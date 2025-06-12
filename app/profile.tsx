@@ -209,6 +209,7 @@ export default function ProfileScreen() {
             </View>
           </View>
 
+          {phone && (
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('profile.sections.mobile')}</Text>
@@ -236,7 +237,7 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           </View>
-
+          )}
         </View>
       </Animated.ScrollView>
       {!isKeyboardVisible && (

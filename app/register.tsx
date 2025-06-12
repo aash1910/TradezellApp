@@ -211,7 +211,7 @@ export default function LoginScreen() {
         password,
         password_confirmation: confirmPassword,
         nationality,
-        gender,
+        gender: gender.toLowerCase(),
         role: 'sender'
       });
       
