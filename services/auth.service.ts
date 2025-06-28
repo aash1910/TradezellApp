@@ -89,8 +89,8 @@ class AuthService {
 
       const { access_token, user } = response.data;
       
-      // Store the token with Bearer prefix
-      await AsyncStorage.setItem('auth_token', `Bearer ${access_token}`);
+      // Store the token without Bearer prefix (will be added by API interceptor)
+      await AsyncStorage.setItem('auth_token', access_token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
       
       // If remember me is true, store a flag
@@ -135,8 +135,8 @@ class AuthService {
 
       const { token : access_token, user } = response.data?.data;
       
-      // Store the token with Bearer prefix
-      await AsyncStorage.setItem('auth_token', `Bearer ${access_token}`);
+      // Store the token without Bearer prefix (will be added by API interceptor)
+      await AsyncStorage.setItem('auth_token', access_token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
 
       return response.data;
@@ -240,17 +240,27 @@ class AuthService {
 
   async isAuthenticated() {
     try {
-      const [token, rememberMe] = await AsyncStorage.multiGet(['auth_token', 'remember_me']);
+      const token = await AsyncStorage.getItem('auth_token');
       
-      // If remember me is not set, user needs to login again
-      if (!rememberMe[1]) {
+      // If no token exists, user is not authenticated
+      if (!token) {
         return false;
       }
       
-      return !!token[0];
+      // Check if remember me is set (optional check)
+      const rememberMe = await AsyncStorage.getItem('remember_me');
+      
+      // If remember me is not set, user needs to login again
+      if (!rememberMe) {
+        // Clear the token since remember me is not set
+        await AsyncStorage.removeItem('auth_token');
+        return false;
+      }
+      
+      return true;
     } catch (error: any) {
       console.error('Is Authenticated Error:', error);
-      throw error;
+      return false; // Return false on error instead of throwing
     }
   }
 

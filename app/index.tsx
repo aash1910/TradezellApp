@@ -25,7 +25,7 @@ export default function WelcomeScreen() {
         // Run the timer and API call concurrently, ensuring minimum 3 second wait
         const [_, user] = await Promise.all([
           new Promise(resolve => setTimeout(resolve, 3000)),
-          isAuthenticated ? authService.getUser() : null
+          isAuthenticated ? authService.getUser().catch(() => null) : null
         ]);
         
         //setShowContent(false);
@@ -46,6 +46,12 @@ export default function WelcomeScreen() {
         }
       } catch (error) {
         console.error('Initial auth check failed:', error);
+        // Clear any invalid auth data
+        try {
+          await authService.logout();
+        } catch (logoutError) {
+          console.error('Logout error during auth check:', logoutError);
+        }
         router.replace('/getStarted');
       } finally {
         setIsLoading(false);

@@ -23,7 +23,12 @@ api.interceptors.request.use(
     
     const token = await AsyncStorage.getItem('auth_token');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // Check if token already has Bearer prefix
+      if (token.startsWith('Bearer ')) {
+        config.headers.Authorization = token;
+      } else {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
