@@ -22,13 +22,11 @@ export default function WelcomeScreen() {
       try {
         const isAuthenticated = await authService.isAuthenticated();
         
-        // Run the timer and API call concurrently, ensuring minimum 3 second wait
-        const [_, user] = await Promise.all([
-          new Promise(resolve => setTimeout(resolve, 3000)),
-          isAuthenticated ? authService.getUser().catch(() => null) : null
-        ]);
+        // First, ensure minimum 3 second wait for users to read content
+        await new Promise(resolve => setTimeout(resolve, 6000));
         
-        //setShowContent(false);
+        // Then check user data if authenticated
+        const user = isAuthenticated ? await authService.getUser().catch(() => null) : null;
         
         if (isAuthenticated && user) {
           if( user.is_verified == 0 ) {

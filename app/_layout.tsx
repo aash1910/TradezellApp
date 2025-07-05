@@ -25,7 +25,7 @@ export default function RootLayout() {
     if (loaded) {
       const hideSplash = async () => {
         // Create a promise that resolves after 2 seconds
-        const delay = new Promise(resolve => setTimeout(resolve, 2000));
+        const delay = new Promise(resolve => setTimeout(resolve, 3000));
         
         // Wait for both the delay and any other setup to complete
         await Promise.all([delay]);
