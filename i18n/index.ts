@@ -8,7 +8,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources: LANGUAGES,
-    lng: Localization.locale.split('-')[0], // Default to device language
+    lng: Localization.getLocales()?.[0]?.languageCode || 'en', // Default to device language
     fallbackLng: 'en',
     react: {
       useSuspense: false

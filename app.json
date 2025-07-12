@@ -8,9 +8,6 @@
     "scheme": "piqdrop",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "cli": {
-      "appVersionSource": "remote"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.piqdrop.com",
@@ -69,6 +66,14 @@
       },
       "eas": {
         "projectId": "f4e2a653-4467-4908-8aba-ce3b2ef4015d"
+      },
+      "stripePublishableKey": "pk_test_51RaMqGBQsHpfCUCmVUDUmoJ3Mi7u6rJlb9mFJVhpMqKacI3JNcGIosKGaQLLvCXnIBGL30TilKbLpKp0rxCrsffP0073sjbHOE",
+      "currency": {
+        "code": "SEK",
+        "symbol": "kr",
+        "locale": "sv-SE",
+        "maxWithdrawal": 100000,
+        "minWithdrawal": 100
       }
     }
   }

@@ -203,17 +203,39 @@ export default {
       number: 'Number:',
       location: 'Location:',
       note: 'Note'
-    },
-    orderConfirmation: {
-      title: 'Order Confirmation',
-      from: 'From:',
-      to: 'To:',
-      date: 'Date:',
-      back: 'Back',
-      confirm: 'Yes Confirm !'
-    },
-    takeOrder: 'Take order!'
+    }
   },
+  payment: {
+    title: 'Payment',
+    orderSummary: 'Order Summary',
+    paymentInformation: 'Payment Information',
+    cardDetails: 'Card Details',
+    escrowInfo: 'This payment will be held in escrow until a dropper accepts your package. If no dropper accepts within 24 hours, you will be automatically refunded.',
+    payButton: 'Pay ${{amount}}',
+    securityNotice: '🔒 Your payment information is secure and encrypted by Stripe',
+    success: {
+      title: 'Payment Successful',
+      message: 'Your payment has been processed and is held in escrow. You will be refunded if no dropper accepts your package.'
+    },
+    error: {
+      title: 'Payment Failed',
+      message: 'There was an error processing your payment. Please try again.'
+    },
+    validation: {
+      completeCardDetails: 'Please complete your card details',
+      setupPayment: 'Setting up payment...',
+      unableToLoad: 'Unable to load payment information'
+    }
+  },
+  orderConfirmation: {
+    title: 'Order Confirmation',
+    from: 'From:',
+    to: 'To:',
+    date: 'Date:',
+    back: 'Back',
+    confirm: 'Yes Confirm !'
+  },
+  takeOrder: 'Take order!',
   review: {
     title: 'Leave a review',
     dropper: 'Dropper',

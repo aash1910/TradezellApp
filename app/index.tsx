@@ -26,7 +26,18 @@ export default function WelcomeScreen() {
         await new Promise(resolve => setTimeout(resolve, 6000));
         
         // Then check user data if authenticated
-        const user = isAuthenticated ? await authService.getUser().catch(() => null) : null;
+        let user = null;
+        if (isAuthenticated) {
+          try {
+            user = await authService.getUser();
+          } catch (error) {
+            console.error('Failed to get user data:', error);
+            // If getUser fails, clear auth and redirect to login
+            await authService.logout();
+            router.replace('/login');
+            return;
+          }
+        }
         
         if (isAuthenticated && user) {
           if( user.is_verified == 0 ) {

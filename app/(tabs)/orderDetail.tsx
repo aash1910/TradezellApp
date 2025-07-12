@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, {
   interpolate,
@@ -28,6 +28,7 @@ const COLORS = {
   textSecondary: '#919191',
   buttonText: '#FFFFFF',
   subtitle: '#616161',
+  success: '#34C759',
 };
 
 interface Coordinates {
@@ -483,6 +484,47 @@ export default function OrderDetailScreen() {
               </Text>
             </View>
           </View>
+
+          <View style={styles.paymentButtonContainer}>
+            {orderData?.order?.status === 'completed' ? (
+              <TouchableOpacity 
+                style={[styles.paymentButton, styles.releaseButton]} 
+                onPress={async () => {
+                  try {
+                    const response = await api.post(`/payments/release/${orderData.id}`);
+                    if (response.data.status === 'success') {
+                      Alert.alert(
+                        'Payment Released',
+                        'Payment has been successfully released to the dropper.',
+                        [{ text: 'OK' }]
+                      );
+                      // Refresh order data or navigate back
+                      router.back();
+                    }
+                  } catch (error: any) {
+                    Alert.alert('Error', error.response?.data?.message || 'Failed to release payment');
+                  }
+                }}
+              >
+                <Text style={styles.paymentButtonText}>Release Payment to Dropper</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity 
+                style={styles.paymentButton} 
+                onPress={() => {
+                  if (orderData) {
+                    router.push({
+                      pathname: '/payment-modal',
+                      params: { orderData: JSON.stringify(orderData) }
+                    });
+                  }
+                }}
+              >
+                <Text style={styles.paymentButtonText}>Payment</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
         </View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
@@ -602,7 +644,7 @@ const styles = StyleSheet.create({
   pickupDetailsCard: {
     backgroundColor: '#fff',
     borderRadius: 14,
-    marginBottom: 18,
+    marginBottom: 0,
     paddingHorizontal: 14,
     paddingVertical: 24,
   },
@@ -673,5 +715,32 @@ const styles = StyleSheet.create({
     height: 220,
     overflow: 'hidden',
     marginTop: -20,
+  },
+  paymentButtonContainer: {
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
+  paymentButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 30,
+  },
+  paymentButtonText: {
+    color: COLORS.buttonText,
+    fontSize: 16,
+    fontFamily: 'nunito-bold',
+    letterSpacing: 0.2,
+  },
+  releaseButton: {
+    backgroundColor: COLORS.success,
+  },
+  releasedButton: {
+    backgroundColor: COLORS.textSecondary,
+  },
+  releasedText: {
+    color: COLORS.background,
   },
 });

@@ -224,10 +224,12 @@ export default function PackageEditScreen() {
           // Set pickup date and time
           if (packageData.pickup.date && packageData.pickup.time) {
             setDate(new Date(packageData.pickup.date));
-            const [hours, minutes] = packageData.pickup.time.split(':');
-            const timeDate = new Date();
-            timeDate.setHours(parseInt(hours), parseInt(minutes));
-            setTime(timeDate);
+            if (packageData.pickup.time && typeof packageData.pickup.time === 'string') {
+              const [hours, minutes] = packageData.pickup.time.split(':');
+              const timeDate = new Date();
+              timeDate.setHours(parseInt(hours), parseInt(minutes));
+              setTime(timeDate);
+            }
           }
 
           // Set pickup coordinates
@@ -460,7 +462,7 @@ export default function PackageEditScreen() {
       }
 
       // Format date and time using local time
-      const formattedDate = date.toISOString().split('T')[0];
+      const formattedDate = date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       const hours = time.getHours().toString().padStart(2, '0');
       const minutes = time.getMinutes().toString().padStart(2, '0');
       const formattedTime = `${hours}:${minutes}`;

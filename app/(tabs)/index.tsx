@@ -442,7 +442,7 @@ export default function HomeScreen() {
       }
 
       // Format date and time using local time
-      const formattedDate = date.toISOString().split('T')[0];
+      const formattedDate = date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       const hours = time.getHours().toString().padStart(2, '0');
       const minutes = time.getMinutes().toString().padStart(2, '0');
       const formattedTime = `${hours}:${minutes}`;

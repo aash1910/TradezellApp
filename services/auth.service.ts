@@ -164,7 +164,21 @@ class AuthService {
       await AsyncStorage.setItem('user', JSON.stringify(user));
       return user;
     } catch (error: any) {
-      console.error('API Response Error:', error);
+      console.error('Get User API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+        }
+      });
+      
+      // If it's an auth error, clear the token
+      if (error.response?.status === 401) {
+        await AsyncStorage.removeItem('auth_token');
+      }
+      
       throw error;
     }
   }

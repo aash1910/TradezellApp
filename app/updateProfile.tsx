@@ -385,7 +385,7 @@ export default function UpdateProfileScreen() {
         last_name: lastName,
         mobile: mobile,
         address: location,
-        date_of_birth: date ? date.toISOString().split('T')[0] : null,
+        date_of_birth: date && date instanceof Date ? date.toISOString().split('T')[0] : null,
         nationality: nationality,
         gender: gender.toLowerCase(),
       };

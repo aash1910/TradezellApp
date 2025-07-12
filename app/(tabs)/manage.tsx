@@ -27,6 +27,7 @@ import { SuccessBadgeIcon } from '@/components/icons/SuccessBadgeIcon';
 import { packageListService } from '@/services/packageList.service';
 import { packageService } from '@/services/package.service';
 import { orderService } from '@/services/order.service';
+import { paymentService } from '@/services/payment.service';
 import type { Package } from '@/services/packageList.service';
 import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
@@ -390,9 +391,23 @@ export default function ManageScreen() {
                       try {
                         setIsCompleting(true);
                         if (selectedPackage?.order?.id) {
+                          // Update order status to completed
                           await orderService.updateOrderStatus(selectedPackage.order.id, { 
                             status: 'completed'
                           });
+                          
+                          // Release payment from escrow to dropper
+                          if (selectedPackage?.id) {
+                            try {
+                              await paymentService.releasePaymentFromEscrow(selectedPackage.id);
+                              console.log('Payment released successfully');
+                            } catch (paymentError) {
+                              console.error('Failed to release payment:', paymentError);
+                              // Don't show error to user as order is already completed
+                              // Payment release can be retried later if needed
+                            }
+                          }
+                          
                           await fetchPackages();
                           setModalVisible(false);
                           setShouldOpenSecond(true);
@@ -570,8 +585,19 @@ export default function ManageScreen() {
                         try {
                           setIsCanceling(true);
                           if (selectedPackage?.id) {
-                            await packageService.cancelPackage(selectedPackage.id);
-                            await fetchPackages();
+                              await packageService.cancelPackage(selectedPackage.id);
+ 
+                              // here sender will get refund 
+                              try {
+                                await paymentService.requestRefund(selectedPackage.id, 'Package cancelled by sender');
+                                console.log('Refund processed successfully');
+                              } catch (refundError) {
+                                console.error('Failed to process refund:', refundError);
+                                // Don't show error to user as package is already cancelled
+                                // Refund can be retried later if needed
+                              }
+ 
+                              await fetchPackages();
                             setModalCancelDeliveryVisible(false);
                             handlePress(3);
                           } else {
