@@ -651,7 +651,8 @@ export default function PackageEditScreen() {
                         style={styles.input} 
                         keyboardType="numeric" 
                         returnKeyType="done" 
-                        onSubmitEditing={handleReturnKey} />
+                        onSubmitEditing={handleReturnKey}
+                        editable={false} />
                     </View>
                   </View>
                 </View>

@@ -31,6 +31,7 @@ import { paymentService } from '@/services/payment.service';
 import type { Package } from '@/services/packageList.service';
 import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
+import { getCurrencyConfig } from '@/constants/Currency';
 
 const HEADER_HEIGHT = 80;
 
@@ -180,6 +181,8 @@ export default function ManageScreen() {
     };
   }, []);
 
+  const currencyConfig = getCurrencyConfig();
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -316,7 +319,7 @@ export default function ManageScreen() {
                       </TouchableOpacity>
                       
                       <View style={styles.footer}>
-                        <Text style={styles.price}>${pkg.price}</Text>
+                        <Text style={styles.price}>{currencyConfig.code} {pkg.price}</Text>
                         <Text style={[
                           styles.status,
                           {
@@ -550,7 +553,7 @@ export default function ManageScreen() {
                         <View style={styles.orderSummaryUserColumn}>
                           <Text style={styles.orderSummaryUserName}>{selectedPackage?.pickup.name}</Text>
                           <View style={styles.orderSummaryPriceBox}>
-                            <Text style={styles.orderSummaryPrice}>${selectedPackage?.price}</Text>
+                            <Text style={styles.orderSummaryPrice}>{currencyConfig.code} {selectedPackage?.price}</Text>
                           </View>
                         </View>
                       </View>

@@ -1,11 +1,12 @@
 import api from './api';
 
 export interface Package {
-  id: number;
+  id: number | null;
   info: string;
   weight: string | number;
   price: string;
   status: string;
+  payment_status: string;
   sender: {
     id: number;
     image: string;

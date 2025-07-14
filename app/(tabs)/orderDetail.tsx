@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, {
   interpolate,
@@ -10,6 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
+import { MoneyIcon } from '@/components/icons/MoneyIcon';
 import MapView from 'react-native-maps';
 import { Marker, MapMarker } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -17,6 +18,11 @@ import mapStyle from '@/components/mapStyle.json';
 import api from '@/services/api';
 import { Package } from '@/services/packageList.service';
 import { useTranslation } from 'react-i18next';
+import { paymentService } from '@/services/payment.service';
+import { StripeProvider, CardField, useStripe } from '@stripe/stripe-react-native';
+import RNModal from 'react-native-modal';
+import { STRIPE_CONFIG } from '@/config/stripe';
+import { getCurrencyConfig } from '@/constants/Currency';
 
 const HEADER_HEIGHT = 120;
 
@@ -29,7 +35,10 @@ const COLORS = {
   buttonText: '#FFFFFF',
   subtitle: '#616161',
   success: '#34C759',
+  error: '#FF3B30',
 };
+
+const STRIPE_PUBLISHABLE_KEY = STRIPE_CONFIG.publishableKey;
 
 interface Coordinates {
   latitude: number;
@@ -67,6 +76,225 @@ const calculateMidpoint = (pickup: Coordinates, dropoff: Coordinates) => {
   };
 };
 
+function PaymentCardModal({
+  visible,
+  onClose,
+  orderData,
+  onPaymentSuccess,
+  currencyConfig
+}: {
+  visible: boolean;
+  onClose: () => void;
+  orderData: Package;
+  onPaymentSuccess: (orderData: any) => void;
+  currencyConfig: ReturnType<typeof getCurrencyConfig>;
+}) {
+  const { confirmPayment } = useStripe();
+  const { t } = useTranslation();
+  const [paymentIntent, setPaymentIntent] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [cardComplete, setCardComplete] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error' | 'polling'>('idle');
+
+  useEffect(() => {
+    if (visible && orderData) {
+      createPaymentIntent();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  const createPaymentIntent = async () => {
+    try {
+      setIsLoading(true);
+      const intent = await paymentService.createPaymentIntent(
+        null,
+        parseFloat(orderData.price),
+        {
+          pickup_name: orderData.pickup.name,
+          pickup_mobile: orderData.pickup.mobile,
+          pickup_address: orderData.pickup.address,
+          pickup_details: orderData.pickup.details || '',
+          weight: typeof orderData.weight === 'string' ? parseFloat(orderData.weight) : orderData.weight,
+          price: parseFloat(orderData.price),
+          pickup_date: orderData.pickup.date,
+          pickup_time: orderData.pickup.time,
+          drop_name: orderData.drop.name,
+          drop_mobile: orderData.drop.mobile,
+          drop_address: orderData.drop.address,
+          drop_details: orderData.drop.details || '',
+          pickup_lat: orderData.pickup.coordinates.lat ? parseFloat(orderData.pickup.coordinates.lat) : undefined,
+          pickup_lng: orderData.pickup.coordinates.lng ? parseFloat(orderData.pickup.coordinates.lng) : undefined,
+          drop_lat: orderData.drop.coordinates.lat ? parseFloat(orderData.drop.coordinates.lat) : undefined,
+          drop_lng: orderData.drop.coordinates.lng ? parseFloat(orderData.drop.coordinates.lng) : undefined,
+        }
+      );
+      setPaymentIntent(intent);
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+      onClose();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Polling helper for package creation
+  const pollCreatePackage = async (paymentIntentId: string, packageData: any, maxAttempts = 10, delayMs = 3000) => {
+    setPaymentStatus('polling');
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await paymentService.createPackageAfterPayment(paymentIntentId, packageData);
+        if (response.status === 'success') {
+          return response;
+        }
+        if (response.status === 'pending') {
+          // Wait and retry
+          await new Promise(res => setTimeout(res, delayMs));
+          continue;
+        }
+        // If error, break and show error
+        throw new Error(response.message || 'Failed to create package');
+      } catch (err) {
+        if (attempt === maxAttempts) throw err;
+        await new Promise(res => setTimeout(res, delayMs));
+      }
+    }
+    throw new Error('Package creation timed out. Please try again.');
+  };
+
+  const handlePayment = async () => {
+    if (!paymentIntent || !cardComplete) {
+      Alert.alert('Error', t('paymentPreview.completeCardDetails') || 'Please complete your card details');
+      return;
+    }
+    try {
+      setPaymentStatus('processing');
+      const { error, paymentIntent: confirmedPaymentIntent } = await confirmPayment(
+        paymentIntent.client_secret,
+        { paymentMethodType: 'Card' }
+      );
+      if (error) {
+        setPaymentStatus('error');
+        Alert.alert('Payment Failed', error.message);
+      } else if (
+        confirmedPaymentIntent &&
+        typeof confirmedPaymentIntent.status === 'string' &&
+        confirmedPaymentIntent.status.toLowerCase() === 'succeeded'
+      ) {
+        setPaymentStatus('polling');
+        // Poll for package creation after payment
+        const packageData = {
+          pickup_name: orderData.pickup.name,
+          pickup_mobile: orderData.pickup.mobile,
+          pickup_address: orderData.pickup.address,
+          pickup_details: orderData.pickup.details || '',
+          weight: typeof orderData.weight === 'string' ? parseFloat(orderData.weight) : orderData.weight,
+          price: parseFloat(orderData.price),
+          pickup_date: orderData.pickup.date,
+          pickup_time: orderData.pickup.time,
+          drop_name: orderData.drop.name,
+          drop_mobile: orderData.drop.mobile,
+          drop_address: orderData.drop.address,
+          drop_details: orderData.drop.details || '',
+          pickup_lat: orderData.pickup.coordinates.lat ? parseFloat(orderData.pickup.coordinates.lat) : undefined,
+          pickup_lng: orderData.pickup.coordinates.lng ? parseFloat(orderData.pickup.coordinates.lng) : undefined,
+          drop_lat: orderData.drop.coordinates.lat ? parseFloat(orderData.drop.coordinates.lat) : undefined,
+          drop_lng: orderData.drop.coordinates.lng ? parseFloat(orderData.drop.coordinates.lng) : undefined,
+        };
+        const response = await pollCreatePackage(paymentIntent.id, packageData);
+        if (response.status === 'success') {
+          setPaymentStatus('success');
+          Alert.alert(
+            t('common.success'),
+            t('paymentPreview.paymentSuccess'),
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  onPaymentSuccess(response.data);
+                }
+              }
+            ]
+          );
+        } else {
+          setPaymentStatus('error');
+          Alert.alert(t('common.error'), response.message || t('paymentPreview.packageCreationFailed'));
+        }
+      } else {
+        setPaymentStatus('error');
+        Alert.alert('Payment Failed', t('paymentPreview.paymentFailed'));
+      }
+    } catch (error: any) {
+      setPaymentStatus('error');
+      Alert.alert('Payment Error', error.message);
+    }
+  };
+
+  return (
+    <RNModal
+      isVisible={visible}
+      onBackdropPress={onClose}
+      onBackButtonPress={onClose}
+      style={{ justifyContent: 'flex-end', margin: 0 }}
+      backdropOpacity={0.5}
+      propagateSwipe
+    >
+      <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, minHeight: 400 }}
+        >
+          <View style={{ alignItems: 'center', marginBottom: 16 }}>
+            <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, marginBottom: 8 }} />
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>{t('paymentPreview.title')}</Text>
+          </View>
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontWeight: 'bold' }}>{t('paymentPreview.packageSummary')}</Text>
+            <Text>{orderData.pickup.name} → {orderData.drop.name}</Text>
+            <Text>{orderData.pickup.address} → {orderData.drop.address}</Text>
+            <Text>{t('paymentPreview.weight')}: {typeof orderData.weight === 'string' ? orderData.weight : `${orderData.weight}kg`}</Text>
+            <Text>{t('paymentPreview.price')}: {currencyConfig.code} {parseFloat(orderData.price).toFixed(2)}</Text>
+          </View>
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>{t('paymentPreview.cardDetails') || 'Card Details'}</Text>
+            <CardField
+              postalCodeEnabled={false}
+              placeholders={{ number: '4242 4242 4242 4242' }}
+              cardStyle={{ backgroundColor: '#fff', textColor: '#212121', borderRadius: 8, borderWidth: 1, borderColor: '#eee' }}
+              style={{ height: 50, marginBottom: 8 }}
+              onCardChange={(cardDetails) => setCardComplete(cardDetails.complete)}
+            />
+          </View>
+          <TouchableOpacity
+            style={{ backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 16, opacity: (!cardComplete || paymentStatus === 'processing' || paymentStatus === 'polling') ? 0.7 : 1 }}
+            onPress={handlePayment}
+            disabled={!cardComplete || paymentStatus === 'processing' || paymentStatus === 'polling'}
+          >
+            {paymentStatus === 'processing' ? (
+              <ActivityIndicator color={COLORS.buttonText} />
+            ) : paymentStatus === 'polling' ? (
+              <>
+                <ActivityIndicator color={COLORS.buttonText} />
+                <Text style={{ color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', marginLeft: 8 }}>
+                  {t('paymentPreview.processing') || 'Processing...'}
+                </Text>
+              </>
+            ) : (
+              <Text style={{ color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold' }}>
+                {t('paymentPreview.payNow')} {currencyConfig.code} {parseFloat(orderData.price).toFixed(2)}
+              </Text>
+            )}
+          </TouchableOpacity>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontSize: 12, color: COLORS.textSecondary, textAlign: 'center' }}>
+              🔒 {t('paymentPreview.securityNotice') || 'Your payment information is secure and encrypted by Stripe'}
+            </Text>
+          </View>
+        </KeyboardAvoidingView>
+      </StripeProvider>
+    </RNModal>
+  );
+}
+
 export default function OrderDetailScreen() {
   const params = useLocalSearchParams();
   const [orderData, setOrderData] = useState<Package | null>(null);
@@ -79,11 +307,31 @@ export default function OrderDetailScreen() {
   const [mapCenter, setMapCenter] = useState<Coordinates | null>(null);
   const [showMarkerInfo, setShowMarkerInfo] = useState(true);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
   const { t } = useTranslation();
+  const currencyConfig = getCurrencyConfig();
   
   const pickupMarkerRef = useRef<MapMarker>(null);
   const dropoffMarkerRef = useRef<MapMarker>(null);
+
+  const handlePaymentSuccess = (updatedOrderData: any) => {
+    setShowPaymentModal(false);
+    // Update the order data with the new data from payment
+    if (updatedOrderData) {
+      setOrderData(updatedOrderData);
+    }
+    // Alert.alert(
+    //   t('common.success'),
+    //   t('paymentPreview.paymentSuccess'),
+    //   [{ text: 'OK' }]
+    // );
+  };
+
+  const handlePayNow = () => {
+    setShowPaymentModal(true);
+  };
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -212,6 +460,13 @@ export default function OrderDetailScreen() {
     setMapCenter(null);
     setIsMapReady(false);
   }, [params.orderData]);
+
+  // Auto-show payment modal for unpaid orders
+  useEffect(() => {
+    if (orderData && orderData.payment_status === 'pending') {
+      setShowPaymentModal(true);
+    }
+  }, [orderData]);
 
   // Set markers when order data changes
   useEffect(() => {
@@ -412,7 +667,7 @@ export default function OrderDetailScreen() {
               )}
 
               <View style={styles.orderSummaryPriceBox}>
-                <Text style={styles.orderSummaryPrice}>${parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
+                <Text style={styles.orderSummaryPrice}>{currencyConfig.code} {parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
               </View>
             </View>
           </View>
@@ -441,7 +696,7 @@ export default function OrderDetailScreen() {
             </View>
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.price')}</Text>
-              <Text style={styles.pickupDetailsValue}>${parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
+              <Text style={styles.pickupDetailsValue}> {currencyConfig.code} {parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
             </View>
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.location')}</Text>
@@ -485,7 +740,7 @@ export default function OrderDetailScreen() {
             </View>
           </View>
 
-          <View style={styles.paymentButtonContainer}>
+          {/* <View style={styles.paymentButtonContainer}>
             {orderData?.order?.status === 'completed' ? (
               <TouchableOpacity 
                 style={[styles.paymentButton, styles.releaseButton]} 
@@ -523,10 +778,48 @@ export default function OrderDetailScreen() {
                 <Text style={styles.paymentButtonText}>Payment</Text>
               </TouchableOpacity>
             )}
-          </View>
+          </View> */}
 
         </View>
       </Animated.ScrollView>
+
+      {/* Payment Modal */}
+      {orderData && orderData.payment_status === 'pending' && (
+        <PaymentCardModal
+          visible={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          orderData={orderData}
+          onPaymentSuccess={handlePaymentSuccess}
+          currencyConfig={currencyConfig}
+        />
+      )}
+
+      {/* Pay Now Button for unpaid orders */}
+      {orderData && orderData.payment_status === 'pending' && (
+        <View style={[styles.paymentButtonContainer, { bottom: 80 }]}> 
+          <TouchableOpacity 
+            style={[styles.paymentButton, isProcessing && styles.disabledButton]}
+            onPress={handlePayNow}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <>
+                <ActivityIndicator color={COLORS.buttonText} />
+                <Text style={[styles.paymentButtonText, { marginLeft: 8 }]}> 
+                  {t('paymentPreview.processing')}
+                </Text>
+              </>
+            ) : (
+              <>
+                <MoneyIcon size={20} color={COLORS.buttonText} />
+                <Text style={styles.paymentButtonText}>
+                  {t('paymentPreview.payNow')} {currencyConfig.code} {parseFloat(orderData.price).toFixed(2)}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -539,7 +832,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 0,
-    paddingBottom: 86,
+    paddingBottom: 80,
   },
   header: {
     flexDirection: 'row',
@@ -717,8 +1010,13 @@ const styles = StyleSheet.create({
     marginTop: -20,
   },
   paymentButtonContainer: {
-    marginTop: 20,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.background,
     paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
   },
   paymentButton: {
     backgroundColor: COLORS.primary,
@@ -726,7 +1024,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 30,
+    flexDirection: 'row',
   },
   paymentButtonText: {
     color: COLORS.buttonText,
@@ -742,5 +1040,8 @@ const styles = StyleSheet.create({
   },
   releasedText: {
     color: COLORS.background,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
 });

@@ -89,6 +89,7 @@ export default function HomeScreen() {
   const [countryDropOff, setCountryDropOff] = useState<Country | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<UserData | null>(null);
 
   const handleDateChange = (event: any, selectedDate: any) => {
     if (selectedDate) setDate(selectedDate);
@@ -246,6 +247,7 @@ export default function HomeScreen() {
             }
           }
         }
+        setUser(user);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -447,37 +449,58 @@ export default function HomeScreen() {
       const minutes = time.getMinutes().toString().padStart(2, '0');
       const formattedTime = `${hours}:${minutes}`;
 
-      const packageData = {
-        pickup_name: name.trim(),
-        pickup_mobile: pickup_mobile,
-        pickup_address: location.trim(),
-        pickup_details: details.trim(),
+      // orderData structure expected by orderDetail.tsx
+      const transformedOrderData = {
+        id: null,
+        payment_status: 'pending',
+        info: null,
         weight: parseFloat(weight),
-        price: parseFloat(price),
-        pickup_date: formattedDate,
-        pickup_time: formattedTime,
-        drop_name: nameDropOff.trim(),
-        drop_mobile: dropOff_mobile,
-        drop_address: locationDropOff.trim(),
-        drop_details: detailsDropOff.trim(),
-        pickup_lat: marker?.latitude,
-        pickup_lng: marker?.longitude,
-        drop_lat: markerDropOff?.latitude,
-        drop_lng: markerDropOff?.longitude,
+        price: parseFloat(price).toString(),
+        status: 'pending',
+        sender: {
+          id: user?.id || null,
+          image: user?.image || null,
+        },
+        pickup: {
+          name: name.trim(),
+          mobile: pickup_mobile,
+          address: location.trim(),
+          details: details.trim() || null,
+          date: formattedDate,
+          time: formattedTime,
+          coordinates: {
+            lat: marker?.latitude?.toString() || null,
+            lng: marker?.longitude?.toString() || null,
+          },
+        },
+        drop: {
+          name: nameDropOff.trim(),
+          mobile: dropOff_mobile,
+          address: locationDropOff.trim(),
+          details: detailsDropOff.trim() || null,
+          coordinates: {
+            lat: markerDropOff?.latitude?.toString() || null,
+            lng: markerDropOff?.longitude?.toString() || null,
+          },
+        },
+        order: {
+          id: null,
+          status: 'pending',
+          dropper: null,
+          review_submitted: false,
+          created_at: null,
+          updated_at: null,
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
-      const response = await packageService.createPackage(packageData);
-      if(response.status === 'success'){
-        console.log("response.data", response.data);
-        router.push({
-          pathname: '/(tabs)/orderDetail',
-          params: { orderData: JSON.stringify(response.data) }
-        });
-        Alert.alert(t('common.success'), t('packageForm.validation.jobPostedSuccess'));
-      }
-      else{
-        Alert.alert(t('common.error'), response.data.message);
-      }
+      // Redirect directly to order detail page
+      router.push({
+        pathname: '/(tabs)/orderDetail',
+        params: { orderData: JSON.stringify(transformedOrderData) }
+      });
+      //Alert.alert(t('common.success'), t('packageForm.validation.jobPostedSuccess'));
       
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || t('packageForm.validation.createPackageError'));
@@ -526,7 +549,7 @@ export default function HomeScreen() {
           {isSubmitting ? (
             <ActivityIndicator color={COLORS.buttonText} />
           ) : (
-            <Text style={styles.loginText}>{t('packageForm.title')}</Text>
+            <Text style={styles.loginText}>{t('packageForm.postJob')}</Text>
           )}
         </TouchableOpacity>
         {/* Toggle Buttons */}
@@ -650,6 +673,62 @@ export default function HomeScreen() {
                   </View>
                 </View>
 
+                <Text style={styles.label}>{t('packageForm.pickupDateAndTime')}</Text>
+                <View style={styles.rowContainer}>
+                  <View style={styles.rowItem}>
+                    <Pressable onPress={() => setShowDateModal(true)} style={styles.inputContainer}>
+                      <CalendarIcon size={20} color={COLORS.text} /> 
+                      <Text style={styles.input}>{formatDate(date) || 'Select Date'}</Text>
+                    </Pressable>
+                  </View>
+                  <View style={styles.rowItem}>
+                    <Pressable onPress={() => setShowTimeModal(true)} style={styles.inputContainer}>
+                      <TimeIcon size={20} color={COLORS.text} />
+                      <Text style={styles.input}>{formatTime(time) || 'Select Time'}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+                <View style={styles.infoContainer}>
+                  <InfoCircleIcon size={14} color={COLORS.text} />
+                  <Text style={styles.infoText}>{t('packageForm.timeZoneHint')}</Text>
+                </View>
+
+                {/* Date Modal */}
+                <Modal visible={showDateModal} transparent animationType="slide">
+                  <View style={styles.modalBackground}>
+                    <View style={styles.modalContainer}>
+                      <DateTimePicker
+                        value={date}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+                        onChange={handleDateChange}
+                        style={styles.picker}
+                      />
+                      <TouchableOpacity onPress={() => setShowDateModal(false)} style={styles.modalButton}>
+                        <Text style={styles.modalButtonText}>{t('packageForm.done')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Modal>
+
+                {/* Time Modal */}
+                <Modal visible={showTimeModal} transparent animationType="slide">
+                  <View style={styles.modalBackground}>
+                    <View style={styles.modalContainer}>
+                      <DateTimePicker
+                        value={time}
+                        mode="time"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={handleTimeChange}
+                        style={styles.picker}
+                      />
+                      <TouchableOpacity onPress={() => setShowTimeModal(false)} style={styles.modalButton}>
+                        <Text style={styles.modalButtonText}>{t('packageForm.done')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Modal>
+
                 <Text style={styles.label}>{t('packageForm.location')}</Text>
                 <View style={styles.inputContainer}>
                   <TouchableOpacity onPress={() => setModalVisible(true)}>
@@ -739,6 +818,8 @@ export default function HomeScreen() {
                       </View>
                     </View>
                   </Modal>
+
+                  // Add a button to add another location like above but can add maximum two more location  
                 </View>
 
                 <Text style={styles.label}>{t('packageForm.moreDetails')}</Text>
@@ -754,62 +835,6 @@ export default function HomeScreen() {
                     onSubmitEditing={handleReturnKey}
                   />
                 </View>
-
-                <Text style={styles.label}>{t('packageForm.pickupDateAndTime')}</Text>
-                <View style={styles.rowContainer}>
-                  <View style={styles.rowItem}>
-                    <Pressable onPress={() => setShowDateModal(true)} style={styles.inputContainer}>
-                      <CalendarIcon size={20} color={COLORS.text} /> 
-                      <Text style={styles.input}>{formatDate(date) || 'Select Date'}</Text>
-                    </Pressable>
-                  </View>
-                  <View style={styles.rowItem}>
-                    <Pressable onPress={() => setShowTimeModal(true)} style={styles.inputContainer}>
-                      <TimeIcon size={20} color={COLORS.text} />
-                      <Text style={styles.input}>{formatTime(time) || 'Select Time'}</Text>
-                    </Pressable>
-                  </View>
-                </View>
-                <View style={styles.infoContainer}>
-                  <InfoCircleIcon size={14} color={COLORS.text} />
-                  <Text style={styles.infoText}>{t('packageForm.timeZoneHint')}</Text>
-                </View>
-
-                {/* Date Modal */}
-                <Modal visible={showDateModal} transparent animationType="slide">
-                  <View style={styles.modalBackground}>
-                    <View style={styles.modalContainer}>
-                      <DateTimePicker
-                        value={date}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
-                        onChange={handleDateChange}
-                        style={styles.picker}
-                      />
-                      <TouchableOpacity onPress={() => setShowDateModal(false)} style={styles.modalButton}>
-                        <Text style={styles.modalButtonText}>{t('packageForm.done')}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </Modal>
-
-                {/* Time Modal */}
-                <Modal visible={showTimeModal} transparent animationType="slide">
-                  <View style={styles.modalBackground}>
-                    <View style={styles.modalContainer}>
-                      <DateTimePicker
-                        value={time}
-                        mode="time"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={handleTimeChange}
-                        style={styles.picker}
-                      />
-                      <TouchableOpacity onPress={() => setShowTimeModal(false)} style={styles.modalButton}>
-                        <Text style={styles.modalButtonText}>{t('packageForm.done')}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </Modal>
 
                 {submitButton}
 

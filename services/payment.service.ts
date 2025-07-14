@@ -27,18 +27,39 @@ export interface PaymentStatus {
 
 class PaymentService {
   // Create a payment intent for escrow
-  async createPaymentIntent(packageId: string | number, amount: number): Promise<PaymentIntent> {
+  async createPaymentIntent(packageId: string | number | null, amount: number, packageData?: any): Promise<PaymentIntent> {
     try {
       const currencyConfig = getCurrencyConfig();
-      const response = await api.post('/payments/create-intent', {
-        package_id: packageId,
+      const payload: any = {
         amount: amount * 100, // Convert to cents
         currency: currencyConfig.code.toLowerCase(),
-      });
+      };
+      
+      if (packageId) {
+        payload.package_id = packageId;
+      } else if (packageData) {
+        payload.package_data = packageData;
+      }
+      
+      const response = await api.post('/payments/create-intent', payload);
       
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to create payment intent');
+    }
+  }
+
+  // Create package after successful payment
+  async createPackageAfterPayment(paymentIntentId: string, packageData: any): Promise<any> {
+    try {
+      const response = await api.post('/payments/create-package', {
+        payment_intent_id: paymentIntentId,
+        package_data: packageData
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to create package after payment');
     }
   }
 
