@@ -812,7 +812,7 @@ export default function OrderDetailScreen() {
             ) : (
               <>
                 <MoneyIcon size={20} color={COLORS.buttonText} />
-                <Text style={styles.paymentButtonText}>
+                <Text style={[styles.paymentButtonText, { marginLeft: 8 }]}>
                   {t('paymentPreview.payNow')} {currencyConfig.code} {parseFloat(orderData.price).toFixed(2)}
                 </Text>
               </>

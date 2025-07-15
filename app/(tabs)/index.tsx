@@ -34,6 +34,7 @@ import { TimeIcon } from '@/components/icons/TimeIcon';
 import { InfoCircleIcon } from '@/components/icons/InfoCircleIcon';
 import { SquareArrowUpIcon } from '@/components/icons/SquareArrowUpIcon';
 import { SquareArrowDownIcon } from '@/components/icons/SquareArrowDownIcon';
+import { AddCircleIcon } from '@/components/icons/AddCircleIcon';
 
 const HEADER_HEIGHT = 375;
 const { width: screenWidth } = Dimensions.get('window');
@@ -66,13 +67,29 @@ export default function HomeScreen() {
   const [weight, setWeight] = useState('');
   const [price, setPrice] = useState('');
   const [location, setLocation] = useState('');
+  const [location2, setLocation2] = useState('');
+  const [location3, setLocation3] = useState('');
   const [locationDropOff, setLocationDropOff] = useState('');
+  const [locationDropOff2, setLocationDropOff2] = useState('');
+  const [locationDropOff3, setLocationDropOff3] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible2, setModalVisible2] = useState(false);
+  const [modalVisible3, setModalVisible3] = useState(false);
   const [modalDropOffVisible, setModalDropOffVisible] = useState(false);
+  const [modalDropOffVisible2, setModalDropOffVisible2] = useState(false);
+  const [modalDropOffVisible3, setModalDropOffVisible3] = useState(false);
   const [marker, setMarker] = useState<{latitude: number; longitude: number} | null>(null);
+  const [marker2, setMarker2] = useState<{latitude: number; longitude: number} | null>(null);
+  const [marker3, setMarker3] = useState<{latitude: number; longitude: number} | null>(null);
   const [markerDropOff, setMarkerDropOff] = useState<{latitude: number; longitude: number} | null>(null);
+  const [markerDropOff2, setMarkerDropOff2] = useState<{latitude: number; longitude: number} | null>(null);
+  const [markerDropOff3, setMarkerDropOff3] = useState<{latitude: number; longitude: number} | null>(null);
   const [region, setRegion] = useState<Region | null>(null);
+  const [region2, setRegion2] = useState<Region | null>(null);
+  const [region3, setRegion3] = useState<Region | null>(null);
   const [regionDropOff, setRegionDropOff] = useState<Region | null>(null);
+  const [regionDropOff2, setRegionDropOff2] = useState<Region | null>(null);
+  const [regionDropOff3, setRegionDropOff3] = useState<Region | null>(null);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState('map');
   const [details, setDetails] = useState('');
@@ -90,6 +107,10 @@ export default function HomeScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<UserData | null>(null);
+
+  // Add state for showing extra pickup locations
+  const [showLocation2, setShowLocation2] = useState(false);
+  const [showLocation3, setShowLocation3] = useState(false);
 
   const handleDateChange = (event: any, selectedDate: any) => {
     if (selectedDate) setDate(selectedDate);
@@ -157,7 +178,11 @@ export default function HomeScreen() {
         };
 
         setRegion(initialRegion);
+        setRegion2(initialRegion);
+        setRegion3(initialRegion);
         setRegionDropOff(initialRegion);
+        setRegionDropOff2(initialRegion);
+        setRegionDropOff3(initialRegion);
         setLoading(false);
       } catch (error) {
         console.error('Error getting location:', error);
@@ -273,9 +298,19 @@ export default function HomeScreen() {
     }
   }, [error]);
 
-  const handleMapPress = async (e: any) => {
+  const handleMapPress = (index: number) => async (e: any) => {
     const coords = e.nativeEvent.coordinate;
-    setMarker(coords);
+    switch(index) {
+      case 2:
+        setMarker2(coords);
+        break;
+      case 3:
+        setMarker3(coords);
+        break;
+      default:
+        setMarker(coords);
+        break;
+    }
 
     try {
       const geocode = await Location.reverseGeocodeAsync(coords);
@@ -291,19 +326,60 @@ export default function HomeScreen() {
         ];
         const uniqueParts = Array.from(new Set(parts.filter(Boolean)));
         const address = uniqueParts.join(', ');        
-        setLocation(address);
+
+        switch(index) {
+          case 2:
+            setLocation2(address);
+            break;
+          case 3:
+            setLocation3(address);
+            break;
+          default:
+            setLocation(address);
+            break;
+        }
       } else {
-        setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+        switch(index) {
+          case 2:
+            setLocation2(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+            break;
+          case 3:
+            setLocation3(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+            break;
+          default:
+            setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+            break;
+        }
       }
     } catch (err) {
       console.warn('Reverse geocoding error:', err);
-      setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+      switch(index) {
+        case 2:
+          setLocation2(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+          break;
+        case 3:
+          setLocation3(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+          break;
+        default:
+          setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+          break;
+      }
     }
   };
 
-  const handleMapPressDropOff = async (e: any) => {
+  const handleMapPressDropOff = (index: number) => async (e: any) => {
     const coords = e.nativeEvent.coordinate;
-    setMarkerDropOff(coords);
+    switch(index) {
+      case 2:
+        setMarkerDropOff2(coords);
+        break;
+      case 3:
+        setMarkerDropOff3(coords);
+        break;
+      default:
+        setMarkerDropOff(coords);
+        break;
+    }
 
     try {
       const geocode = await Location.reverseGeocodeAsync(coords);
@@ -318,14 +394,44 @@ export default function HomeScreen() {
           place.country
         ];
         const uniqueParts = Array.from(new Set(parts.filter(Boolean)));
-        const address = uniqueParts.join(', ');        
-        setLocationDropOff(address);
+        const address = uniqueParts.join(', ');
+        switch(index) {
+          case 2:
+            setLocationDropOff2(address);
+            break;
+          case 3:
+            setLocationDropOff3(address);
+            break;
+          default:
+            setLocationDropOff(address);
+            break;
+        }
       } else {
-        setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+        switch(index) {
+          case 2:
+            setLocationDropOff2(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+            break;
+          case 3:
+            setLocationDropOff3(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+            break;
+          default:
+            setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+            break;
+        }
       }
     } catch (err) {
       console.warn('Reverse geocoding error:', err);
-      setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+      switch(index) {
+        case 2:
+          setLocationDropOff2(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+          break;
+        case 3:
+          setLocationDropOff3(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+          break;
+        default:
+          setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+          break;
+      }
     }
   };
 
@@ -754,7 +860,7 @@ export default function HomeScreen() {
                                 key="pickup-map"
                                 style={{ flex: 1 }}
                                 region={region}
-                                onPress={handleMapPress}
+                                onPress={handleMapPress(1)}
                                 onLayout={() => {
                                   if (marker) {
                                     setRegion({
@@ -818,9 +924,219 @@ export default function HomeScreen() {
                       </View>
                     </View>
                   </Modal>
-
-                  // Add a button to add another location like above but can add maximum two more location  
                 </View>
+
+                {showLocation2 && (<View style={styles.inputContainer}>
+                  <TouchableOpacity onPress={() => setModalVisible2(true)}>
+                    <LocationIcon size={20} color={COLORS.text} /> 
+                  </TouchableOpacity>
+                  <TextInput 
+                    placeholder={t('packageForm.location')} 
+                    value={location2} 
+                    onChangeText={setLocation2} 
+                    style={styles.input} 
+                    editable={false}
+                    onPress={() => setModalVisible2(true)}
+                  />
+
+                  <Modal visible={modalVisible2} animationType="slide">
+                    <View style={{ flex: 1 }}>
+                      {/* Map View */}
+                      {mode === 'map' && (
+                        <>
+                          {region2 && (
+                            <>
+                              <MapView
+                                key="pickup-map2"
+                                style={{ flex: 1 }}
+                                region={region2}
+                                onPress={handleMapPress(2)}
+                                onLayout={() => {
+                                  if (marker2) {
+                                    setRegion2({
+                                      latitude: marker2.latitude,
+                                      longitude: marker2.longitude,
+                                      latitudeDelta: 0.01,
+                                      longitudeDelta: 0.01,
+                                    });
+                                  }
+                                }}
+                              >
+                                {marker2 && <Marker coordinate={marker2} />}
+                              </MapView>
+                              <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
+                            </>
+                          )}
+                        </>
+                      )}
+
+                      {/* Manual Entry */}
+                      {mode === 'manual' && (
+                        <View style={styles.manualContainer}>
+                          <TextInput
+                            placeholder={t('packageForm.location')}
+                            value={location2}
+                            onChangeText={setLocation2}
+                            style={styles.manualInput}
+                            multiline
+                            autoCapitalize="words"
+                            autoComplete="off"
+                            clearButtonMode="always"
+                            textContentType="fullStreetAddress"
+                            selectionColor={COLORS.primary}
+                            returnKeyType="done"
+                            blurOnSubmit={true}
+                            onSubmitEditing={handleReturnKey}
+                          />
+                        </View>
+                      )}
+                      {/* Mode switch buttons */}
+                      <View style={styles.toggleContainer}>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
+                          onPress={() => setMode('map')}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
+                          onPress={() => setMode('manual')}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.footer}>
+                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
+                          onPress={() => setModalVisible2(false)}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </Modal>
+                  <TouchableOpacity
+                    onPress={() => { setShowLocation2(false); setLocation2(''); setMarker2(null); }}
+                    style={{ marginLeft: 8 }}
+                    accessibilityLabel="Delete second location"
+                  >
+                    <Feather name="trash-2" size={22} color="#d32f2f" />
+                  </TouchableOpacity>
+                </View>)}
+
+                {showLocation3 && (<View style={styles.inputContainer}>
+                  <TouchableOpacity onPress={() => setModalVisible3(true)}>
+                    <LocationIcon size={20} color={COLORS.text} /> 
+                  </TouchableOpacity>
+                  <TextInput 
+                    placeholder={t('packageForm.location')} 
+                    value={location3} 
+                    onChangeText={setLocation3} 
+                    style={styles.input} 
+                    editable={false}
+                    onPress={() => setModalVisible3(true)}
+                  />
+
+                  <Modal visible={modalVisible3} animationType="slide">
+                    <View style={{ flex: 1 }}>
+                      {/* Map View */}
+                      {mode === 'map' && (
+                        <>
+                          {region3 && (
+                            <>
+                              <MapView
+                                key="pickup-map3"
+                                style={{ flex: 1 }}
+                                region={region3}
+                                onPress={handleMapPress(3)}
+                                onLayout={() => {
+                                  if (marker3) {
+                                    setRegion3({
+                                      latitude: marker3.latitude,
+                                      longitude: marker3.longitude,
+                                      latitudeDelta: 0.01,
+                                      longitudeDelta: 0.01,
+                                    });
+                                  }
+                                }}
+                              >
+                                {marker3 && <Marker coordinate={marker3} />}
+                              </MapView>
+                              <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
+                            </>
+                          )}
+                        </>
+                      )}
+
+                      {/* Manual Entry */}
+                      {mode === 'manual' && (
+                        <View style={styles.manualContainer}>
+                          <TextInput
+                            placeholder={t('packageForm.location')}
+                            value={location3}
+                            onChangeText={setLocation3}
+                            style={styles.manualInput}
+                            multiline
+                            autoCapitalize="words"
+                            autoComplete="off"
+                            clearButtonMode="always"
+                            textContentType="fullStreetAddress"
+                            selectionColor={COLORS.primary}
+                            returnKeyType="done"
+                            blurOnSubmit={true}
+                            onSubmitEditing={handleReturnKey}
+                          />
+                        </View>
+                      )}
+                      {/* Mode switch buttons */}
+                      <View style={styles.toggleContainer}>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
+                          onPress={() => setMode('map')}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
+                          onPress={() => setMode('manual')}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.footer}>
+                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
+                          onPress={() => setModalVisible3(false)}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </Modal>
+                  <TouchableOpacity
+                      onPress={() => { 
+                        setShowLocation3(false); 
+                        setLocation3(''); 
+                        setMarker3(null);
+                      }}
+                      style={{ marginLeft: 8 }}
+                      accessibilityLabel="Delete third location"
+                    >
+                    <Feather name="trash-2" size={22} color="#d32f2f" />
+                  </TouchableOpacity>
+                </View>)}
+
+                {/* Add Button: only show if not all three are visible */}
+                {(!showLocation2 || !showLocation3) && (
+                  <TouchableOpacity
+                    style={styles.addAddressButton}
+                    onPress={() => {
+                      if (!showLocation2) setShowLocation2(true);
+                      else if (!showLocation3) setShowLocation3(true);
+                    }}
+                  >
+                    <AddCircleIcon size={24} color={COLORS.primary} />
+                    <Text style={styles.addAddressText}>Add another address</Text>
+                  </TouchableOpacity>
+                )}
 
                 <Text style={styles.label}>{t('packageForm.moreDetails')}</Text>
                 <View style={styles.inputContainer}>
@@ -921,7 +1237,7 @@ export default function HomeScreen() {
                                 key="dropoff-map"
                                 style={{ flex: 1 }}
                                 region={regionDropOff}
-                                onPress={handleMapPressDropOff}
+                                onPress={handleMapPressDropOff(0)}
                                 onLayout={() => {
                                   if (markerDropOff) {
                                     setRegionDropOff({
@@ -1153,6 +1469,24 @@ const styles = StyleSheet.create({
   loginText: {
     color: COLORS.buttonText,
     fontFamily: 'nunito-bold',
+    fontSize: 16,
+    letterSpacing: 0.2,
+  },
+  addAddressButton: {
+    height: 54,
+    padding: 10,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14, 
+    display: 'flex', 
+    flexDirection: 'row', 
+    gap: 12, 
+    backgroundColor: 'rgba(85, 176, 134, 0.15)',
+  },
+  addAddressText: {
+    color: COLORS.primary,
+    fontFamily: 'nunito-semibold',
     fontSize: 16,
     letterSpacing: 0.2,
   },

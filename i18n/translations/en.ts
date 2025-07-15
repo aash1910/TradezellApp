@@ -380,5 +380,19 @@ export default {
       title: 'Maintenance Update',
       description: 'Scheduled maintenance has been completed. The system is now running with improved stability and performance.'
     }
+  },
+  paymentPreview: {
+    title: 'Payment',
+    packageSummary: 'Package Summary',
+    weight: 'Weight',
+    price: 'Price',
+    cardDetails: 'Card Details',
+    completeCardDetails: 'Please complete your card details',
+    paymentSuccess: 'Your payment was successful!',
+    packageCreationFailed: 'Failed to create package after payment.',
+    paymentFailed: 'Payment failed. Please try again.',
+    processing: 'Processing...',
+    payNow: 'Pay Now',
+    securityNotice: 'Your payment information is secure and encrypted by Stripe'
   }
 }; 
