@@ -23,6 +23,7 @@ import { StripeProvider, CardField, useStripe } from '@stripe/stripe-react-nativ
 import RNModal from 'react-native-modal';
 import { STRIPE_CONFIG } from '@/config/stripe';
 import { getCurrencyConfig } from '@/constants/Currency';
+import { packageService } from '@/services/package.service';
 
 const HEADER_HEIGHT = 120;
 
@@ -186,19 +187,32 @@ function PaymentCardModal({
           pickup_name: orderData.pickup.name,
           pickup_mobile: orderData.pickup.mobile,
           pickup_address: orderData.pickup.address,
+          pickup_address2: orderData.pickup.address2,
+          pickup_address3: orderData.pickup.address3,
           pickup_details: orderData.pickup.details || '',
           weight: typeof orderData.weight === 'string' ? parseFloat(orderData.weight) : orderData.weight,
           price: parseFloat(orderData.price),
           pickup_date: orderData.pickup.date,
           pickup_time: orderData.pickup.time,
+          pickup_image: orderData.pickup.image,
           drop_name: orderData.drop.name,
           drop_mobile: orderData.drop.mobile,
           drop_address: orderData.drop.address,
+          drop_address2: orderData.drop.address2,
+          drop_address3: orderData.drop.address3,
           drop_details: orderData.drop.details || '',
           pickup_lat: orderData.pickup.coordinates.lat ? parseFloat(orderData.pickup.coordinates.lat) : undefined,
           pickup_lng: orderData.pickup.coordinates.lng ? parseFloat(orderData.pickup.coordinates.lng) : undefined,
+          pickup_lat2: orderData.pickup.coordinates.lat2 ? parseFloat(orderData.pickup.coordinates.lat2) : undefined,
+          pickup_lng2: orderData.pickup.coordinates.lng2 ? parseFloat(orderData.pickup.coordinates.lng2) : undefined,
+          pickup_lat3: orderData.pickup.coordinates.lat3 ? parseFloat(orderData.pickup.coordinates.lat3) : undefined,
+          pickup_lng3: orderData.pickup.coordinates.lng3 ? parseFloat(orderData.pickup.coordinates.lng3) : undefined,
           drop_lat: orderData.drop.coordinates.lat ? parseFloat(orderData.drop.coordinates.lat) : undefined,
           drop_lng: orderData.drop.coordinates.lng ? parseFloat(orderData.drop.coordinates.lng) : undefined,
+          drop_lat2: orderData.drop.coordinates.lat2 ? parseFloat(orderData.drop.coordinates.lat2) : undefined,
+          drop_lng2: orderData.drop.coordinates.lng2 ? parseFloat(orderData.drop.coordinates.lng2) : undefined,
+          drop_lat3: orderData.drop.coordinates.lat3 ? parseFloat(orderData.drop.coordinates.lat3) : undefined,
+          drop_lng3: orderData.drop.coordinates.lng3 ? parseFloat(orderData.drop.coordinates.lng3) : undefined,
         };
         const response = await pollCreatePackage(paymentIntent.id, packageData);
         if (response.status === 'success') {
@@ -315,12 +329,44 @@ export default function OrderDetailScreen() {
   
   const pickupMarkerRef = useRef<MapMarker>(null);
   const dropoffMarkerRef = useRef<MapMarker>(null);
+  const [isUploadingPickupImage, setIsUploadingPickupImage] = useState(false);
+
+  // Method to upload pickup image after package creation
+  const uploadPickupImage = async (pkgId: number) => {
+    const uploadedPhoto = params.uploadedPhoto as string | undefined;
+    if (uploadedPhoto && pkgId) {
+      try {
+        setIsUploadingPickupImage(true);
+        const response = await packageService.uploadPickupImage(pkgId, uploadedPhoto);
+        // The response structure is: { data: { pickup_image: "uploads/packages/..." }, ... }
+        const newPickupImage = response?.data?.pickup_image;
+        if (newPickupImage && orderData) {
+          setOrderData({
+            ...orderData,
+            pickup: {
+              ...orderData.pickup,
+              image: newPickupImage,
+            },
+          });
+        }
+        Alert.alert('Success', 'Pickup image uploaded successfully');
+      } catch (error: any) {
+        Alert.alert('Error', error.message || 'Failed to upload pickup image');
+      } finally {
+        setIsUploadingPickupImage(false);
+      }
+    }
+  };
 
   const handlePaymentSuccess = (updatedOrderData: any) => {
     setShowPaymentModal(false);
     // Update the order data with the new data from payment
     if (updatedOrderData) {
       setOrderData(updatedOrderData);
+      // Upload pickup image if needed
+      if (updatedOrderData.id) {
+        uploadPickupImage(updatedOrderData.id);
+      }
     }
     // Alert.alert(
     //   t('common.success'),
@@ -704,6 +750,15 @@ export default function OrderDetailScreen() {
                 {orderData?.pickup.address || 'N/A'}
               </Text>
             </View>
+            {orderData?.pickup?.image && (
+              <View style={styles.pickupDetailsRow}>
+                <Text style={styles.pickupDetailsLabel}>Image</Text>
+                <Image
+                  source={{ uri: `${baseURLWithoutApi}/${orderData.pickup.image}` }}
+                  style={{ width: 100, height: 100, borderRadius: 10, marginTop: 10 }}
+                />
+              </View>
+            )}
             {/* Note Section */}
             <View style={styles.noteBox}>
               <Text style={styles.noteLabel}>{t('orderDetail.pickupDetails.note')}</Text>

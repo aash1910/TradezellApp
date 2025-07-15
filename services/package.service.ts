@@ -47,6 +47,25 @@ class PackageService {
     }
   }
 
+  async uploadPickupImage(packageId: number, imageUri: string) {
+    try {
+      const formData = new FormData();
+      formData.append('package_id', packageId.toString());
+      formData.append('image', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: `pickup_${Date.now()}.jpg`
+      } as any);
+      const response = await api.post('/packages/upload-pickup-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to upload pickup image');
+    }
+  }
 }
 
 export const packageService = new PackageService(); 

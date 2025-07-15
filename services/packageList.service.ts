@@ -15,22 +15,35 @@ export interface Package {
     name: string;
     mobile: string;
     address: string;
+    address2: string | null;
+    address3: string | null;
     details: string | null;
     date: string;
     time: string;
+    image: string | null;
     coordinates: {
       lat: string;
       lng: string;
+      lat2: string | null;
+      lng2: string | null;
+      lat3: string | null;
+      lng3: string | null;
     };
   };
   drop: {
     name: string;
     mobile: string;
     address: string;
+    address2: string | null;
+    address3: string | null;
     details: string | null;
     coordinates: {
       lat: string | null;
       lng: string | null;
+      lat2: string | null;
+      lng2: string | null;
+      lat3: string | null;
+      lng3: string | null;
     };
   };
   order: {

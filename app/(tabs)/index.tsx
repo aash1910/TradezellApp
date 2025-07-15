@@ -35,6 +35,8 @@ import { InfoCircleIcon } from '@/components/icons/InfoCircleIcon';
 import { SquareArrowUpIcon } from '@/components/icons/SquareArrowUpIcon';
 import { SquareArrowDownIcon } from '@/components/icons/SquareArrowDownIcon';
 import { AddCircleIcon } from '@/components/icons/AddCircleIcon';
+import { ImageUploadIcon } from '@/components/icons/ImageUploadIcon';
+import * as ImagePicker from 'expo-image-picker';
 
 const HEADER_HEIGHT = 375;
 const { width: screenWidth } = Dimensions.get('window');
@@ -111,6 +113,10 @@ export default function HomeScreen() {
   // Add state for showing extra pickup locations
   const [showLocation2, setShowLocation2] = useState(false);
   const [showLocation3, setShowLocation3] = useState(false);
+  const [showLocationDropOff2, setShowLocationDropOff2] = useState(false);
+  const [showLocationDropOff3, setShowLocationDropOff3] = useState(false);
+  const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
 
   const handleDateChange = (event: any, selectedDate: any) => {
     if (selectedDate) setDate(selectedDate);
@@ -146,6 +152,10 @@ export default function HomeScreen() {
   const switchTab = (tab: 'pickup' | 'dropoff') => {
     setActiveTab(tab);
     translateX.value = withTiming(tab === 'pickup' ? 0 : -screenWidth, { duration: 250 });
+    // Scroll to top when switching tabs
+    if (scrollRef.current && typeof scrollRef.current.scrollTo === 'function') {
+      scrollRef.current.scrollTo({ y: 0, animated: true });
+    }
   };
 
   const animatedStyles = useAnimatedStyle(() => ({
@@ -571,22 +581,35 @@ export default function HomeScreen() {
           name: name.trim(),
           mobile: pickup_mobile,
           address: location.trim(),
+          address2: location2.trim(),
+          address3: location3.trim(),
           details: details.trim() || null,
           date: formattedDate,
           time: formattedTime,
+          image: null,
           coordinates: {
             lat: marker?.latitude?.toString() || null,
             lng: marker?.longitude?.toString() || null,
+            lat2: marker2?.latitude?.toString() || null,
+            lng2: marker2?.longitude?.toString() || null,
+            lat3: marker3?.latitude?.toString() || null,
+            lng3: marker3?.longitude?.toString() || null,
           },
         },
         drop: {
           name: nameDropOff.trim(),
           mobile: dropOff_mobile,
           address: locationDropOff.trim(),
+          address2: locationDropOff2.trim(),
+          address3: locationDropOff3.trim(),
           details: detailsDropOff.trim() || null,
           coordinates: {
             lat: markerDropOff?.latitude?.toString() || null,
             lng: markerDropOff?.longitude?.toString() || null,
+            lat2: markerDropOff2?.latitude?.toString() || null,
+            lng2: markerDropOff2?.longitude?.toString() || null,
+            lat3: markerDropOff3?.latitude?.toString() || null,
+            lng3: markerDropOff3?.longitude?.toString() || null,
           },
         },
         order: {
@@ -604,7 +627,10 @@ export default function HomeScreen() {
       // Redirect directly to order detail page
       router.push({
         pathname: '/(tabs)/orderDetail',
-        params: { orderData: JSON.stringify(transformedOrderData) }
+        params: { 
+          orderData: JSON.stringify(transformedOrderData),
+          uploadedPhoto: uploadedPhoto, 
+        }
       });
       //Alert.alert(t('common.success'), t('packageForm.validation.jobPostedSuccess'));
       
@@ -633,6 +659,50 @@ export default function HomeScreen() {
       )}
     </TouchableOpacity>
   );
+
+  // Image picker handlers
+  const pickPhotoFromGallery = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'images',
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+      setShowPhotoOptions(false);
+      if (!result.canceled) {
+        setUploadedPhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.warn('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      setShowPhotoOptions(false);
+    }
+  };
+
+  const takePhotoWithCamera = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Error', 'Camera permission is required!');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: 'images',
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+      setShowPhotoOptions(false);
+      if (!result.canceled) {
+        setUploadedPhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.warn('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take picture. Please try again.');
+      setShowPhotoOptions(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -1138,6 +1208,50 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 )}
 
+                <Text style={styles.label}>Upload photo</Text>
+
+                <View style={styles.uploadButtonContainer}>
+                  <View style={{flexDirection: 'row', alignItems: 'center', width: '100%'}}>
+                    <TouchableOpacity style={[styles.uploadButton, {flex: 1, flexDirection: 'column'}]} onPress={() => setShowPhotoOptions(true)}>
+                      <ImageUploadIcon size={24} color={COLORS.primary} />
+                      <Text style={styles.uploadButtonText}>Upload Photo</Text>
+                    </TouchableOpacity>
+                    {uploadedPhoto && (
+                      <View style={{ position: 'relative', marginLeft: 16 }}>
+                        <Image source={{ uri: uploadedPhoto }} style={{ width: 80, height: 80, borderRadius: 10 }} />
+                        <TouchableOpacity
+                          style={{ position: 'absolute', top: -8, right: -8, backgroundColor: '#fff', borderRadius: 12, padding: 2, elevation: 2 }}
+                          onPress={() => setUploadedPhoto(null)}
+                          accessibilityLabel="Remove uploaded photo"
+                        >
+                          <Feather name="x" size={18} color="#d32f2f" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                  <Modal
+                    visible={showPhotoOptions}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={() => setShowPhotoOptions(false)}
+                  >
+                    <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                      <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+                        <TouchableOpacity style={{ paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#eee' }} onPress={pickPhotoFromGallery}>
+                          <Text style={{ fontSize: 16, textAlign: 'center' }}>Choose from Gallery</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#eee' }} onPress={takePhotoWithCamera}>
+                          <Text style={{ fontSize: 16, textAlign: 'center' }}>Take Photo</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ paddingVertical: 15, marginTop: 10 }} onPress={() => setShowPhotoOptions(false)}>
+                          <Text style={{ fontSize: 16, textAlign: 'center', color: 'red', fontWeight: 'bold' }}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </Modal>
+                </View>
+
+
                 <Text style={styles.label}>{t('packageForm.moreDetails')}</Text>
                 <View style={styles.inputContainer}>
                   <TextInput 
@@ -1302,6 +1416,220 @@ export default function HomeScreen() {
                     </View>
                   </Modal>
                 </View>
+                {showLocationDropOff2 && (<View style={styles.inputContainer}>
+                  <TouchableOpacity onPress={() => setModalDropOffVisible2(true)}>
+                    <LocationIcon size={20} color={COLORS.text} /> 
+                  </TouchableOpacity>
+                  <TextInput 
+                    placeholder={t('packageForm.location')} 
+                    value={locationDropOff2} 
+                    onChangeText={setLocationDropOff2} 
+                    style={styles.input} 
+                    editable={false}
+                    onPress={() => setModalDropOffVisible2(true)}
+                  />
+
+                  <Modal visible={modalDropOffVisible2} animationType="slide">
+                    <View style={{ flex: 1 }}>
+                      {/* Map View */}
+                      {mode === 'map' && (
+                        <>
+                          {regionDropOff2 && (
+                            <>
+                              <MapView
+                                key="dropoff-map"
+                                style={{ flex: 1 }}
+                                region={regionDropOff2}
+                                onPress={handleMapPressDropOff(2)}
+                                onLayout={() => {
+                                  if (markerDropOff2) {
+                                    setRegionDropOff2({
+                                      latitude: markerDropOff2.latitude,
+                                      longitude: markerDropOff2.longitude,
+                                      latitudeDelta: 0.01,
+                                      longitudeDelta: 0.01,
+                                    });
+                                  }
+                                }}
+                              >
+                                {markerDropOff2 && <Marker coordinate={markerDropOff2} />}
+                              </MapView>
+                              <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
+                            </>
+                          )}
+                        </>
+                      )}
+
+                      {/* Manual Entry */}
+                      {mode === 'manual' && (
+                        <View style={styles.manualContainer}>
+                          <TextInput
+                            placeholder={t('packageForm.location')}
+                            value={locationDropOff2}
+                            onChangeText={setLocationDropOff2}
+                            style={styles.manualInput}
+                            multiline
+                            autoCapitalize="words"
+                            autoComplete="off"
+                            clearButtonMode="always"
+                            textContentType="fullStreetAddress"
+                            selectionColor={COLORS.primary}
+                            returnKeyType="done"
+                            blurOnSubmit={true}
+                            onSubmitEditing={handleReturnKey}
+                          />
+                        </View>
+                      )}
+                      {/* Mode switch buttons */}
+                      <View style={styles.toggleContainer}>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
+                          onPress={() => setMode('map')}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
+                          onPress={() => setMode('manual')}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.footer}>
+                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
+                          onPress={() => setModalDropOffVisible2(false)}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </Modal>
+                  <TouchableOpacity
+                      onPress={() => { 
+                        setShowLocationDropOff2(false); 
+                        setLocationDropOff2(''); 
+                        setMarkerDropOff2(null);
+                      }}
+                      style={{ marginLeft: 8 }}
+                      accessibilityLabel="Delete third location"
+                    >
+                    <Feather name="trash-2" size={22} color="#d32f2f" />
+                  </TouchableOpacity>
+                </View>)}
+                {showLocationDropOff3 && (<View style={styles.inputContainer}>
+                  <TouchableOpacity onPress={() => setModalDropOffVisible3(true)}>
+                    <LocationIcon size={20} color={COLORS.text} /> 
+                  </TouchableOpacity>
+                  <TextInput 
+                    placeholder={t('packageForm.location')} 
+                    value={locationDropOff3} 
+                    onChangeText={setLocationDropOff3} 
+                    style={styles.input} 
+                    editable={false}
+                    onPress={() => setModalDropOffVisible3(true)}
+                  />
+
+                  <Modal visible={modalDropOffVisible3} animationType="slide">
+                    <View style={{ flex: 1 }}>
+                      {/* Map View */}
+                      {mode === 'map' && (
+                        <>
+                          {regionDropOff3 && (
+                            <>
+                              <MapView
+                                key="dropoff-map"
+                                style={{ flex: 1 }}
+                                region={regionDropOff3}
+                                onPress={handleMapPressDropOff(3)}
+                                onLayout={() => {
+                                  if (markerDropOff3) {
+                                    setRegionDropOff3({
+                                      latitude: markerDropOff3.latitude,
+                                      longitude: markerDropOff3.longitude,
+                                      latitudeDelta: 0.01,
+                                      longitudeDelta: 0.01,
+                                    });
+                                  }
+                                }}
+                              >
+                                {markerDropOff3 && <Marker coordinate={markerDropOff3} />}
+                              </MapView>
+                              <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
+                            </>
+                          )}
+                        </>
+                      )}
+
+                      {/* Manual Entry */}
+                      {mode === 'manual' && (
+                        <View style={styles.manualContainer}>
+                          <TextInput
+                            placeholder={t('packageForm.location')}
+                            value={locationDropOff3}
+                            onChangeText={setLocationDropOff3}
+                            style={styles.manualInput}
+                            multiline
+                            autoCapitalize="words"
+                            autoComplete="off"
+                            clearButtonMode="always"
+                            textContentType="fullStreetAddress"
+                            selectionColor={COLORS.primary}
+                            returnKeyType="done"
+                            blurOnSubmit={true}
+                            onSubmitEditing={handleReturnKey}
+                          />
+                        </View>
+                      )}
+                      {/* Mode switch buttons */}
+                      <View style={styles.toggleContainer}>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
+                          onPress={() => setMode('map')}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
+                          onPress={() => setMode('manual')}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.footer}>
+                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
+                          onPress={() => setModalDropOffVisible3(false)}
+                        >
+                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </Modal>
+                  <TouchableOpacity
+                      onPress={() => { 
+                        setShowLocationDropOff3(false); 
+                        setLocationDropOff3(''); 
+                        setMarkerDropOff3(null);
+                      }}
+                      style={{ marginLeft: 8 }}
+                      accessibilityLabel="Delete third location"
+                    >
+                    <Feather name="trash-2" size={22} color="#d32f2f" />
+                  </TouchableOpacity>
+                </View>)}
+
+                {/* Add Button: only show if not all three are visible */}
+                {(!showLocationDropOff2 || !showLocationDropOff3) && (
+                  <TouchableOpacity
+                    style={styles.addAddressButton}
+                    onPress={() => {
+                      if (!showLocationDropOff2) setShowLocationDropOff2(true);
+                      else if (!showLocationDropOff3) setShowLocationDropOff3(true);
+                    }}
+                  >
+                    <AddCircleIcon size={24} color={COLORS.primary} />
+                    <Text style={styles.addAddressText}>Add another address</Text>
+                  </TouchableOpacity>
+                )}
 
                 <Text style={styles.label}>{t('packageForm.moreDetails')}</Text>
                 <View style={styles.inputContainer}>
@@ -1623,6 +1951,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     fontFamily: 'nunito-medium',
+  },
+  uploadButtonContainer: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  uploadButton: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    backgroundColor: COLORS.background,
+    width: '100%',
+    height: 125,
+  },
+  uploadButtonText: {
+    marginTop: 10,
+    fontSize: 16,
+    fontFamily: 'nunito-medium',
+    color: COLORS.primary,
+    letterSpacing: 0.2,
   },
 });
 
