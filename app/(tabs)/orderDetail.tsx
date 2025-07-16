@@ -24,6 +24,7 @@ import RNModal from 'react-native-modal';
 import { STRIPE_CONFIG } from '@/config/stripe';
 import { getCurrencyConfig } from '@/constants/Currency';
 import { packageService } from '@/services/package.service';
+import { uploadService } from '@/services/upload.service';
 
 const HEADER_HEIGHT = 120;
 
@@ -217,18 +218,7 @@ function PaymentCardModal({
         const response = await pollCreatePackage(paymentIntent.id, packageData);
         if (response.status === 'success') {
           setPaymentStatus('success');
-          Alert.alert(
-            t('common.success'),
-            t('paymentPreview.paymentSuccess'),
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  onPaymentSuccess(response.data);
-                }
-              }
-            ]
-          );
+          onPaymentSuccess(response.data);
         } else {
           setPaymentStatus('error');
           Alert.alert(t('common.error'), response.message || t('paymentPreview.packageCreationFailed'));
@@ -332,24 +322,25 @@ export default function OrderDetailScreen() {
   const [isUploadingPickupImage, setIsUploadingPickupImage] = useState(false);
 
   // Method to upload pickup image after package creation
-  const uploadPickupImage = async (pkgId: number) => {
+  const uploadPickupImage = async (pkgId: number, baseOrderData: any) => {
     const uploadedPhoto = params.uploadedPhoto as string | undefined;
     if (uploadedPhoto && pkgId) {
       try {
         setIsUploadingPickupImage(true);
-        const response = await packageService.uploadPickupImage(pkgId, uploadedPhoto);
-        // The response structure is: { data: { pickup_image: "uploads/packages/..." }, ... }
+        // Compress the image before upload
+        const compressedUri = await uploadService.compressImage(uploadedPhoto);
+        const response = await packageService.uploadPickupImage(pkgId, compressedUri);
         const newPickupImage = response?.data?.pickup_image;
-        if (newPickupImage && orderData) {
+        if (newPickupImage && baseOrderData) {
           setOrderData({
-            ...orderData,
+            ...baseOrderData,
             pickup: {
-              ...orderData.pickup,
+              ...baseOrderData.pickup,
               image: newPickupImage,
             },
           });
         }
-        Alert.alert('Success', 'Pickup image uploaded successfully');
+        //Alert.alert('Success', 'Pickup image uploaded successfully');
       } catch (error: any) {
         Alert.alert('Error', error.message || 'Failed to upload pickup image');
       } finally {
@@ -360,19 +351,18 @@ export default function OrderDetailScreen() {
 
   const handlePaymentSuccess = (updatedOrderData: any) => {
     setShowPaymentModal(false);
-    // Update the order data with the new data from payment
     if (updatedOrderData) {
       setOrderData(updatedOrderData);
       // Upload pickup image if needed
       if (updatedOrderData.id) {
-        uploadPickupImage(updatedOrderData.id);
+        uploadPickupImage(updatedOrderData.id, updatedOrderData);
       }
     }
-    // Alert.alert(
-    //   t('common.success'),
-    //   t('paymentPreview.paymentSuccess'),
-    //   [{ text: 'OK' }]
-    // );
+    Alert.alert(
+      t('common.success'),
+      t('paymentPreview.paymentSuccess') + '\n' + t('packageForm.validation.jobPostedSuccess'),
+      [{ text: 'OK' }]
+    );
   };
 
   const handlePayNow = () => {
@@ -747,18 +737,36 @@ export default function OrderDetailScreen() {
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.location')}</Text>
               <Text style={styles.pickupDetailsValue}>
-                {orderData?.pickup.address || 'N/A'}
+                {orderData?.pickup.address || orderData?.pickup.address2 || orderData?.pickup.address3 ? (
+                  <Text>
+                    {[orderData?.pickup.address, orderData?.pickup.address2, orderData?.pickup.address3]
+                      .filter(Boolean)
+                      .join('\n')}
+                  </Text>
+                ) : 'N/A'}
               </Text>
             </View>
-            {orderData?.pickup?.image && (
+            {orderData?.pickup?.image ? (
               <View style={styles.pickupDetailsRow}>
                 <Text style={styles.pickupDetailsLabel}>Image</Text>
-                <Image
-                  source={{ uri: `${baseURLWithoutApi}/${orderData.pickup.image}` }}
-                  style={{ width: 100, height: 100, borderRadius: 10, marginTop: 10 }}
-                />
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                  <Image
+                    source={{ uri: `${baseURLWithoutApi}/${orderData.pickup.image}` }}
+                    style={{ width: 100, height: 100, borderRadius: 10 }}
+                  />
+                </View>
               </View>
-            )}
+            ) : params.uploadedPhoto ? (
+              <View style={styles.pickupDetailsRow}>
+                <Text style={styles.pickupDetailsLabel}>Image</Text>
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                  <Image
+                    source={{ uri: params.uploadedPhoto as string }}
+                    style={{ width: 100, height: 100, borderRadius: 10 }}
+                  />
+                </View>
+              </View>
+            ) : null}
             {/* Note Section */}
             <View style={styles.noteBox}>
               <Text style={styles.noteLabel}>{t('orderDetail.pickupDetails.note')}</Text>
@@ -783,7 +791,13 @@ export default function OrderDetailScreen() {
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>{t('orderDetail.dropoffDetails.location')}</Text>
               <Text style={styles.pickupDetailsValue}>
-                {orderData?.drop.address || 'N/A'}
+                {orderData?.drop.address || orderData?.drop.address2 || orderData?.drop.address3 ? (
+                  <Text>
+                    {[orderData?.drop.address, orderData?.drop.address2, orderData?.drop.address3]
+                      .filter(Boolean)
+                      .join('\n')}
+                  </Text>
+                ) : 'N/A'}
               </Text>
             </View>
             {/* Note Section */}

@@ -59,6 +59,8 @@ class PackageService {
       const response = await api.post('/packages/upload-pickup-image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         },
       });
       return response.data;
