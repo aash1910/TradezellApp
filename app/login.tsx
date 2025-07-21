@@ -3,6 +3,12 @@ import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, 
 import { Button, Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
+import {
+  GoogleSignin,
+  isSuccessResponse,
+  isErrorWithCode,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -141,6 +147,66 @@ export default function LoginScreen() {
     }
   };
 
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '885136208940-5ru8ijrkjmkdkhqi9aar0c1t62fth09n.apps.googleusercontent.com', // client ID of type WEB for your server. Required to get the `idToken` on the user object, and for offline access.
+      iosClientId: '885136208940-c07brsdi2plaqiijmfq9rslnmnlvi7bt.apps.googleusercontent.com', // [iOS] if you want to specify the client ID of type iOS (otherwise, it is taken from GoogleService-Info.plist)
+      profileImageSize: 150, // [iOS] The desired height (and width) of the profile image. Defaults to 120px
+    });
+  }, []);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      if (isSuccessResponse(response)) {
+        // Show the response in an alert for debugging
+        console.log('Google Sign-In Response', JSON.stringify(response, null, 2));
+        // You can extract first_name, last_name, email, image from googleResponse.user if needed
+        // Call backend
+        const idToken = response.data.idToken;
+        if(idToken){
+          const backendResponse = await authService.googleLogin({
+            id_token: idToken,
+            role: 'sender', // or 'dropper' as needed
+          });
+
+          if( backendResponse.user.image == null || backendResponse.user.document == null ) {
+            Alert.alert('Please upload your profile image and document to continue.');
+            router.replace('/uploadFile');
+          }
+          else {
+            router.replace('/(tabs)');
+          }
+        }
+
+      } else {
+        // sign in was cancelled by user
+        console.log("sign in was cancelled by user");
+      }
+    } catch (error) {
+      if (isErrorWithCode(error)) {
+        switch (error.code) {
+          case statusCodes.IN_PROGRESS:
+            // operation (eg. sign in) already in progress
+            console.log("operation (eg. sign in) already in progress");
+            break;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            // Android only, play services not available or outdated
+            console.log("Android only, play services not available or outdated");
+            break;
+          default:
+          // some other error happened
+        }
+      } else {
+        // an error that's not related to google sign in occurred
+        console.log("an error that's not related to google sign in occurred");
+      }
+    }
+  };
+
+  
+
   return (
     <View style={styles.container}>
       <Animated.ScrollView
@@ -237,17 +303,17 @@ export default function LoginScreen() {
             <View style={styles.divider} />
           </View>
 
-          {/* <View style={styles.socials}>
+          <View style={styles.socials}>
             <TouchableOpacity style={styles.socialIcon}>
               <PhoneIcon size={24} color={COLORS.text} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.socialIcon}>
               <FacebookIcon size={32} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon}>
+            <TouchableOpacity style={styles.socialIcon} onPress={handleGoogleSignIn}>
               <GoogleIcon size={32} />
             </TouchableOpacity>
-          </View> */}
+          </View>
 
           <View style={styles.signUpRow}>
             <Text style={styles.signUpNoAccountText}>Don't have an account? </Text> 

@@ -386,6 +386,26 @@ class AuthService {
     }
   }
   
+  async googleLogin(data: { id_token: string; role: string }) {
+    try {
+      const response = await api.post('/google-login', data, {
+        timeout: 30000,
+      });
+
+      const { access_token, user } = response.data;
+      await AsyncStorage.setItem('auth_token', access_token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Google Login Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw error;
+    }
+  }
 }
 
 export const authService = new AuthService(); 

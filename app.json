@@ -2,7 +2,7 @@
   "expo": {
     "name": "PiqDrop",
     "slug": "piqdrop",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
@@ -29,7 +29,7 @@
         "foregroundImage": "./assets/icons/adaptive-icon.png",
         "backgroundColor": "#55B086"
       },
-      "package": "com.ashraful1910.piqdrop",
+      "package": "com.piqdrop.app",
       "versionCode": 1
     },
     "web": {
@@ -55,7 +55,13 @@
           }
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme" : "com.googleusercontent.apps.885136208940-c07brsdi2plaqiijmfq9rslnmnlvi7bt"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
