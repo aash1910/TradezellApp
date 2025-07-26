@@ -1,14 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator, Alert, Platform, Modal, KeyboardAvoidingView, Keyboard } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
-import {
-  GoogleSignin,
-  isSuccessResponse,
-  isErrorWithCode,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
+import Constants from 'expo-constants';
+
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -21,6 +17,22 @@ import { PhoneIcon } from '@/components/icons/PhoneIcon';
 import { FacebookIcon } from '@/components/icons/FacebookIcon';
 import { GoogleIcon } from '@/components/icons/GoogleIcon';
 import { authService } from '@/services/auth.service';
+import { makeRedirectUri } from 'expo-auth-session';
+import * as Linking from 'expo-linking';
+import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
+import { SelectDownArrowIcon } from '@/components/icons/SelectDownArrowIcon';
+import { parsePhoneNumber } from 'libphonenumber-js';
+import { 
+  isGoogleSignInAvailable, 
+  configureGoogleSignIn, 
+  getGoogleSignInModule, 
+  showGoogleSignInUnavailableAlert 
+} from '@/utils/googleSignIn';
+import { 
+  isFacebookLoginAvailable, 
+  handleFacebookLogin as handleFacebookLoginUtil,
+  showFacebookLoginUnavailableAlert 
+} from '@/utils/facebookLogin';
 
 const HEADER_HEIGHT = 230;
 
@@ -47,6 +59,13 @@ export default function LoginScreen() {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
   const passwordInputRef = useRef<TextInput>(null);
+  const [isPhoneModalVisible, setIsPhoneModalVisible] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isPhoneLoading, setIsPhoneLoading] = useState(false);
+  const [countryCode, setCountryCode] = useState<Country['cca2']>('BD');
+  const [callingCode, setCallingCode] = useState('880');
+  const [country, setCountry] = useState<Country | null>(null);
+  const [withCallingCode, setWithCallingCode] = useState(true);
 
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
@@ -71,6 +90,103 @@ export default function LoginScreen() {
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handlePhoneIconPress = () => {
+    setIsPhoneModalVisible(true);
+  };
+
+  const onSelect = (country: Country) => {
+    setCountryCode(country.cca2);
+    setCallingCode(country.callingCode[0]);
+    setCountry(country);
+  };
+
+  const handlePhoneSubmit = async () => {
+    if (!phoneNumber.trim()) {
+      Alert.alert('Validation Error', 'Please enter your phone number');
+      return;
+    }
+
+    // Format phone number with country code
+    const formattedPhone = `+${callingCode}${phoneNumber}`;
+
+    // Validate phone number
+    try {
+      const phoneNumberObj = parsePhoneNumber(formattedPhone);
+      if (!phoneNumberObj || !phoneNumberObj.isValid()) {
+        Alert.alert('Error', 'Please enter a valid phone number');
+        return;
+      }
+      // Use the validated phone number
+      const validatedPhone = phoneNumberObj.number;
+      
+      setIsPhoneLoading(true);
+      const response = await authService.phoneLogin({ 
+        phone: validatedPhone, 
+        role: 'sender' 
+      });
+
+      console.log('Phone login response:', response);
+      
+      if (response.message === 'Verification code sent successfully') {
+        setIsPhoneModalVisible(false);
+        // router.push({
+        //   pathname: '/phoneLogin',
+        //   params: { phone: validatedPhone }
+        // });
+      } else {
+        Alert.alert(
+          'Error',
+          'Failed to send verification code. Please try again.'
+        );
+      }
+    } catch (err: any) {
+      console.error('Phone login error:', err);
+      console.error('Error response data:', err.response?.data);
+      console.error('Error status:', err.response?.status);
+      
+      let errorMessage = 'Unable to verify phone number. Please try again.';
+      let errorTitle = 'Verification Failed';
+      
+      // Extract error message from response data
+      const responseData = err.response?.data;
+      if (responseData) {
+        if (responseData.error) {
+          errorMessage = responseData.error;
+        } else if (responseData.message) {
+          errorMessage = responseData.message;
+        }
+        
+        // Set appropriate title based on error type
+        if (err.response.status === 404) {
+          errorTitle = 'Account Not Found';
+        } else if (err.response.status === 403) {
+          errorTitle = 'Permission Denied';
+        } else if (err.response.status === 422) {
+          errorTitle = 'Validation Error';
+        }
+      }
+
+      // Log the final error message for debugging
+      console.log('Final error message:', errorMessage);
+      console.log('Final error title:', errorTitle);
+
+      Alert.alert(
+        errorTitle,
+        errorMessage,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setPhoneNumber('');
+            }
+          }
+        ]
+      );
+    } finally {
+      setIsPhoneLoading(false);
+    }
   };
 
   const handleLogin = async () => {
@@ -148,17 +264,25 @@ export default function LoginScreen() {
   };
 
   useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: '885136208940-5ru8ijrkjmkdkhqi9aar0c1t62fth09n.apps.googleusercontent.com', // client ID of type WEB for your server. Required to get the `idToken` on the user object, and for offline access.
-      iosClientId: '885136208940-c07brsdi2plaqiijmfq9rslnmnlvi7bt.apps.googleusercontent.com', // [iOS] if you want to specify the client ID of type iOS (otherwise, it is taken from GoogleService-Info.plist)
-      profileImageSize: 150, // [iOS] The desired height (and width) of the profile image. Defaults to 120px
-    });
+    // Only configure Google Sign-In if the module is available
+    if (isGoogleSignInAvailable()) {
+      configureGoogleSignIn();
+    }
   }, []);
 
   const handleGoogleSignIn = async () => {
+    // Check if Google Sign-In is available
+    if (!isGoogleSignInAvailable()) {
+      showGoogleSignInUnavailableAlert();
+      return;
+    }
+
     try {
+      const { GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes } = getGoogleSignInModule();
+      
       await GoogleSignin.hasPlayServices();
       const response = await GoogleSignin.signIn();
+      
       if (isSuccessResponse(response)) {
         // Show the response in an alert for debugging
         console.log('Google Sign-In Response', JSON.stringify(response, null, 2));
@@ -168,7 +292,7 @@ export default function LoginScreen() {
         if(idToken){
           const backendResponse = await authService.googleLogin({
             id_token: idToken,
-            role: 'sender', // or 'dropper' as needed
+            role: 'sender',
           });
 
           if( backendResponse.user.image == null || backendResponse.user.document == null ) {
@@ -184,8 +308,10 @@ export default function LoginScreen() {
         // sign in was cancelled by user
         console.log("sign in was cancelled by user");
       }
-    } catch (error) {
-      if (isErrorWithCode(error)) {
+    } catch (error: any) {
+      const { isErrorWithCode, statusCodes } = getGoogleSignInModule();
+      
+      if (isErrorWithCode && isErrorWithCode(error)) {
         switch (error.code) {
           case statusCodes.IN_PROGRESS:
             // operation (eg. sign in) already in progress
@@ -194,18 +320,53 @@ export default function LoginScreen() {
           case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
             // Android only, play services not available or outdated
             console.log("Android only, play services not available or outdated");
+            Alert.alert('Google Play Services Error', 'Google Play Services is not available or outdated. Please update Google Play Services.');
             break;
           default:
-          // some other error happened
+            // some other error happened
+            console.log("Google Sign-In error:", error.code);
+            Alert.alert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In');
         }
       } else {
         // an error that's not related to google sign in occurred
         console.log("an error that's not related to google sign in occurred");
+        Alert.alert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In');
       }
     }
   };
 
-  
+  const handleFacebookLogin = async () => {
+    try {
+      const data = await handleFacebookLoginUtil();
+      
+      if (data) {
+        console.log('Facebook Sign-In Response', JSON.stringify(data, null, 2));
+        //Alert.alert('Facebook Sign-In Response', JSON.stringify(data, null, 2));
+
+        // Use authService.facebookLogin instead of direct fetch
+        const backendResponse = await authService.facebookLogin({
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          picture: data.picture?.data?.url,
+          role: 'sender',
+          remember: true, // or use rememberMe state if you want
+        });
+
+        if( backendResponse.user.image == null || backendResponse.user.document == null ) {
+          Alert.alert('Please upload your profile image and document to continue.');
+          router.replace('/uploadFile');
+        }
+        else {
+          router.replace('/(tabs)');
+        }
+
+      }
+    } catch (error: any) {
+      //Alert.alert('Facebook Login Error', error.message || 'An error occurred during Facebook login');
+      console.log('Facebook Login Error', error.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -304,10 +465,13 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.socials}>
-            <TouchableOpacity style={styles.socialIcon}>
+            <TouchableOpacity 
+              style={styles.socialIcon}
+              onPress={handlePhoneIconPress}
+            >
               <PhoneIcon size={24} color={COLORS.text} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon}>
+            <TouchableOpacity style={styles.socialIcon} onPress={handleFacebookLogin}>
               <FacebookIcon size={32} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.socialIcon} onPress={handleGoogleSignIn}>
@@ -323,6 +487,67 @@ export default function LoginScreen() {
           </View>
         </View>
       </Animated.ScrollView>
+
+      <Modal
+        visible={isPhoneModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsPhoneModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Enter Phone Number</Text>
+              <TouchableOpacity 
+                onPress={() => setIsPhoneModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={styles.modalSubtitle}>
+                Please enter your registered phone number to continue
+              </Text>
+              
+              <View style={styles.phoneInputContainer}>
+                <CountryPicker
+                  countryCode={countryCode}
+                  withFilter
+                  withFlag
+                  withCallingCode
+                  withAlphaFilter
+                  withCallingCodeButton
+                  withModal
+                  onSelect={onSelect}
+                />
+                <SelectDownArrowIcon size={16} color={COLORS.text} />
+                <TextInput
+                  style={styles.phoneInput}
+                  placeholder="Enter your phone number"
+                  keyboardType="phone-pad"
+                  value={phoneNumber}
+                  onChangeText={text => setPhoneNumber(text.replace(/[^0-9]/g, ''))}
+                  editable={!isPhoneLoading}
+                />
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.modalButton, isPhoneLoading && styles.modalButtonDisabled]}
+                onPress={handlePhoneSubmit}
+                disabled={isPhoneLoading}
+              >
+                {isPhoneLoading ? (
+                  <ActivityIndicator color={COLORS.buttonText} />
+                ) : (
+                  <Text style={styles.modalButtonText}>Continue</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -498,5 +723,91 @@ const styles = StyleSheet.create({
   },
   loginButtonDisabled: {
     opacity: 0.7,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: COLORS.background,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: 'nunito-bold',
+    color: COLORS.text,
+  },
+  closeButton: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: COLORS.subtitle,
+  },
+  modalBody: {
+    alignItems: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    fontFamily: 'nunito-medium',
+    color: COLORS.subtitle,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  phoneInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.inputBorder,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 20,
+    width: '100%',
+    backgroundColor: COLORS.background,
+  },
+  phoneInput: {
+    flex: 1,
+    height: 50,
+    fontSize: 16,
+    fontFamily: 'nunito-medium',
+    color: COLORS.text,
+    marginLeft: 10,
+  },
+  modalButton: {
+    backgroundColor: COLORS.primary,
+    height: 50,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  modalButtonDisabled: {
+    opacity: 0.7,
+  },
+  modalButtonText: {
+    color: COLORS.buttonText,
+    fontFamily: 'nunito-bold',
+    fontSize: 16,
   },
 });

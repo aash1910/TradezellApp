@@ -8,15 +8,27 @@
     "scheme": "piqdrop",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "facebookAppId": "1018394353841992",
+    "facebookDisplayName": "PiqDrop",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.piqdrop.com",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show your current location on the map.",
         "NSLocationAlwaysUsageDescription": "This app needs access to your location to show your current location on the map.",
         "NSCameraUsageDescription": "This app needs access to your camera to take photos of your vehicle.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save photos of your vehicle."
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save photos of your vehicle.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["fb1018394353841992"]
+          }
+        ],
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "FirebaseAppDelegateProxyEnabled": false
       },
       "icon": {
         "dark": "./assets/icons/ios-dark.png",
@@ -59,9 +71,10 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosUrlScheme" : "com.googleusercontent.apps.885136208940-c07brsdi2plaqiijmfq9rslnmnlvi7bt"
+          "iosUrlScheme": "com.googleusercontent.apps.885136208940-c07brsdi2plaqiijmfq9rslnmnlvi7bt"
         }
-      ]
+      ],
+      "expo-facebook"
     ],
     "experiments": {
       "typedRoutes": true

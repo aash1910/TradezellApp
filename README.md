@@ -28,6 +28,8 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 7.2. Submit to App Store: eas submit --platform ios --profile production
 
+8.0. Development build standalone app: eas build --profile development --platform ios
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
