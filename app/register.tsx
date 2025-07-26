@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -62,6 +62,8 @@ export default function LoginScreen() {
   const passwordInputRef = useRef<TextInput>(null);
   const confirmPasswordInputRef = useRef<TextInput>(null);
   const nationalityInputRef = useRef<TextInput>(null);
+  const params = useLocalSearchParams();
+  const [mobile, setMobile] = useState(params.phone ? String(params.phone) : '');
 
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
@@ -204,7 +206,7 @@ export default function LoginScreen() {
       }
 
       console.log('Making registration request...');
-      const response = await authService.register({ 
+      const payload: any = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         email: email.trim(),
@@ -212,8 +214,12 @@ export default function LoginScreen() {
         password_confirmation: confirmPassword,
         nationality,
         gender: gender.toLowerCase(),
-        role: 'sender'
-      });
+        role: 'sender',
+      };
+      if (mobile) {
+        payload.mobile = mobile;
+      }
+      const response = await authService.register(payload);
       
       console.log('Registration successful:', response);
 

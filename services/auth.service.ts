@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from './api';
 
 interface LoginCredentials {
-  email: string;
+  email?: string;
+  phone?: string;
   password: string;
   role?: string;
   remember?: boolean;
@@ -491,6 +492,19 @@ class AuthService {
         response: error.response?.data,
         status: error.response?.status,
       });
+      throw error;
+    }
+  }
+
+  async checkPhoneExists(phone: string) {
+    try {
+      // Validate phone number format
+      if (!phone.startsWith('+')) {
+        throw new Error('Phone number must start with country code (e.g., +880)');
+      }
+      const response = await api.post('/check-phone-exists', { phone });
+      return response.data;
+    } catch (error: any) {
       throw error;
     }
   }

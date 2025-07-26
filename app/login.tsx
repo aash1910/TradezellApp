@@ -66,6 +66,11 @@ export default function LoginScreen() {
   const [callingCode, setCallingCode] = useState('880');
   const [country, setCountry] = useState<Country | null>(null);
   const [withCallingCode, setWithCallingCode] = useState(true);
+  // Add state for phone password and phone existence
+  const [phonePassword, setPhonePassword] = useState('');
+  const [phoneExists, setPhoneExists] = useState(false);
+  const [phoneCheckLoading, setPhoneCheckLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
@@ -103,87 +108,81 @@ export default function LoginScreen() {
   };
 
   const handlePhoneSubmit = async () => {
+    setPhoneError(null);
     if (!phoneNumber.trim()) {
-      Alert.alert('Validation Error', 'Please enter your phone number');
+      setPhoneError('Please enter your phone number');
       return;
     }
-
-    // Format phone number with country code
     const formattedPhone = `+${callingCode}${phoneNumber}`;
-
-    // Validate phone number
     try {
       const phoneNumberObj = parsePhoneNumber(formattedPhone);
       if (!phoneNumberObj || !phoneNumberObj.isValid()) {
-        Alert.alert('Error', 'Please enter a valid phone number');
+        setPhoneError('Please enter a valid phone number');
         return;
       }
-      // Use the validated phone number
       const validatedPhone = phoneNumberObj.number;
-      
       setIsPhoneLoading(true);
-      const response = await authService.phoneLogin({ 
-        phone: validatedPhone, 
-        role: 'sender' 
-      });
-
-      console.log('Phone login response:', response);
-      
-      if (response.message === 'Verification code sent successfully') {
-        setIsPhoneModalVisible(false);
-        // router.push({
-        //   pathname: '/phoneLogin',
-        //   params: { phone: validatedPhone }
-        // });
+      setPhoneCheckLoading(true);
+      // Check if phone exists
+      const checkRes = await authService.checkPhoneExists(validatedPhone);
+      setPhoneCheckLoading(false);
+      if (checkRes.exists) {
+        setPhoneExists(true);
+        // here show a message to enter password
+        Alert.alert('Please enter your password to continue');
       } else {
-        Alert.alert(
-          'Error',
-          'Failed to send verification code. Please try again.'
-        );
+        setIsPhoneModalVisible(false);
+        setPhoneExists(false);
+        setPhonePassword('');
+        // Redirect to register page, pass phone as param
+        // here show a message to enter all the details
+        Alert.alert('Please enter all the details to continue');
+        router.push({ pathname: '/register', params: { phone: validatedPhone } });
       }
     } catch (err: any) {
-      console.error('Phone login error:', err);
-      console.error('Error response data:', err.response?.data);
-      console.error('Error status:', err.response?.status);
-      
-      let errorMessage = 'Unable to verify phone number. Please try again.';
-      let errorTitle = 'Verification Failed';
-      
-      // Extract error message from response data
-      const responseData = err.response?.data;
-      if (responseData) {
-        if (responseData.error) {
-          errorMessage = responseData.error;
-        } else if (responseData.message) {
-          errorMessage = responseData.message;
-        }
-        
-        // Set appropriate title based on error type
-        if (err.response.status === 404) {
-          errorTitle = 'Account Not Found';
-        } else if (err.response.status === 403) {
-          errorTitle = 'Permission Denied';
-        } else if (err.response.status === 422) {
-          errorTitle = 'Validation Error';
-        }
+      setPhoneCheckLoading(false);
+      setIsPhoneLoading(false);
+      setPhoneError(err.message || 'Error checking phone number');
+    } finally {
+      setIsPhoneLoading(false);
+    }
+  };
+
+  const handlePhonePasswordLogin = async () => {
+    setPhoneError(null);
+    if (!phoneNumber.trim() || !phonePassword) {
+      setPhoneError('Please enter both phone number and password');
+      return;
+    }
+    const formattedPhone = `+${callingCode}${phoneNumber}`;
+    try {
+      setIsPhoneLoading(true);
+      const phoneNumberObj = parsePhoneNumber(formattedPhone);
+      if (!phoneNumberObj || !phoneNumberObj.isValid()) {
+        setPhoneError('Please enter a valid phone number');
+        return;
       }
-
-      // Log the final error message for debugging
-      console.log('Final error message:', errorMessage);
-      console.log('Final error title:', errorTitle);
-
-      Alert.alert(
-        errorTitle,
-        errorMessage,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setPhoneNumber('');
-            }
-          }
-        ]
-      );
+      const validatedPhone = phoneNumberObj.number;
+      // Use login API with phone and password
+      const response = await authService.login({
+        phone: validatedPhone,
+        password: phonePassword,
+        role: 'sender',
+        remember: true,
+      });
+      setIsPhoneModalVisible(false);
+      setPhoneExists(false);
+      setPhonePassword('');
+      setPhoneNumber('');
+      // Handle login success (same as email login)
+      if (response.user.image == null || response.user.document == null) {
+        Alert.alert('Please upload your profile image and document to continue.');
+        router.replace('/uploadFile');
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (err: any) {
+      setPhoneError(err.response?.data?.message || err.message || 'Login failed. Please try again.');
     } finally {
       setIsPhoneLoading(false);
     }
@@ -533,15 +532,45 @@ export default function LoginScreen() {
                 />
               </View>
 
+              {phoneExists && (
+                <>
+                  <View style={[styles.phoneInputContainer, {paddingVertical: 14}]}>
+                    <LockIcon size={20} color={COLORS.text} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Password"
+                      secureTextEntry={!showPassword}
+                      value={phonePassword}
+                      onChangeText={setPhonePassword}
+                      autoCapitalize="none"
+                      autoComplete="password"
+                      autoCorrect={false}
+                      returnKeyType="done"
+                    />
+                    <TouchableOpacity onPress={togglePasswordVisibility}>
+                      <Feather 
+                        name={showPassword ? "eye-off" : "eye"} 
+                        size={20} 
+                        color={COLORS.text} 
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+
+              {phoneError && (
+                <Text style={styles.errorText}>{phoneError}</Text>
+              )}
+
               <TouchableOpacity 
                 style={[styles.modalButton, isPhoneLoading && styles.modalButtonDisabled]}
-                onPress={handlePhoneSubmit}
+                onPress={phoneExists ? handlePhonePasswordLogin : handlePhoneSubmit}
                 disabled={isPhoneLoading}
               >
                 {isPhoneLoading ? (
                   <ActivityIndicator color={COLORS.buttonText} />
                 ) : (
-                  <Text style={styles.modalButtonText}>Continue</Text>
+                  <Text style={styles.modalButtonText}>{phoneExists ? 'Login' : 'Continue'}</Text>
                 )}
               </TouchableOpacity>
             </View>
