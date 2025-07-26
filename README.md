@@ -30,6 +30,8 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 8.0. Development build standalone app: eas build --profile development --platform ios
 
+8.1 "googleServicesFile": "./GoogleService-Info.plist", // firebase
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

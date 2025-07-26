@@ -83,3 +83,4 @@ expo-env.d.ts
 # @end expo-cli
 
 .password
+credentials.json
