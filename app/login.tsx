@@ -59,6 +59,7 @@ export default function LoginScreen() {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
   const passwordInputRef = useRef<TextInput>(null);
+  const phonePasswordInputRef = useRef<TextInput>(null);
   const [isPhoneModalVisible, setIsPhoneModalVisible] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isPhoneLoading, setIsPhoneLoading] = useState(false);
@@ -98,6 +99,13 @@ export default function LoginScreen() {
   };
 
   const handlePhoneIconPress = () => {
+    // Reset all phone-related fields when opening the modal
+    setPhoneNumber('');
+    setPhonePassword('');
+    setPhoneExists(false);
+    setPhoneError(null);
+    setPhoneCheckLoading(false);
+    setIsPhoneLoading(false);
     setIsPhoneModalVisible(true);
   };
 
@@ -129,7 +137,17 @@ export default function LoginScreen() {
       if (checkRes.exists) {
         setPhoneExists(true);
         // here show a message to enter password
-        Alert.alert('Please enter your password to continue');
+        Alert.alert('Please enter your password to continue', '', [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Auto focus the password field after alert is dismissed
+              setTimeout(() => {
+                // Focus will be handled in useEffect when phoneExists changes
+              }, 100);
+            }
+          }
+        ]);
       } else {
         setIsPhoneModalVisible(false);
         setPhoneExists(false);
@@ -268,6 +286,15 @@ export default function LoginScreen() {
       configureGoogleSignIn();
     }
   }, []);
+
+  // Auto-focus password field when phoneExists becomes true
+  useEffect(() => {
+    if (phoneExists && phonePasswordInputRef.current) {
+      setTimeout(() => {
+        phonePasswordInputRef.current?.focus();
+      }, 300); // Small delay to ensure modal is fully rendered
+    }
+  }, [phoneExists]);
 
   const handleGoogleSignIn = async () => {
     // Check if Google Sign-In is available
@@ -537,6 +564,7 @@ export default function LoginScreen() {
                   <View style={[styles.phoneInputContainer, {paddingVertical: 14}]}>
                     <LockIcon size={20} color={COLORS.text} />
                     <TextInput
+                      ref={phonePasswordInputRef}
                       style={styles.input}
                       placeholder="Password"
                       secureTextEntry={!showPassword}
