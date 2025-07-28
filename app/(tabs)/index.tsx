@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, TextInput, Button, TouchableOpacity, Image, StyleSheet, StatusBar,KeyboardAvoidingView, Platform, Modal, Keyboard, ActivityIndicator, Pressable, Dimensions, Alert } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 import { router, useFocusEffect } from 'expo-router';
@@ -59,6 +59,12 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
+  const pickupInputRef = useRef<TextInput>(null);
+  const pickupInputRef2 = useRef<TextInput>(null);
+  const pickupInputRef3 = useRef<TextInput>(null);
+  const dropoffInputRef = useRef<TextInput>(null);
+  const dropoffInputRef2 = useRef<TextInput>(null);
+  const dropoffInputRef3 = useRef<TextInput>(null);
   const [country, setCountry] = useState<Country | null>(null);
   const [withCallingCode, setWithCallingCode] = useState(true);
   const [senderProfileImage, setSenderProfileImage] = useState(require('@/assets/img/profile-blank.png'));
@@ -559,6 +565,106 @@ export default function HomeScreen() {
         return;
       }
 
+      // Geocode manually entered addresses if markers are not set
+      let pickupCoords = marker;
+      let pickupCoords2 = marker2;
+      let pickupCoords3 = marker3;
+      let dropoffCoords = markerDropOff;
+      let dropoffCoords2 = markerDropOff2;
+      let dropoffCoords3 = markerDropOff3;
+
+      // Geocode pickup addresses
+      if (location && !pickupCoords) {
+        try {
+          const pickup = await Location.geocodeAsync(location);
+          if (pickup.length > 0) {
+            pickupCoords = { latitude: pickup[0].latitude, longitude: pickup[0].longitude };
+          } else {
+            setError('Could not find coordinates for pickup address. Please try a different address or select from map.');
+            return;
+          }
+        } catch (error) {
+          setError('Error processing pickup address. Please try again or select from map.');
+          return;
+        }
+      }
+
+      if (location2 && !pickupCoords2) {
+        try {
+          const pickup2 = await Location.geocodeAsync(location2);
+          if (pickup2.length > 0) {
+            pickupCoords2 = { latitude: pickup2[0].latitude, longitude: pickup2[0].longitude };
+          } else {
+            setError('Could not find coordinates for pickup address 2. Please try a different address or select from map.');
+            return;
+          }
+        } catch (error) {
+          setError('Error processing pickup address 2. Please try again or select from map.');
+          return;
+        }
+      }
+
+      if (location3 && !pickupCoords3) {
+        try {
+          const pickup3 = await Location.geocodeAsync(location3);
+          if (pickup3.length > 0) {
+            pickupCoords3 = { latitude: pickup3[0].latitude, longitude: pickup3[0].longitude };
+          } else {
+            setError('Could not find coordinates for pickup address 3. Please try a different address or select from map.');
+            return;
+          }
+        } catch (error) {
+          setError('Error processing pickup address 3. Please try again or select from map.');
+          return;
+        }
+      }
+
+      // Geocode dropoff addresses
+      if (locationDropOff && !dropoffCoords) {
+        try {
+          const dropoff = await Location.geocodeAsync(locationDropOff);
+          if (dropoff.length > 0) {
+            dropoffCoords = { latitude: dropoff[0].latitude, longitude: dropoff[0].longitude };
+          } else {
+            setError('Could not find coordinates for dropoff address. Please try a different address or select from map.');
+            return;
+          }
+        } catch (error) {
+          setError('Error processing dropoff address. Please try again or select from map.');
+          return;
+        }
+      }
+
+      if (locationDropOff2 && !dropoffCoords2) {
+        try {
+          const dropoff2 = await Location.geocodeAsync(locationDropOff2);
+          if (dropoff2.length > 0) {
+            dropoffCoords2 = { latitude: dropoff2[0].latitude, longitude: dropoff2[0].longitude };
+          } else {
+            setError('Could not find coordinates for dropoff address 2. Please try a different address or select from map.');
+            return;
+          }
+        } catch (error) {
+          setError('Error processing dropoff address 2. Please try again or select from map.');
+          return;
+        }
+      }
+
+      if (locationDropOff3 && !dropoffCoords3) {
+        try {
+          const dropoff3 = await Location.geocodeAsync(locationDropOff3);
+          if (dropoff3.length > 0) {
+            dropoffCoords3 = { latitude: dropoff3[0].latitude, longitude: dropoff3[0].longitude };
+          } else {
+            setError('Could not find coordinates for dropoff address 3. Please try a different address or select from map.');
+            return;
+          }
+        } catch (error) {
+          setError('Error processing dropoff address 3. Please try again or select from map.');
+          return;
+        }
+      }
+
       // Format date and time using local time
       const formattedDate = date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       const hours = time.getHours().toString().padStart(2, '0');
@@ -588,12 +694,12 @@ export default function HomeScreen() {
           time: formattedTime,
           image: null,
           coordinates: {
-            lat: marker?.latitude?.toString() || null,
-            lng: marker?.longitude?.toString() || null,
-            lat2: marker2?.latitude?.toString() || null,
-            lng2: marker2?.longitude?.toString() || null,
-            lat3: marker3?.latitude?.toString() || null,
-            lng3: marker3?.longitude?.toString() || null,
+            lat: pickupCoords?.latitude?.toString() || null,
+            lng: pickupCoords?.longitude?.toString() || null,
+            lat2: pickupCoords2?.latitude?.toString() || null,
+            lng2: pickupCoords2?.longitude?.toString() || null,
+            lat3: pickupCoords3?.latitude?.toString() || null,
+            lng3: pickupCoords3?.longitude?.toString() || null,
           },
         },
         drop: {
@@ -604,12 +710,12 @@ export default function HomeScreen() {
           address3: locationDropOff3.trim(),
           details: detailsDropOff.trim() || null,
           coordinates: {
-            lat: markerDropOff?.latitude?.toString() || null,
-            lng: markerDropOff?.longitude?.toString() || null,
-            lat2: markerDropOff2?.latitude?.toString() || null,
-            lng2: markerDropOff2?.longitude?.toString() || null,
-            lat3: markerDropOff3?.latitude?.toString() || null,
-            lng3: markerDropOff3?.longitude?.toString() || null,
+            lat: dropoffCoords?.latitude?.toString() || null,
+            lng: dropoffCoords?.longitude?.toString() || null,
+            lat2: dropoffCoords2?.latitude?.toString() || null,
+            lng2: dropoffCoords2?.longitude?.toString() || null,
+            lat3: dropoffCoords3?.latitude?.toString() || null,
+            lng3: dropoffCoords3?.longitude?.toString() || null,
           },
         },
         order: {
@@ -953,10 +1059,15 @@ export default function HomeScreen() {
                       {/* Manual Entry */}
                       {mode === 'manual' && (
                         <View style={styles.manualContainer}>
+                          <Text style={styles.manualLabel}>{t('packageForm.enterPickupAddress')}</Text>
                           <TextInput
+                            ref={pickupInputRef}
                             placeholder={t('packageForm.location')}
                             value={location}
-                            onChangeText={setLocation}
+                            onChangeText={text => {
+                              setLocation(text);
+                              setMarker(null);
+                            }}
                             style={styles.manualInput}
                             multiline
                             autoCapitalize="words"
@@ -967,7 +1078,9 @@ export default function HomeScreen() {
                             returnKeyType="done"
                             blurOnSubmit={true}
                             onSubmitEditing={handleReturnKey}
+                            onBlur={() => Keyboard.dismiss()}
                           />
+                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
                         </View>
                       )}
                       {/* Mode switch buttons */}
@@ -980,7 +1093,15 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => setMode('manual')}
+                          onPress={() => {
+                            setMode('manual');
+                            // Auto-focus the appropriate input after a short delay
+                            setTimeout(() => {
+                              if (modalVisible && pickupInputRef.current) {
+                                pickupInputRef.current.focus();
+                              }
+                            }, 100);
+                          }}
                         >
                           <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
                         </TouchableOpacity>
@@ -1043,10 +1164,15 @@ export default function HomeScreen() {
                       {/* Manual Entry */}
                       {mode === 'manual' && (
                         <View style={styles.manualContainer}>
+                          <Text style={styles.manualLabel}>{t('packageForm.enterPickupAddress')}</Text>
                           <TextInput
+                            ref={pickupInputRef2}
                             placeholder={t('packageForm.location')}
                             value={location2}
-                            onChangeText={setLocation2}
+                            onChangeText={text => {
+                              setLocation2(text);
+                              setMarker2(null);
+                            }}
                             style={styles.manualInput}
                             multiline
                             autoCapitalize="words"
@@ -1057,7 +1183,9 @@ export default function HomeScreen() {
                             returnKeyType="done"
                             blurOnSubmit={true}
                             onSubmitEditing={handleReturnKey}
+                            onBlur={() => Keyboard.dismiss()}
                           />
+                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
                         </View>
                       )}
                       {/* Mode switch buttons */}
@@ -1070,7 +1198,15 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => setMode('manual')}
+                          onPress={() => {
+                            setMode('manual');
+                            // Auto-focus the appropriate input after a short delay
+                            setTimeout(() => {
+                              if (modalVisible2 && pickupInputRef2.current) {
+                                pickupInputRef2.current.focus();
+                              }
+                            }, 100);
+                          }}
                         >
                           <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
                         </TouchableOpacity>
@@ -1140,10 +1276,15 @@ export default function HomeScreen() {
                       {/* Manual Entry */}
                       {mode === 'manual' && (
                         <View style={styles.manualContainer}>
+                          <Text style={styles.manualLabel}>{t('packageForm.enterPickupAddress')}</Text>
                           <TextInput
+                            ref={pickupInputRef3}
                             placeholder={t('packageForm.location')}
                             value={location3}
-                            onChangeText={setLocation3}
+                            onChangeText={text => {
+                              setLocation3(text);
+                              setMarker3(null);
+                            }}
                             style={styles.manualInput}
                             multiline
                             autoCapitalize="words"
@@ -1154,7 +1295,9 @@ export default function HomeScreen() {
                             returnKeyType="done"
                             blurOnSubmit={true}
                             onSubmitEditing={handleReturnKey}
+                            onBlur={() => Keyboard.dismiss()}
                           />
+                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
                         </View>
                       )}
                       {/* Mode switch buttons */}
@@ -1167,7 +1310,15 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => setMode('manual')}
+                          onPress={() => {
+                            setMode('manual');
+                            // Auto-focus the appropriate input after a short delay
+                            setTimeout(() => {
+                              if (modalVisible3 && pickupInputRef3.current) {
+                                pickupInputRef3.current.focus();
+                              }
+                            }, 100);
+                          }}
                         >
                           <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
                         </TouchableOpacity>
@@ -1374,10 +1525,15 @@ export default function HomeScreen() {
                       {/* Manual Entry */}
                       {mode === 'manual' && (
                         <View style={styles.manualContainer}>
+                          <Text style={styles.manualLabel}>{t('packageForm.enterDropoffAddress')}</Text>
                           <TextInput
+                            ref={dropoffInputRef}
                             placeholder={t('packageForm.location')}
                             value={locationDropOff}
-                            onChangeText={setLocationDropOff}
+                            onChangeText={text => {
+                              setLocationDropOff(text);
+                              setMarkerDropOff(null);
+                            }}
                             style={styles.manualInput}
                             multiline
                             autoCapitalize="words"
@@ -1388,7 +1544,9 @@ export default function HomeScreen() {
                             returnKeyType="done"
                             blurOnSubmit={true}
                             onSubmitEditing={handleReturnKey}
+                            onBlur={() => Keyboard.dismiss()}
                           />
+                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
                         </View>
                       )}
                       {/* Mode switch buttons */}
@@ -1401,7 +1559,15 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => setMode('manual')}
+                          onPress={() => {
+                            setMode('manual');
+                            // Auto-focus the appropriate input after a short delay
+                            setTimeout(() => {
+                              if (modalDropOffVisible && dropoffInputRef.current) {
+                                dropoffInputRef.current.focus();
+                              }
+                            }, 100);
+                          }}
                         >
                           <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
                         </TouchableOpacity>
@@ -1463,10 +1629,15 @@ export default function HomeScreen() {
                       {/* Manual Entry */}
                       {mode === 'manual' && (
                         <View style={styles.manualContainer}>
+                          <Text style={styles.manualLabel}>{t('packageForm.enterDropoffAddress')}</Text>
                           <TextInput
+                            ref={dropoffInputRef2}
                             placeholder={t('packageForm.location')}
                             value={locationDropOff2}
-                            onChangeText={setLocationDropOff2}
+                            onChangeText={text => {
+                              setLocationDropOff2(text);
+                              setMarkerDropOff2(null);
+                            }}
                             style={styles.manualInput}
                             multiline
                             autoCapitalize="words"
@@ -1477,7 +1648,9 @@ export default function HomeScreen() {
                             returnKeyType="done"
                             blurOnSubmit={true}
                             onSubmitEditing={handleReturnKey}
+                            onBlur={() => Keyboard.dismiss()}
                           />
+                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
                         </View>
                       )}
                       {/* Mode switch buttons */}
@@ -1490,7 +1663,14 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => setMode('manual')}
+                          onPress={() => {
+                            setMode('manual');
+                            setTimeout(() => {
+                              if (modalDropOffVisible2 && dropoffInputRef2.current) {
+                                dropoffInputRef2.current.focus();
+                              }
+                            }, 100);
+                          }}
                         >
                           <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
                         </TouchableOpacity>
@@ -1563,10 +1743,15 @@ export default function HomeScreen() {
                       {/* Manual Entry */}
                       {mode === 'manual' && (
                         <View style={styles.manualContainer}>
+                          <Text style={styles.manualLabel}>{t('packageForm.enterDropoffAddress')}</Text>
                           <TextInput
+                            ref={dropoffInputRef3}
                             placeholder={t('packageForm.location')}
                             value={locationDropOff3}
-                            onChangeText={setLocationDropOff3}
+                            onChangeText={text => {
+                              setLocationDropOff3(text);
+                              setMarkerDropOff3(null);
+                            }}
                             style={styles.manualInput}
                             multiline
                             autoCapitalize="words"
@@ -1577,7 +1762,9 @@ export default function HomeScreen() {
                             returnKeyType="done"
                             blurOnSubmit={true}
                             onSubmitEditing={handleReturnKey}
+                            onBlur={() => Keyboard.dismiss()}
                           />
+                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
                         </View>
                       )}
                       {/* Mode switch buttons */}
@@ -1590,7 +1777,14 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => setMode('manual')}
+                          onPress={() => {
+                            setMode('manual');
+                            setTimeout(() => {
+                              if (modalDropOffVisible3 && dropoffInputRef3.current) {
+                                dropoffInputRef3.current.focus();
+                              }
+                            }, 100);
+                          }}
                         >
                           <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
                         </TouchableOpacity>
@@ -1860,6 +2054,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlignVertical: 'top',
     backgroundColor: COLORS.background,
+  },
+  manualLabel: {
+    fontSize: 16,
+    fontFamily: 'nunito-bold',
+    color: COLORS.text,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  manualNote: {
+    fontSize: 12,
+    fontFamily: 'nunito-regular',
+    color: COLORS.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   footer: {
     padding: 10,
