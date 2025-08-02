@@ -32,6 +32,7 @@ import type { Package } from '@/services/packageList.service';
 import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
 import { getCurrencyConfig } from '@/constants/Currency';
+import * as Location from 'expo-location';
 
 const HEADER_HEIGHT = 80;
 
@@ -75,6 +76,8 @@ export default function ManageScreen() {
 
   const [isCanceling, setIsCanceling] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const TABS = [
     { id: 'ongoing', label: t('managePage.tabs.ongoing') },
@@ -181,6 +184,48 @@ export default function ManageScreen() {
     };
   }, []);
 
+  // Request location permission and get user location
+  useEffect(() => {
+    const getLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({});
+          setUserLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+        }
+      } catch (error) {
+        console.log('Error getting location:', error);
+      }
+    };
+
+    getLocation();
+  }, []);
+
+  // Haversine formula utility
+  function getDistanceFromLatLonInMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371000; // Radius of the earth in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in meters
+    return d;
+  }
+
+  function formatDistance(meters: number): string {
+    if (meters < 1000) {
+      return `${Math.round(meters)} m from you`;
+    } else {
+      return `${(meters / 1000).toFixed(1)} km from you`;
+    }
+  }
+
   const currencyConfig = getCurrencyConfig();
 
   return (
@@ -268,81 +313,122 @@ export default function ManageScreen() {
             ) : (
               <>
                 {getFilteredPackages().length > 0 ? (
-                  getFilteredPackages().map((pkg, index) => (
-                    <View style={styles.card} key={pkg.id}>
-                      <View style={styles.cardHeader}>
-                        <Text style={styles.cardTitle}>{t('managePage.deliveryOverview')}</Text>
-                        {(pkg.order.status === 'ongoing' || pkg.order.status === 'active' || pkg.order.status === 'completed') && (
-                        <TouchableOpacity onPress={() => {
-                          setSelectedPackage(pkg);
-                          setModalVisible(true);
-                        }}>
-                          <MoreVerticalIcon size={20} />
+                  getFilteredPackages().map((pkg, index) => {
+                    // Calculate distances if userLocation and pickup/drop lat/lon exist
+                    let pickupDistanceText = '';
+                    let dropDistanceText = '';
+                    if (
+                      userLocation &&
+                      pkg.pickup?.coordinates?.lat && pkg.pickup?.coordinates?.lng
+                    ) {
+                      const pickupDistance = getDistanceFromLatLonInMeters(
+                        userLocation.latitude,
+                        userLocation.longitude,
+                        Number(pkg.pickup.coordinates.lat),
+                        Number(pkg.pickup.coordinates.lng)
+                      );
+                      pickupDistanceText = formatDistance(pickupDistance);
+                    }
+                    if (
+                      userLocation &&
+                      pkg.drop?.coordinates?.lat && pkg.drop?.coordinates?.lng
+                    ) {
+                      const dropDistance = getDistanceFromLatLonInMeters(
+                        userLocation.latitude,
+                        userLocation.longitude,
+                        Number(pkg.drop.coordinates.lat),
+                        Number(pkg.drop.coordinates.lng)
+                      );
+                      dropDistanceText = formatDistance(dropDistance);
+                    }
+                    return (
+                      <View style={styles.card} key={pkg.id}>
+                        <View style={styles.cardHeader}>
+                          <Text style={styles.cardTitle}>{t('managePage.deliveryOverview')}</Text>
+                          {(pkg.order.status === 'ongoing' || pkg.order.status === 'active' || pkg.order.status === 'completed') && (
+                          <TouchableOpacity onPress={() => {
+                            setSelectedPackage(pkg);
+                            setModalVisible(true);
+                          }}>
+                            <MoreVerticalIcon size={20} />
+                          </TouchableOpacity>
+                          )}
+                        </View>
+                        <TouchableOpacity style={styles.cardContainer} onPress={() => router.push({
+                          pathname: '/orderDetail',
+                          params: { orderData: JSON.stringify(pkg) }
+                        })}>
+                          <View style={styles.mapPinContainer}>
+                            <MapIcon size={24} color={COLORS.primary} />
+                            <VerticalDashedLineIcon />
+                            <MapIcon size={24} color={COLORS.danger} />
+                          </View>
+                          <View style={styles.itemRowContainer}>
+                            <View style={styles.itemRow}>                          
+                              <View style={styles.info}>
+                                <View style={styles.infoRow}>
+                                  <Image 
+                                    source={pkg.sender.image ? { uri: `${(api.defaults.baseURL || '').replace('/api', '')}/${pkg.sender.image}` } : require('@/assets/img/profile-blank.png')} 
+                                    style={styles.avatar} 
+                                  />
+                                  <Text style={styles.name}>{pkg.pickup.name}</Text>
+                                </View>
+                                <Text style={styles.location}>{pkg.pickup.address}</Text>
+                                {pickupDistanceText && (
+                                  <View style={styles.infoRow}>
+                                    <DistanceIcon size={14} />
+                                    <Text style={styles.distance}>{pickupDistanceText}</Text>
+                                  </View>
+                                )}
+                              </View>
+                            </View>
+                            <View style={styles.itemRow}>                          
+                              <View style={styles.info}>
+                                <View style={styles.infoRow}>
+                                  <Image 
+                                    source={require('@/assets/img/profile-blank.png')} 
+                                    style={styles.avatar} 
+                                  />
+                                  <Text style={styles.name}>{pkg.drop.name}</Text>
+                                </View>
+                                <Text style={styles.location}>{pkg.drop.address}</Text>
+                                {dropDistanceText && (
+                                  <View style={styles.infoRow}>
+                                    <DistanceIcon size={14} />
+                                    <Text style={styles.distance}>{dropDistanceText}</Text>
+                                  </View>
+                                )}
+                              </View>
+                            </View>
+                          </View>
                         </TouchableOpacity>
-                        )}
-                      </View>
-                      <TouchableOpacity style={styles.cardContainer} onPress={() => router.push({
-                        pathname: '/orderDetail',
-                        params: { orderData: JSON.stringify(pkg) }
-                      })}>
-                        <View style={styles.mapPinContainer}>
-                          <MapIcon size={24} color={COLORS.primary} />
-                          <VerticalDashedLineIcon />
-                          <MapIcon size={24} color={COLORS.danger} />
+                        
+                        <View style={styles.footer}>
+                          <Text style={styles.price}>{currencyConfig.code} {pkg.price}</Text>
+                          <Text style={[
+                            styles.status,
+                            {
+                              backgroundColor: 
+                                pkg.order.status === 'ongoing' ? COLORS.buttonBackground :
+                                pkg.order.status === 'active' ? 'rgba(40, 152, 255, 0.15)' :
+                                pkg.order.status === 'completed' ? 'rgba(85, 176, 134, 0.15)' :
+                                'rgba(246, 63, 63, 0.15)',
+                              color:
+                                pkg.order.status === 'ongoing' ? COLORS.text :
+                                pkg.order.status === 'active' ? '#2898FF' :
+                                pkg.order.status === 'completed' ? '#55B086' :
+                                '#F63F3F'
+                            }
+                          ]}>
+                            {pkg.order.status === 'ongoing' ? t('managePage.orderStatus.inProgress') :
+                             pkg.order.status === 'active' ? t('managePage.orderStatus.accepted') :
+                             pkg.order.status === 'completed' ? t('managePage.orderStatus.completed') :
+                             t('managePage.orderStatus.canceled')}
+                          </Text>
                         </View>
-                        <View style={styles.itemRowContainer}>
-                          <View style={styles.itemRow}>                          
-                            <View style={styles.info}>
-                              <View style={styles.infoRow}>
-                                <Image 
-                                  source={pkg.sender.image ? { uri: `${(api.defaults.baseURL || '').replace('/api', '')}/${pkg.sender.image}` } : require('@/assets/img/profile-blank.png')} 
-                                  style={styles.avatar} 
-                                />
-                                <Text style={styles.name}>{pkg.pickup.name}</Text>
-                              </View>
-                              <Text style={styles.location}>{pkg.pickup.address}</Text>
-                            </View>
-                          </View>
-                          <View style={styles.itemRow}>                          
-                            <View style={styles.info}>
-                              <View style={styles.infoRow}>
-                                <Image 
-                                  source={require('@/assets/img/profile-blank.png')} 
-                                  style={styles.avatar} 
-                                />
-                                <Text style={styles.name}>{pkg.drop.name}</Text>
-                              </View>
-                              <Text style={styles.location}>{pkg.drop.address}</Text>
-                            </View>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                      
-                      <View style={styles.footer}>
-                        <Text style={styles.price}>{currencyConfig.code} {pkg.price}</Text>
-                        <Text style={[
-                          styles.status,
-                          {
-                            backgroundColor: 
-                              pkg.order.status === 'ongoing' ? COLORS.buttonBackground :
-                              pkg.order.status === 'active' ? 'rgba(40, 152, 255, 0.15)' :
-                              pkg.order.status === 'completed' ? 'rgba(85, 176, 134, 0.15)' :
-                              'rgba(246, 63, 63, 0.15)',
-                            color:
-                              pkg.order.status === 'ongoing' ? COLORS.text :
-                              pkg.order.status === 'active' ? '#2898FF' :
-                              pkg.order.status === 'completed' ? '#55B086' :
-                              '#F63F3F'
-                          }
-                        ]}>
-                          {pkg.order.status === 'ongoing' ? t('managePage.orderStatus.inProgress') :
-                           pkg.order.status === 'active' ? t('managePage.orderStatus.accepted') :
-                           pkg.order.status === 'completed' ? t('managePage.orderStatus.completed') :
-                           t('managePage.orderStatus.canceled')}
-                        </Text>
                       </View>
-                    </View>
-                  ))
+                    );
+                  })
                 ) : (
                   <View style={styles.emptyContainer}>
                     <Image source={require('@/assets/images/empty_board.png')} style={styles.emptyImage} />

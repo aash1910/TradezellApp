@@ -20,7 +20,7 @@ export const initializeFacebook = async () => {
   if (Facebook) {
     try {
       await Facebook.initializeAsync({
-        appId: '1018394353841992',
+        appId: '727197286878204', //'1018394353841992',
       });
       return true;
     } catch (error) {
@@ -62,12 +62,12 @@ export const handleFacebookLogin = async () => {
     }
 
     const result = await Facebook.logInWithReadPermissionsAsync({
-      permissions: ['public_profile', 'email'],
+      permissions: ['public_profile'],
     });
 
     if (result.type === 'success') {
-      // Get user details from Facebook
-      const response = await fetch(`https://graph.facebook.com/me?access_token=${result.token}&fields=id,name,email,picture.type(large)`);
+      // Get user details from Facebook (basic fields only - no verification required)
+      const response = await fetch(`https://graph.facebook.com/me?access_token=${result.token}&fields=id,name`);
       const data = await response.json();
       return data;
     } else {

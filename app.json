@@ -2,15 +2,16 @@
   "expo": {
     "name": "PiqDrop",
     "slug": "piqdrop",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "facebookAppId": "1018394353841992",
+    "facebookAppId": "727197286878204",
     "facebookDisplayName": "PiqDrop",
     "ios": {
+      "CFBundleDisplayName": "PiqDrop",
       "supportsTablet": false,
       "bundleIdentifier": "com.piqdrop.com",
       "googleServicesFile": "./GoogleService-Info.plist",
@@ -22,7 +23,7 @@
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save photos of your vehicle.",
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["fb1018394353841992"]
+            "CFBundleURLSchemes": ["fb727197286878204"]
           }
         ],
         "NSAppTransportSecurity": {

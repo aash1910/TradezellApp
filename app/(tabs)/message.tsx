@@ -253,7 +253,9 @@ export default function MessageScreen() {
       style={styles.container}
     >
         <Animated.View style={[styles.header]}>
-          <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.leftArrow} onPress={() => router.push({
+            pathname: '/conversations'
+          })}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
           <Text style={styles.pageTitle}>{userName}</Text>

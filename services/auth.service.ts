@@ -12,7 +12,7 @@ interface LoginCredentials {
 interface FacebookLoginCredentials {
   id: string;
   name: string;
-  email: string;
+  email?: string; // Made optional since unverified Facebook apps can't access email
   picture?: string;
   role?: string;
   remember?: boolean;

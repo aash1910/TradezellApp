@@ -32,6 +32,7 @@ export default function UploadFileScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [idCardImage, setIdCardImage] = useState<string | null>(null);
   const [showImageOptions, setShowImageOptions] = useState(false);
+  const [imageType, setImageType] = useState<'profile' | 'id'>('id');
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isLoadingId, setIsLoadingId] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
@@ -80,7 +81,7 @@ export default function UploadFileScreen() {
     };
   }, []);
 
-  const takePicture = async () => {
+  const takeProfilePicture = async () => {
     try {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: 'images',
@@ -88,7 +89,7 @@ export default function UploadFileScreen() {
         aspect: [1, 1],
         quality: 1,
       });
-
+      setShowImageOptions(false);
       if (!result.canceled) {
         setIsLoadingProfile(true);
         try {
@@ -110,6 +111,40 @@ export default function UploadFileScreen() {
     } catch (error) {
       console.error('Error taking picture:', error);
       Alert.alert('Error', 'Failed to take picture. Please try again.');
+      setShowImageOptions(false);
+    }
+  };
+
+  const pickProfileImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'images',
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+      setShowImageOptions(false);
+      if (!result.canceled) {
+        setIsLoadingProfile(true);
+        try {
+          const compressedUri = await uploadService.compressImage(result.assets[0].uri);
+          const response = await authService.uploadImage(compressedUri, 'profile');
+          if (response.data.image) {
+            setProfileImage(response.data.image);
+            Alert.alert('Success', 'Profile image updated successfully');
+          } else {
+            Alert.alert('Error', 'Failed to update profile image');
+          }
+        } catch (error: any) {
+          Alert.alert('Error', error.message);
+        } finally {
+          setIsLoadingProfile(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      setShowImageOptions(false);
     }
   };
 
@@ -203,7 +238,10 @@ export default function UploadFileScreen() {
           <Text style={styles.labelSubtitle}>We're required to ask you for some documents to sign you as a sender. Documents scans and quality photos are accepted.</Text>
           <TouchableOpacity 
             style={styles.inputContainer}
-            onPress={() => setShowImageOptions(true)}
+            onPress={() => {
+              setImageType('id');
+              setShowImageOptions(true);
+            }}
             disabled={isLoadingId}
           >
             {isLoadingId ? (
@@ -222,7 +260,10 @@ export default function UploadFileScreen() {
           <Text style={styles.labelSubtitle}>Picture of you where you can clearly see your face without sunglasses or a hat. Please take the photo in a well lit place.</Text>
           <TouchableOpacity 
             style={styles.inputContainer}
-            onPress={takePicture}
+            onPress={() => {
+              setImageType('profile');
+              setShowImageOptions(true);
+            }}
             disabled={isLoadingProfile}
           >
             {isLoadingProfile ? (
@@ -254,8 +295,14 @@ export default function UploadFileScreen() {
           <TouchableOpacity 
             style={styles.continueButton}
             onPress={() => {
-              if (!profileImage || !idCardImage) {
+              if (!profileImage && !idCardImage) {
                 Alert.alert('Error', 'Please upload both ID document and profile picture');
+                return;
+              } else if (!profileImage) {
+                Alert.alert('Error', 'Please upload your profile picture');
+                return;
+              } else if (!idCardImage) {
+                Alert.alert('Error', 'Please upload your ID document');
                 return;
               }
               router.push('/(tabs)');
@@ -278,7 +325,11 @@ export default function UploadFileScreen() {
               style={styles.modalOption}
               onPress={() => {
                 console.log('pickImage called');
-                pickImage();
+                if (imageType === 'profile') {
+                  pickProfileImage();
+                } else {
+                  pickImage();
+                }
               }}
             >
               <Text style={styles.modalOptionText}>Choose from Gallery</Text>
@@ -286,7 +337,11 @@ export default function UploadFileScreen() {
             <TouchableOpacity 
               style={styles.modalOption}
               onPress={() => {
-                takeIdCardPicture();
+                if (imageType === 'profile') {
+                  takeProfilePicture();
+                } else {
+                  takeIdCardPicture();
+                }
               }}
             >
               <Text style={styles.modalOptionText}>Take Photo</Text>

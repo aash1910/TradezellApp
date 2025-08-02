@@ -62,13 +62,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="message"
+        name="conversations"
         listeners={{
           tabPress: (e) => {
             e.preventDefault();
             router.push({
-              pathname: '/message',
-              params: { userId: '1', refresh: Date.now() }
+              pathname: '/conversations',
+              //params: { userId: '1', refresh: Date.now() }
             });
           },
         }}
@@ -120,6 +120,12 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="packageEdit"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="message"
         options={{
           href: null,
         }}

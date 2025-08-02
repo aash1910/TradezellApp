@@ -115,16 +115,37 @@ export default function LoginScreen() {
   };
 
   const openPicker = (type: 'nationality' | 'gender') => {
-    confirmPasswordInputRef.current?.blur();
-    setPickerType(type);
-    setShowPicker(true);
+    try {
+      // Blur any active input to prevent keyboard conflicts
+      confirmPasswordInputRef.current?.blur();
+      emailInputRef.current?.blur();
+      passwordInputRef.current?.blur();
+      firstNameInputRef.current?.blur();
+      lastNameInputRef.current?.blur();
+      
+      setPickerType(type);
+      setShowPicker(true);
+    } catch (error) {
+      console.error('Error opening picker:', error);
+      Alert.alert('Error', 'Unable to open picker. Please try again.');
+    }
   };
 
   const handlePickerChange = (value: string) => {
-    if (pickerType === 'nationality') {
-      setNationality(value);
-    } else {
-      setGender(value);
+    try {
+      if (pickerType === 'nationality') {
+        setNationality(value);
+      } else {
+        setGender(value);
+      }
+    } catch (error) {
+      console.error('Picker change error:', error);
+      // Fallback to prevent crash
+      if (pickerType === 'nationality') {
+        setNationality('');
+      } else {
+        setGender('');
+      }
     }
   };
 
@@ -133,15 +154,32 @@ export default function LoginScreen() {
   };
 
   const getPickerItems = () => {
-    const items = pickerType === 'nationality' ? COUNTRIES : GENDERS;
-    return [
-      { label: pickerType === 'nationality' ? 'Nationality' : 'Gender', value: '' },
-      ...items.map(item => ({ label: item, value: item }))
-    ];
+    try {
+      if (pickerType === 'nationality') {
+        return [
+          { label: 'Select Nationality', value: '' },
+          ...COUNTRIES.map(country => ({ label: country, value: country }))
+        ];
+      } else {
+        return [
+          { label: 'Select Gender', value: '' },
+          ...GENDERS.map(gender => ({ label: gender, value: gender }))
+        ];
+      }
+    } catch (error) {
+      console.error('Error getting picker items:', error);
+      return [{ label: 'Error loading options', value: '' }];
+    }
   };
 
   const getSelectedValue = () => {
-    return pickerType === 'nationality' ? nationality : gender;
+    try {
+      const value = pickerType === 'nationality' ? nationality : gender;
+      return value || '';
+    } catch (error) {
+      console.error('Error getting selected value:', error);
+      return '';
+    }
   };
 
   const validateForm = () => {
@@ -419,9 +457,10 @@ export default function LoginScreen() {
           <TouchableOpacity 
             style={styles.inputContainer}
             onPress={() => openPicker('nationality')}
+            activeOpacity={0.7}
           >
             <Text style={[styles.input, !nationality && { color: '#999' }]}>
-              {nationality || 'Nationality'}
+              {nationality || 'Select Nationality'}
             </Text>
             <SelectArrowIcon size={20} color={COLORS.text} />
           </TouchableOpacity>
@@ -430,9 +469,10 @@ export default function LoginScreen() {
           <TouchableOpacity 
             style={styles.inputContainer}
             onPress={() => openPicker('gender')}
+            activeOpacity={0.7}
           >
             <Text style={[styles.input, !gender && { color: '#999' }]}>
-              {gender || 'Gender'}
+              {gender || 'Select Gender'}
             </Text>
             <SelectArrowIcon size={20} color={COLORS.text} />
           </TouchableOpacity>
@@ -441,6 +481,7 @@ export default function LoginScreen() {
             visible={showPicker}
             transparent={true}
             animationType="slide"
+            onRequestClose={() => setShowPicker(false)}
           >
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
@@ -457,10 +498,30 @@ export default function LoginScreen() {
                   selectedValue={getSelectedValue()}
                   onValueChange={handlePickerChange}
                   style={styles.modalPicker}
+                  itemStyle={styles.pickerItem}
                 >
-                  {getPickerItems().map((item) => (
-                    <Picker.Item key={item.label} label={item.label} value={item.value} />
-                  ))}
+                  {(() => {
+                    try {
+                      return getPickerItems().map((item, index) => (
+                        <Picker.Item 
+                          key={`${pickerType}-${index}`} 
+                          label={item.label} 
+                          value={item.value}
+                          color={item.value === '' ? '#999' : COLORS.text}
+                        />
+                      ));
+                    } catch (error) {
+                      console.error('Error rendering picker items:', error);
+                      return (
+                        <Picker.Item 
+                          key="error" 
+                          label="Error loading options" 
+                          value="" 
+                          color="#999"
+                        />
+                      );
+                    }
+                  })()}
                 </Picker>
               </View>
             </View>
@@ -680,5 +741,10 @@ const styles = StyleSheet.create({
   },
   loginButtonDisabled: {
     opacity: 0.7,
+  },
+  pickerItem: {
+    fontFamily: 'nunito-medium',
+    fontSize: 16,
+    color: COLORS.text,
   },
 });
