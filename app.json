@@ -2,7 +2,7 @@
   "expo": {
     "name": "PiqDrop",
     "slug": "piqdrop",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
@@ -10,6 +10,7 @@
     "newArchEnabled": true,
     "facebookAppId": "727197286878204",
     "facebookDisplayName": "PiqDrop",
+    "facebookClientToken": "dbe9f242f374128a5b8564438461e0f6",
     "ios": {
       "CFBundleDisplayName": "PiqDrop",
       "supportsTablet": false,
@@ -25,6 +26,12 @@
           {
             "CFBundleURLSchemes": ["fb727197286878204"]
           }
+        ],
+        "LSApplicationQueriesSchemes": [
+          "fbapi",
+          "fb-messenger-share-api",
+          "fbauth2",
+          "fbshareextension"
         ],
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
@@ -43,7 +50,19 @@
         "backgroundColor": "#55B086"
       },
       "package": "com.piqdrop.app",
-      "versionCode": 1
+      "versionCode": 1,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "fb727197286878204"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -75,7 +94,19 @@
           "iosUrlScheme": "com.googleusercontent.apps.885136208940-c07brsdi2plaqiijmfq9rslnmnlvi7bt"
         }
       ],
-      "expo-facebook"
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "727197286878204",
+          "clientToken": "your_client_token_here",
+          "displayName": "PiqDrop",
+          "scheme": "fb727197286878204",
+          "advertiserIDCollectionEnabled": false,
+          "autoLogAppEventsEnabled": false,
+          "isAutoInitEnabled": true,
+          "iosUserTrackingPermission": "This identifier will be used to deliver personalized ads to you."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -89,9 +120,9 @@
       },
       "stripePublishableKey": "pk_test_51RaMqGBQsHpfCUCmVUDUmoJ3Mi7u6rJlb9mFJVhpMqKacI3JNcGIosKGaQLLvCXnIBGL30TilKbLpKp0rxCrsffP0073sjbHOE",
       "currency": {
-        "code": "SEK",
-        "symbol": "kr",
-        "locale": "sv-SE",
+        "code": "USD",
+        "symbol": "$",
+        "locale": "en-US",
         "maxWithdrawal": 100000,
         "minWithdrawal": 100
       }

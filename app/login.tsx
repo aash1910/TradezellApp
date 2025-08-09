@@ -370,12 +370,12 @@ export default function LoginScreen() {
         //Alert.alert('Facebook Sign-In Response', JSON.stringify(data, null, 2));
 
         // Use authService.facebookLogin instead of direct fetch
-        // Note: email and picture are not available from unverified Facebook apps
+        // Note: email and picture are now available with the new SDK
         const backendResponse = await authService.facebookLogin({
           id: data.id,
           name: data.name,
-          email: '', // Email not available from unverified Facebook app
-          picture: '', // Picture not available from unverified Facebook app
+          email: data.email || '', // Email is now available with the new SDK
+          picture: data.picture?.data?.url || '', // Picture is now available with the new SDK
           role: 'sender',
           remember: true, // or use rememberMe state if you want
         });

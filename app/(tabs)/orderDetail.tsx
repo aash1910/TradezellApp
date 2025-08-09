@@ -25,6 +25,7 @@ import { STRIPE_CONFIG } from '@/config/stripe';
 import { getCurrencyConfig } from '@/constants/Currency';
 import { packageService } from '@/services/package.service';
 import { uploadService } from '@/services/upload.service';
+import ImageViewing from 'react-native-image-viewing';
 
 const HEADER_HEIGHT = 120;
 
@@ -316,6 +317,8 @@ export default function OrderDetailScreen() {
   const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
   const { t } = useTranslation();
   const currencyConfig = getCurrencyConfig();
+  const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
+  const [imageViewerUri, setImageViewerUri] = useState<string | null>(null);
   
   const pickupMarkerRef = useRef<MapMarker>(null);
   const dropoffMarkerRef = useRef<MapMarker>(null);
@@ -750,20 +753,36 @@ export default function OrderDetailScreen() {
               <View style={styles.pickupDetailsRow}>
                 <Text style={styles.pickupDetailsLabel}>Image</Text>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                  <Image
-                    source={{ uri: `${baseURLWithoutApi}/${orderData.pickup.image}` }}
-                    style={{ width: 100, height: 100, borderRadius: 10 }}
-                  />
+                  <TouchableOpacity
+                    onPress={() => {
+                      setImageViewerUri(`${baseURLWithoutApi}/${orderData.pickup.image}`);
+                      setIsImageViewerVisible(true);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Image
+                      source={{ uri: `${baseURLWithoutApi}/${orderData.pickup.image}` }}
+                      style={{ width: 100, height: 100, borderRadius: 10 }}
+                    />
+                  </TouchableOpacity>
                 </View>
               </View>
             ) : params.uploadedPhoto ? (
               <View style={styles.pickupDetailsRow}>
                 <Text style={styles.pickupDetailsLabel}>Image</Text>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                  <Image
-                    source={{ uri: params.uploadedPhoto as string }}
-                    style={{ width: 100, height: 100, borderRadius: 10 }}
-                  />
+                  <TouchableOpacity
+                    onPress={() => {
+                      setImageViewerUri(params.uploadedPhoto as string);
+                      setIsImageViewerVisible(true);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Image
+                      source={{ uri: params.uploadedPhoto as string }}
+                      style={{ width: 100, height: 100, borderRadius: 10 }}
+                    />
+                  </TouchableOpacity>
                 </View>
               </View>
             ) : null}
@@ -889,6 +908,18 @@ export default function OrderDetailScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      {imageViewerUri ? (
+        <ImageViewing
+          images={[{ uri: imageViewerUri }]}
+          imageIndex={0}
+          visible={isImageViewerVisible}
+          onRequestClose={() => setIsImageViewerVisible(false)}
+          presentationStyle="overFullScreen"
+          swipeToCloseEnabled
+          doubleTapToZoomEnabled
+        />
+      ) : null}
     </KeyboardAvoidingView>
   );
 }

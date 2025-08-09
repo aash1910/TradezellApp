@@ -1,10 +1,11 @@
-import { View, Text, Image, StyleSheet, Dimensions, StatusBar, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions, StatusBar, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import ParallaxScrollViewNormal from '@/components/ParallaxScrollViewNormal';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { authService } from '@/services/auth.service';
+import Svg, { Path } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_DELIVERY_HEIGHT = height / 100 * 22;
@@ -51,7 +52,7 @@ export default function WelcomeScreen() {
           }
         } else {
           // User needs to go through onboarding
-          router.replace('/getStarted');
+          //router.replace('/getStarted');
         }
       } catch (error) {
         console.error('Initial auth check failed:', error);
@@ -61,7 +62,7 @@ export default function WelcomeScreen() {
         } catch (logoutError) {
           console.error('Logout error during auth check:', logoutError);
         }
-        router.replace('/getStarted');
+        //router.replace('/getStarted');
       } finally {
         setIsLoading(false);
       }
@@ -103,6 +104,18 @@ export default function WelcomeScreen() {
         <ThemedText type="default" style={styles.stepText}> 
           Send your package anywhere in the {'\n'}world through travellers and {'\n'}freelancers with just a few clicks. {'\n'}Quick and easy.
         </ThemedText>
+      </ThemedView>
+
+      <ThemedView style={styles.buttonBackgroundContainer}>
+        <TouchableOpacity 
+          style={styles.buttonContainer}
+          onPress={() => router.replace('/getStarted')}
+        >
+          <Text style={styles.buttonText}>Get started</Text>
+          <Svg width="20" height="20" viewBox="0 0 20 20" fill="none"> 
+            <Path d="M7.5 15C7.5 15 12.5 11.3176 12.5 10C12.5 8.68233 7.5 5 7.5 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </Svg> 
+        </TouchableOpacity>
       </ThemedView>
     </ParallaxScrollViewNormal>
   );
@@ -155,6 +168,35 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSemiBold',
     fontSize: 20,
     lineHeight: 24,
+    letterSpacing: 0.2,
+  },
+  buttonBackgroundContainer: {
+    backgroundColor: '#FFFFFF',
+    width: '100%',
+    padding: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 28,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  buttonContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    height: 54,
+    padding: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    alignSelf: 'stretch',
+    borderRadius: 14,
+    backgroundColor: '#55B086',   
+  },
+  buttonText: {
+    color: '#FFF',
+    fontFamily: 'NunitoBold',
+    fontSize: 17, 
     letterSpacing: 0.2,
   },
 });

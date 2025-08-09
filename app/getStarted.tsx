@@ -38,7 +38,7 @@ export default function GetStartedScreen() {
           style={styles.buttonContainer}
           onPress={() => router.replace('/login')}
         >
-          <Text style={styles.buttonText}>Get started</Text>
+          <Text style={styles.buttonText}>Login</Text>
           <Svg width="20" height="20" viewBox="0 0 20 20" fill="none"> 
             <Path d="M7.5 15C7.5 15 12.5 11.3176 12.5 10C12.5 8.68233 7.5 5 7.5 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </Svg> 

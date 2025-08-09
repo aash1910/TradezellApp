@@ -3,25 +3,32 @@
  * @author Ashraful Islam
  */
 
+import { Alert } from 'react-native';
+
 // Conditional import for Facebook Login
-let Facebook: any = null;
+let FacebookSDK: any = null;
 
 try {
-  Facebook = require('expo-facebook');
+  const { LoginManager, AccessToken, GraphRequest, GraphRequestManager } = require('react-native-fbsdk-next');
+  FacebookSDK = {
+    LoginManager,
+    AccessToken,
+    GraphRequest,
+    GraphRequestManager
+  };
 } catch (error) {
-  console.log('Facebook Login module not available in Expo Go');
+  console.log('Facebook SDK not available in Expo Go - requires development build');
 }
 
 export const isFacebookLoginAvailable = () => {
-  return Facebook !== null;
+  return FacebookSDK !== null;
 };
 
 export const initializeFacebook = async () => {
-  if (Facebook) {
+  if (FacebookSDK) {
     try {
-      await Facebook.initializeAsync({
-        appId: '727197286878204', //'1018394353841992',
-      });
+      // The new SDK doesn't require explicit initialization like the old expo-facebook
+      // It's automatically initialized when the app starts
       return true;
     } catch (error) {
       console.error('Facebook initialization error:', error);
@@ -32,14 +39,13 @@ export const initializeFacebook = async () => {
 };
 
 export const getFacebookModule = () => {
-  return Facebook;
+  return FacebookSDK;
 };
 
 export const showFacebookLoginUnavailableAlert = () => {
-  const { Alert } = require('react-native');
   Alert.alert(
     'Facebook Login Not Available',
-    'Facebook Login is not available in Expo Go. Please use a development build or native build to test this feature.',
+    'Facebook Login requires a development build. Please use "expo run:ios" or "expo run:android" to test this feature.',
     [
       {
         text: 'OK',
@@ -49,7 +55,18 @@ export const showFacebookLoginUnavailableAlert = () => {
   );
 };
 
-export const handleFacebookLogin = async () => {
+interface FacebookUserData {
+  id: string;
+  name: string;
+  email?: string;
+  picture?: {
+    data: {
+      url: string;
+    };
+  };
+}
+
+export const handleFacebookLogin = async (): Promise<FacebookUserData | null> => {
   if (!isFacebookLoginAvailable()) {
     showFacebookLoginUnavailableAlert();
     return null;
@@ -61,17 +78,49 @@ export const handleFacebookLogin = async () => {
       throw new Error('Failed to initialize Facebook');
     }
 
-    const result = await Facebook.logInWithReadPermissionsAsync({
-      permissions: ['public_profile'],
-    });
+    const { LoginManager, AccessToken, GraphRequest, GraphRequestManager } = FacebookSDK;
 
-    if (result.type === 'success') {
-      // Get user details from Facebook (basic fields only - no verification required)
-      const response = await fetch(`https://graph.facebook.com/me?access_token=${result.token}&fields=id,name`);
-      const data = await response.json();
-      return data;
-    } else {
+    // Request login permissions
+    const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+
+    if (result.isCancelled) {
       throw new Error('Facebook login was cancelled');
+    }
+
+    if (result.grantedPermissions && result.grantedPermissions.length > 0) {
+      // Get access token
+      const accessToken = await AccessToken.getCurrentAccessToken();
+      
+      if (!accessToken) {
+        throw new Error('Failed to get access token');
+      }
+
+      // Get user details using Graph API
+      return new Promise<FacebookUserData>((resolve, reject) => {
+        const userInfoRequest = new GraphRequest(
+          '/me',
+          {
+            accessToken: accessToken.accessToken,
+            parameters: {
+              fields: {
+                string: 'id,name,email,picture.type(large)'
+              }
+            }
+          },
+          (error: any, result: any) => {
+            if (error) {
+              console.error('Graph API Error:', error);
+              reject(new Error('Failed to get user information'));
+            } else {
+              resolve(result as FacebookUserData);
+            }
+          }
+        );
+
+        new GraphRequestManager().addRequest(userInfoRequest).start();
+      });
+    } else {
+      throw new Error('No permissions granted');
     }
   } catch (error: any) {
     console.error('Facebook Login Error:', error);
