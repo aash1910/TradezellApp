@@ -81,7 +81,7 @@ export const handleFacebookLogin = async (): Promise<FacebookUserData | null> =>
     const { LoginManager, AccessToken, GraphRequest, GraphRequestManager } = FacebookSDK;
 
     // Request login permissions
-    const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+    const result = await LoginManager.logInWithPermissions(['user_link']);
 
     if (result.isCancelled) {
       throw new Error('Facebook login was cancelled');

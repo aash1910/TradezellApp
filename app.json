@@ -2,13 +2,13 @@
   "expo": {
     "name": "PiqDrop",
     "slug": "piqdrop",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "facebookAppId": "727197286878204",
+    "facebookAppId": "1087628436894472",
     "facebookDisplayName": "PiqDrop",
     "facebookClientToken": "dbe9f242f374128a5b8564438461e0f6",
     "ios": {
@@ -24,7 +24,7 @@
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save photos of your vehicle.",
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["fb727197286878204"]
+            "CFBundleURLSchemes": ["fb1087628436894472"]
           }
         ],
         "LSApplicationQueriesSchemes": [
@@ -57,7 +57,7 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "fb727197286878204"
+              "scheme": "fb1087628436894472"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
@@ -97,10 +97,10 @@
       [
         "react-native-fbsdk-next",
         {
-          "appID": "727197286878204",
+          "appID": "1087628436894472",
           "clientToken": "your_client_token_here",
           "displayName": "PiqDrop",
-          "scheme": "fb727197286878204",
+          "scheme": "fb1087628436894472",
           "advertiserIDCollectionEnabled": false,
           "autoLogAppEventsEnabled": false,
           "isAutoInitEnabled": true,

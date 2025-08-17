@@ -12,6 +12,7 @@ import api from '@/services/api';
 import { packageService } from '@/services/package.service';
 import type { UserData, SettingsData } from '@/services/auth.service';
 import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import Animated, {
@@ -59,12 +60,6 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
-  const pickupInputRef = useRef<TextInput>(null);
-  const pickupInputRef2 = useRef<TextInput>(null);
-  const pickupInputRef3 = useRef<TextInput>(null);
-  const dropoffInputRef = useRef<TextInput>(null);
-  const dropoffInputRef2 = useRef<TextInput>(null);
-  const dropoffInputRef3 = useRef<TextInput>(null);
   const [country, setCountry] = useState<Country | null>(null);
   const [withCallingCode, setWithCallingCode] = useState(true);
   const [senderProfileImage, setSenderProfileImage] = useState(require('@/assets/img/profile-blank.png'));
@@ -80,12 +75,6 @@ export default function HomeScreen() {
   const [locationDropOff, setLocationDropOff] = useState('');
   const [locationDropOff2, setLocationDropOff2] = useState('');
   const [locationDropOff3, setLocationDropOff3] = useState('');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalVisible2, setModalVisible2] = useState(false);
-  const [modalVisible3, setModalVisible3] = useState(false);
-  const [modalDropOffVisible, setModalDropOffVisible] = useState(false);
-  const [modalDropOffVisible2, setModalDropOffVisible2] = useState(false);
-  const [modalDropOffVisible3, setModalDropOffVisible3] = useState(false);
   const [marker, setMarker] = useState<{latitude: number; longitude: number} | null>(null);
   const [marker2, setMarker2] = useState<{latitude: number; longitude: number} | null>(null);
   const [marker3, setMarker3] = useState<{latitude: number; longitude: number} | null>(null);
@@ -99,7 +88,6 @@ export default function HomeScreen() {
   const [regionDropOff2, setRegionDropOff2] = useState<Region | null>(null);
   const [regionDropOff3, setRegionDropOff3] = useState<Region | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState('map');
   const [details, setDetails] = useState('');
   const [detailsDropOff, setDetailsDropOff] = useState('');
   const [date, setDate] = useState(new Date());
@@ -123,6 +111,23 @@ export default function HomeScreen() {
   const [showLocationDropOff3, setShowLocationDropOff3] = useState(false);
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // Helper function for modal navigation to getLocation
+  const navigateToLocationModal = (params: any) => {
+    if (isNavigating) return; // Prevent multiple presses
+    
+    setIsNavigating(true);
+    (router as any).push({
+      pathname: '/getLocation', 
+      params: params
+    }, {
+      presentation: 'pageSheet'
+    });
+    
+    // Re-enable after navigation completes
+    setTimeout(() => setIsNavigating(false), 1000);
+  };
 
   const handleDateChange = (event: any, selectedDate: any) => {
     if (selectedDate) setDate(selectedDate);
@@ -207,6 +212,72 @@ export default function HomeScreen() {
       }
     })();
   }, []);
+
+  // Listen for location data when returning from getLocation screen
+  useFocusEffect(
+    useCallback(() => {
+      const checkForLocationData = async () => {
+        try {
+          const locationData = await AsyncStorage.getItem('selectedLocationData');
+          if (locationData) {
+            const { selectedLocation, selectedRegion, selectedMarker, locationType, locationIndex } = JSON.parse(locationData);
+            
+            console.log('=== LOCATION DATA RECEIVED ===');
+            console.log('Location Type:', locationType);
+            console.log('Location Index:', locationIndex);
+            console.log('Selected Location:', selectedLocation);
+            console.log('Selected Region:', selectedRegion);
+            console.log('Selected Marker:', selectedMarker);
+            console.log('==============================');
+            
+            if (locationType === 'pickup') {
+              if (locationIndex === '1' || locationIndex === 1) {
+                setLocation(selectedLocation);
+                if (selectedRegion) setRegion(selectedRegion);
+                if (selectedMarker) setMarker(selectedMarker);
+                else setMarker(null);
+              } else if (locationIndex === '2' || locationIndex === 2) {
+                setLocation2(selectedLocation);
+                if (selectedRegion) setRegion2(selectedRegion);
+                if (selectedMarker) setMarker2(selectedMarker);
+                else setMarker2(null);
+              } else if (locationIndex === '3' || locationIndex === 3) {
+                setLocation3(selectedLocation);
+                if (selectedRegion) setRegion3(selectedRegion);
+                if (selectedMarker) setMarker3(selectedMarker);
+                else setMarker3(null);
+              }
+            } else if (locationType === 'dropoff') {
+              if (locationIndex === '1' || locationIndex === 1) {
+                setLocationDropOff(selectedLocation);
+                if (selectedRegion) setRegionDropOff(selectedRegion);
+                if (selectedMarker) setMarkerDropOff(selectedMarker);
+                else setMarkerDropOff(null);
+              } else if (locationIndex === '2' || locationIndex === 2) {
+                setLocationDropOff2(selectedLocation);
+                if (selectedRegion) setRegionDropOff2(selectedRegion);
+                if (selectedMarker) setMarkerDropOff2(selectedMarker);
+                else setMarkerDropOff2(null);
+              } else if (locationIndex === '3' || locationIndex === 3) {
+                setLocationDropOff3(selectedLocation);
+                if (selectedRegion) setRegionDropOff3(selectedRegion);
+                if (selectedMarker) setMarkerDropOff3(selectedMarker);
+                else setMarkerDropOff3(null);
+              }
+            }
+            
+            // Clear the stored data to avoid reprocessing
+            await AsyncStorage.removeItem('selectedLocationData');
+          }
+        } catch (error) {
+          console.error('Error retrieving location data:', error);
+        }
+      };
+      
+      // Check for location data when screen comes into focus
+      checkForLocationData();
+    }, [])
+  );
 
   const loadUserData = async () => {
     try {
@@ -313,143 +384,6 @@ export default function HomeScreen() {
       );
     }
   }, [error]);
-
-  const handleMapPress = (index: number) => async (e: any) => {
-    const coords = e.nativeEvent.coordinate;
-    switch(index) {
-      case 2:
-        setMarker2(coords);
-        break;
-      case 3:
-        setMarker3(coords);
-        break;
-      default:
-        setMarker(coords);
-        break;
-    }
-
-    try {
-      const geocode = await Location.reverseGeocodeAsync(coords);
-      if (geocode.length > 0) {
-        const place = geocode[0];
-        const parts = [
-          place.name,
-          place.street,
-          place.city,
-          place.region,
-          place.postalCode,
-          place.country
-        ];
-        const uniqueParts = Array.from(new Set(parts.filter(Boolean)));
-        const address = uniqueParts.join(', ');        
-
-        switch(index) {
-          case 2:
-            setLocation2(address);
-            break;
-          case 3:
-            setLocation3(address);
-            break;
-          default:
-            setLocation(address);
-            break;
-        }
-      } else {
-        switch(index) {
-          case 2:
-            setLocation2(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-            break;
-          case 3:
-            setLocation3(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-            break;
-          default:
-            setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-            break;
-        }
-      }
-    } catch (err) {
-      console.warn('Reverse geocoding error:', err);
-      switch(index) {
-        case 2:
-          setLocation2(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-          break;
-        case 3:
-          setLocation3(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-          break;
-        default:
-          setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-          break;
-      }
-    }
-  };
-
-  const handleMapPressDropOff = (index: number) => async (e: any) => {
-    const coords = e.nativeEvent.coordinate;
-    switch(index) {
-      case 2:
-        setMarkerDropOff2(coords);
-        break;
-      case 3:
-        setMarkerDropOff3(coords);
-        break;
-      default:
-        setMarkerDropOff(coords);
-        break;
-    }
-
-    try {
-      const geocode = await Location.reverseGeocodeAsync(coords);
-      if (geocode.length > 0) {
-        const place = geocode[0];
-        const parts = [
-          place.name,
-          place.street,
-          place.city,
-          place.region,
-          place.postalCode,
-          place.country
-        ];
-        const uniqueParts = Array.from(new Set(parts.filter(Boolean)));
-        const address = uniqueParts.join(', ');
-        switch(index) {
-          case 2:
-            setLocationDropOff2(address);
-            break;
-          case 3:
-            setLocationDropOff3(address);
-            break;
-          default:
-            setLocationDropOff(address);
-            break;
-        }
-      } else {
-        switch(index) {
-          case 2:
-            setLocationDropOff2(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-            break;
-          case 3:
-            setLocationDropOff3(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-            break;
-          default:
-            setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-            break;
-        }
-      }
-    } catch (err) {
-      console.warn('Reverse geocoding error:', err);
-      switch(index) {
-        case 2:
-          setLocationDropOff2(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-          break;
-        case 3:
-          setLocationDropOff3(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-          break;
-        default:
-          setLocationDropOff(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-          break;
-      }
-    }
-  };
 
   const handleReturnKey = () => {
     Keyboard.dismiss();
@@ -1013,7 +947,16 @@ export default function HomeScreen() {
 
                 <Text style={styles.label}>{t('packageForm.location')}</Text>
                 <View style={styles.inputContainer}>
-                  <TouchableOpacity onPress={() => setModalVisible(true)}>
+                  <TouchableOpacity onPress={() => {
+                    navigateToLocationModal({
+                      currentLocation: location, 
+                      currentRegion: region ? JSON.stringify(region) : null, 
+                      currentMarker: marker ? JSON.stringify(marker) : null, 
+                      type: 'pickup',
+                      locationIndex: '1'
+                    });
+                  }}
+                  disabled={isNavigating}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1022,103 +965,29 @@ export default function HomeScreen() {
                     onChangeText={setLocation} 
                     style={styles.input} 
                     editable={false}
-                    onPress={() => setModalVisible(true)}
+                    onPress={() => {
+                      navigateToLocationModal({
+                        currentLocation: location, 
+                        currentRegion: region ? JSON.stringify(region) : null, 
+                        currentMarker: marker ? JSON.stringify(marker) : null, 
+                        type: 'pickup',
+                        locationIndex: '1'
+                      });
+                    }}
                   />
-
-                  <Modal visible={modalVisible} animationType="slide">
-                    <View style={{ flex: 1 }}>
-                      {/* Map View */}
-                      {mode === 'map' && (
-                        <>
-                          {region && (
-                            <>
-                              <MapView
-                                key="pickup-map"
-                                style={{ flex: 1 }}
-                                region={region}
-                                onPress={handleMapPress(1)}
-                                onLayout={() => {
-                                  if (marker) {
-                                    setRegion({
-                                      latitude: marker.latitude,
-                                      longitude: marker.longitude,
-                                      latitudeDelta: 0.01,
-                                      longitudeDelta: 0.01,
-                                    });
-                                  }
-                                }}
-                              >
-                                {marker && <Marker coordinate={marker} />}
-                              </MapView>
-                              <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
-                            </>
-                          )}
-                        </>
-                      )}
-
-                      {/* Manual Entry */}
-                      {mode === 'manual' && (
-                        <View style={styles.manualContainer}>
-                          <Text style={styles.manualLabel}>{t('packageForm.enterPickupAddress')}</Text>
-                          <TextInput
-                            ref={pickupInputRef}
-                            placeholder={t('packageForm.location')}
-                            value={location}
-                            onChangeText={text => {
-                              setLocation(text);
-                              setMarker(null);
-                            }}
-                            style={styles.manualInput}
-                            multiline
-                            autoCapitalize="words"
-                            autoComplete="off"
-                            clearButtonMode="always"
-                            textContentType="fullStreetAddress"
-                            selectionColor={COLORS.primary}
-                            returnKeyType="done"
-                            blurOnSubmit={true}
-                            onSubmitEditing={handleReturnKey}
-                            onBlur={() => Keyboard.dismiss()}
-                          />
-                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
-                        </View>
-                      )}
-                      {/* Mode switch buttons */}
-                      <View style={styles.toggleContainer}>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
-                          onPress={() => setMode('map')}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => {
-                            setMode('manual');
-                            // Auto-focus the appropriate input after a short delay
-                            setTimeout(() => {
-                              if (modalVisible && pickupInputRef.current) {
-                                pickupInputRef.current.focus();
-                              }
-                            }, 100);
-                          }}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <View style={styles.footer}>
-                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
-                          onPress={() => setModalVisible(false)}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </Modal>
                 </View>
 
                 {showLocation2 && (<View style={styles.inputContainer}>
-                  <TouchableOpacity onPress={() => setModalVisible2(true)}>
+                  <TouchableOpacity onPress={() => {
+                    navigateToLocationModal({
+                      currentLocation: location2, 
+                      currentRegion: region2 ? JSON.stringify(region2) : null, 
+                      currentMarker: marker2 ? JSON.stringify(marker2) : null, 
+                      type: 'pickup',
+                      locationIndex: '2'
+                    });
+                  }}
+                  disabled={isNavigating}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1127,99 +996,16 @@ export default function HomeScreen() {
                     onChangeText={setLocation2} 
                     style={styles.input} 
                     editable={false}
-                    onPress={() => setModalVisible2(true)}
+                    onPress={() => {
+                      navigateToLocationModal({
+                        currentLocation: location2,  
+                        currentRegion: region2 ? JSON.stringify(region2) : null, 
+                        currentMarker: marker2 ? JSON.stringify(marker2) : null, 
+                        type: 'pickup',
+                        locationIndex: '2'
+                      });
+                    }}
                   />
-
-                  <Modal visible={modalVisible2} animationType="slide">
-                    <View style={{ flex: 1 }}>
-                      {/* Map View */}
-                      {mode === 'map' && (
-                        <>
-                          {region2 && (
-                            <>
-                              <MapView
-                                key="pickup-map2"
-                                style={{ flex: 1 }}
-                                region={region2}
-                                onPress={handleMapPress(2)}
-                                onLayout={() => {
-                                  if (marker2) {
-                                    setRegion2({
-                                      latitude: marker2.latitude,
-                                      longitude: marker2.longitude,
-                                      latitudeDelta: 0.01,
-                                      longitudeDelta: 0.01,
-                                    });
-                                  }
-                                }}
-                              >
-                                {marker2 && <Marker coordinate={marker2} />}
-                              </MapView>
-                              <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
-                            </>
-                          )}
-                        </>
-                      )}
-
-                      {/* Manual Entry */}
-                      {mode === 'manual' && (
-                        <View style={styles.manualContainer}>
-                          <Text style={styles.manualLabel}>{t('packageForm.enterPickupAddress')}</Text>
-                          <TextInput
-                            ref={pickupInputRef2}
-                            placeholder={t('packageForm.location')}
-                            value={location2}
-                            onChangeText={text => {
-                              setLocation2(text);
-                              setMarker2(null);
-                            }}
-                            style={styles.manualInput}
-                            multiline
-                            autoCapitalize="words"
-                            autoComplete="off"
-                            clearButtonMode="always"
-                            textContentType="fullStreetAddress"
-                            selectionColor={COLORS.primary}
-                            returnKeyType="done"
-                            blurOnSubmit={true}
-                            onSubmitEditing={handleReturnKey}
-                            onBlur={() => Keyboard.dismiss()}
-                          />
-                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
-                        </View>
-                      )}
-                      {/* Mode switch buttons */}
-                      <View style={styles.toggleContainer}>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
-                          onPress={() => setMode('map')}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => {
-                            setMode('manual');
-                            // Auto-focus the appropriate input after a short delay
-                            setTimeout(() => {
-                              if (modalVisible2 && pickupInputRef2.current) {
-                                pickupInputRef2.current.focus();
-                              }
-                            }, 100);
-                          }}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <View style={styles.footer}>
-                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
-                          onPress={() => setModalVisible2(false)}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </Modal>
                   <TouchableOpacity
                     onPress={() => { setShowLocation2(false); setLocation2(''); setMarker2(null); }}
                     style={{ marginLeft: 8 }}
@@ -1230,7 +1016,16 @@ export default function HomeScreen() {
                 </View>)}
 
                 {showLocation3 && (<View style={styles.inputContainer}>
-                  <TouchableOpacity onPress={() => setModalVisible3(true)}>
+                  <TouchableOpacity onPress={() => {
+                    navigateToLocationModal({
+                      currentLocation: location3, 
+                      currentRegion: region3 ? JSON.stringify(region3) : null, 
+                      currentMarker: marker3 ? JSON.stringify(marker3) : null, 
+                      type: 'pickup',
+                      locationIndex: '3'
+                    });
+                  }}
+                  disabled={isNavigating}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1239,99 +1034,16 @@ export default function HomeScreen() {
                     onChangeText={setLocation3} 
                     style={styles.input} 
                     editable={false}
-                    onPress={() => setModalVisible3(true)}
+                    onPress={() => {
+                      navigateToLocationModal({
+                        currentLocation: location3, 
+                        currentRegion: region3 ? JSON.stringify(region3) : null, 
+                        currentMarker: marker3 ? JSON.stringify(marker3) : null, 
+                        type: 'pickup',
+                        locationIndex: '3'
+                      });
+                    }}
                   />
-
-                  <Modal visible={modalVisible3} animationType="slide">
-                    <View style={{ flex: 1 }}>
-                      {/* Map View */}
-                      {mode === 'map' && (
-                        <>
-                          {region3 && (
-                            <>
-                              <MapView
-                                key="pickup-map3"
-                                style={{ flex: 1 }}
-                                region={region3}
-                                onPress={handleMapPress(3)}
-                                onLayout={() => {
-                                  if (marker3) {
-                                    setRegion3({
-                                      latitude: marker3.latitude,
-                                      longitude: marker3.longitude,
-                                      latitudeDelta: 0.01,
-                                      longitudeDelta: 0.01,
-                                    });
-                                  }
-                                }}
-                              >
-                                {marker3 && <Marker coordinate={marker3} />}
-                              </MapView>
-                              <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
-                            </>
-                          )}
-                        </>
-                      )}
-
-                      {/* Manual Entry */}
-                      {mode === 'manual' && (
-                        <View style={styles.manualContainer}>
-                          <Text style={styles.manualLabel}>{t('packageForm.enterPickupAddress')}</Text>
-                          <TextInput
-                            ref={pickupInputRef3}
-                            placeholder={t('packageForm.location')}
-                            value={location3}
-                            onChangeText={text => {
-                              setLocation3(text);
-                              setMarker3(null);
-                            }}
-                            style={styles.manualInput}
-                            multiline
-                            autoCapitalize="words"
-                            autoComplete="off"
-                            clearButtonMode="always"
-                            textContentType="fullStreetAddress"
-                            selectionColor={COLORS.primary}
-                            returnKeyType="done"
-                            blurOnSubmit={true}
-                            onSubmitEditing={handleReturnKey}
-                            onBlur={() => Keyboard.dismiss()}
-                          />
-                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
-                        </View>
-                      )}
-                      {/* Mode switch buttons */}
-                      <View style={styles.toggleContainer}>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
-                          onPress={() => setMode('map')}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => {
-                            setMode('manual');
-                            // Auto-focus the appropriate input after a short delay
-                            setTimeout(() => {
-                              if (modalVisible3 && pickupInputRef3.current) {
-                                pickupInputRef3.current.focus();
-                              }
-                            }, 100);
-                          }}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <View style={styles.footer}>
-                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
-                          onPress={() => setModalVisible3(false)}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </Modal>
                   <TouchableOpacity
                       onPress={() => { 
                         setShowLocation3(false); 
@@ -1479,7 +1191,16 @@ export default function HomeScreen() {
 
                 <Text style={styles.label}>{t('packageForm.location')}</Text>
                 <View style={styles.inputContainer}>
-                  <TouchableOpacity onPress={() => setModalDropOffVisible(true)}>
+                  <TouchableOpacity onPress={() => {
+                      navigateToLocationModal({
+                        currentLocation: locationDropOff, 
+                        currentRegion: regionDropOff ? JSON.stringify(regionDropOff) : null, 
+                        currentMarker: markerDropOff ? JSON.stringify(markerDropOff) : null, 
+                        type: 'dropoff',
+                        locationIndex: '1'
+                      });
+                    }}
+                    disabled={isNavigating}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1488,102 +1209,28 @@ export default function HomeScreen() {
                     onChangeText={setLocationDropOff} 
                     style={styles.input} 
                     editable={false}
-                    onPress={() => setModalDropOffVisible(true)}
+                    onPress={() => {
+                      navigateToLocationModal({
+                        currentLocation: locationDropOff, 
+                        currentRegion: regionDropOff ? JSON.stringify(regionDropOff) : null, 
+                        currentMarker: markerDropOff ? JSON.stringify(markerDropOff) : null, 
+                        type: 'dropoff',
+                        locationIndex: '1'
+                      });
+                    }}
                   />
-
-                  <Modal visible={modalDropOffVisible} animationType="slide">
-                    <View style={{ flex: 1 }}>
-                      {/* Map View */}
-                      {mode === 'map' && (
-                        <>
-                          {regionDropOff && (
-                            <>
-                              <MapView
-                                key="dropoff-map"
-                                style={{ flex: 1 }}
-                                region={regionDropOff}
-                                onPress={handleMapPressDropOff(0)}
-                                onLayout={() => {
-                                  if (markerDropOff) {
-                                    setRegionDropOff({
-                                      latitude: markerDropOff.latitude,
-                                      longitude: markerDropOff.longitude,
-                                      latitudeDelta: 0.01,
-                                      longitudeDelta: 0.01,
-                                    });
-                                  }
-                                }}
-                              >
-                                {markerDropOff && <Marker coordinate={markerDropOff} />}
-                              </MapView>
-                              <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
-                            </>
-                          )}
-                        </>
-                      )}
-
-                      {/* Manual Entry */}
-                      {mode === 'manual' && (
-                        <View style={styles.manualContainer}>
-                          <Text style={styles.manualLabel}>{t('packageForm.enterDropoffAddress')}</Text>
-                          <TextInput
-                            ref={dropoffInputRef}
-                            placeholder={t('packageForm.location')}
-                            value={locationDropOff}
-                            onChangeText={text => {
-                              setLocationDropOff(text);
-                              setMarkerDropOff(null);
-                            }}
-                            style={styles.manualInput}
-                            multiline
-                            autoCapitalize="words"
-                            autoComplete="off"
-                            clearButtonMode="always"
-                            textContentType="fullStreetAddress"
-                            selectionColor={COLORS.primary}
-                            returnKeyType="done"
-                            blurOnSubmit={true}
-                            onSubmitEditing={handleReturnKey}
-                            onBlur={() => Keyboard.dismiss()}
-                          />
-                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
-                        </View>
-                      )}
-                      {/* Mode switch buttons */}
-                      <View style={styles.toggleContainer}>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
-                          onPress={() => setMode('map')}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => {
-                            setMode('manual');
-                            // Auto-focus the appropriate input after a short delay
-                            setTimeout(() => {
-                              if (modalDropOffVisible && dropoffInputRef.current) {
-                                dropoffInputRef.current.focus();
-                              }
-                            }, 100);
-                          }}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <View style={styles.footer}>
-                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
-                          onPress={() => setModalDropOffVisible(false)}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </Modal>
                 </View>
                 {showLocationDropOff2 && (<View style={styles.inputContainer}>
-                  <TouchableOpacity onPress={() => setModalDropOffVisible2(true)}>
+                  <TouchableOpacity onPress={() => {
+                      navigateToLocationModal({
+                        currentLocation: locationDropOff2, 
+                        currentRegion: regionDropOff2 ? JSON.stringify(regionDropOff2) : null, 
+                        currentMarker: markerDropOff2 ? JSON.stringify(markerDropOff2) : null, 
+                        type: 'dropoff',
+                        locationIndex: '2'
+                      });
+                    }}
+                    disabled={isNavigating}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1592,98 +1239,16 @@ export default function HomeScreen() {
                     onChangeText={setLocationDropOff2} 
                     style={styles.input} 
                     editable={false}
-                    onPress={() => setModalDropOffVisible2(true)}
+                    onPress={() => {
+                      navigateToLocationModal({
+                        currentLocation: locationDropOff2, 
+                        currentRegion: regionDropOff2 ? JSON.stringify(regionDropOff2) : null, 
+                        currentMarker: markerDropOff2 ? JSON.stringify(markerDropOff2) : null, 
+                        type: 'dropoff',
+                        locationIndex: '2'
+                      });
+                    }}
                   />
-
-                  <Modal visible={modalDropOffVisible2} animationType="slide">
-                    <View style={{ flex: 1 }}>
-                      {/* Map View */}
-                      {mode === 'map' && (
-                        <>
-                          {regionDropOff2 && (
-                            <>
-                              <MapView
-                                key="dropoff-map"
-                                style={{ flex: 1 }}
-                                region={regionDropOff2}
-                                onPress={handleMapPressDropOff(2)}
-                                onLayout={() => {
-                                  if (markerDropOff2) {
-                                    setRegionDropOff2({
-                                      latitude: markerDropOff2.latitude,
-                                      longitude: markerDropOff2.longitude,
-                                      latitudeDelta: 0.01,
-                                      longitudeDelta: 0.01,
-                                    });
-                                  }
-                                }}
-                              >
-                                {markerDropOff2 && <Marker coordinate={markerDropOff2} />}
-                              </MapView>
-                              <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
-                            </>
-                          )}
-                        </>
-                      )}
-
-                      {/* Manual Entry */}
-                      {mode === 'manual' && (
-                        <View style={styles.manualContainer}>
-                          <Text style={styles.manualLabel}>{t('packageForm.enterDropoffAddress')}</Text>
-                          <TextInput
-                            ref={dropoffInputRef2}
-                            placeholder={t('packageForm.location')}
-                            value={locationDropOff2}
-                            onChangeText={text => {
-                              setLocationDropOff2(text);
-                              setMarkerDropOff2(null);
-                            }}
-                            style={styles.manualInput}
-                            multiline
-                            autoCapitalize="words"
-                            autoComplete="off"
-                            clearButtonMode="always"
-                            textContentType="fullStreetAddress"
-                            selectionColor={COLORS.primary}
-                            returnKeyType="done"
-                            blurOnSubmit={true}
-                            onSubmitEditing={handleReturnKey}
-                            onBlur={() => Keyboard.dismiss()}
-                          />
-                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
-                        </View>
-                      )}
-                      {/* Mode switch buttons */}
-                      <View style={styles.toggleContainer}>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
-                          onPress={() => setMode('map')}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => {
-                            setMode('manual');
-                            setTimeout(() => {
-                              if (modalDropOffVisible2 && dropoffInputRef2.current) {
-                                dropoffInputRef2.current.focus();
-                              }
-                            }, 100);
-                          }}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <View style={styles.footer}>
-                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
-                          onPress={() => setModalDropOffVisible2(false)}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </Modal>
                   <TouchableOpacity
                       onPress={() => { 
                         setShowLocationDropOff2(false); 
@@ -1697,7 +1262,16 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 </View>)}
                 {showLocationDropOff3 && (<View style={styles.inputContainer}>
-                  <TouchableOpacity onPress={() => setModalDropOffVisible3(true)}>
+                  <TouchableOpacity onPress={() => {
+                      navigateToLocationModal({
+                        currentLocation: locationDropOff3, 
+                        currentRegion: regionDropOff3 ? JSON.stringify(regionDropOff3) : null, 
+                        currentMarker: markerDropOff3 ? JSON.stringify(markerDropOff3) : null, 
+                        type: 'dropoff',
+                        locationIndex: '3'
+                      });
+                    }}
+                    disabled={isNavigating}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1706,98 +1280,16 @@ export default function HomeScreen() {
                     onChangeText={setLocationDropOff3} 
                     style={styles.input} 
                     editable={false}
-                    onPress={() => setModalDropOffVisible3(true)}
+                    onPress={() => {
+                      navigateToLocationModal({
+                        currentLocation: locationDropOff3, 
+                        currentRegion: regionDropOff3 ? JSON.stringify(regionDropOff3) : null, 
+                        currentMarker: markerDropOff3 ? JSON.stringify(markerDropOff3) : null, 
+                        type: 'dropoff',
+                        locationIndex: '3'
+                      });
+                    }}
                   />
-
-                  <Modal visible={modalDropOffVisible3} animationType="slide">
-                    <View style={{ flex: 1 }}>
-                      {/* Map View */}
-                      {mode === 'map' && (
-                        <>
-                          {regionDropOff3 && (
-                            <>
-                              <MapView
-                                key="dropoff-map"
-                                style={{ flex: 1 }}
-                                region={regionDropOff3}
-                                onPress={handleMapPressDropOff(3)}
-                                onLayout={() => {
-                                  if (markerDropOff3) {
-                                    setRegionDropOff3({
-                                      latitude: markerDropOff3.latitude,
-                                      longitude: markerDropOff3.longitude,
-                                      latitudeDelta: 0.01,
-                                      longitudeDelta: 0.01,
-                                    });
-                                  }
-                                }}
-                              >
-                                {markerDropOff3 && <Marker coordinate={markerDropOff3} />}
-                              </MapView>
-                              <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
-                            </>
-                          )}
-                        </>
-                      )}
-
-                      {/* Manual Entry */}
-                      {mode === 'manual' && (
-                        <View style={styles.manualContainer}>
-                          <Text style={styles.manualLabel}>{t('packageForm.enterDropoffAddress')}</Text>
-                          <TextInput
-                            ref={dropoffInputRef3}
-                            placeholder={t('packageForm.location')}
-                            value={locationDropOff3}
-                            onChangeText={text => {
-                              setLocationDropOff3(text);
-                              setMarkerDropOff3(null);
-                            }}
-                            style={styles.manualInput}
-                            multiline
-                            autoCapitalize="words"
-                            autoComplete="off"
-                            clearButtonMode="always"
-                            textContentType="fullStreetAddress"
-                            selectionColor={COLORS.primary}
-                            returnKeyType="done"
-                            blurOnSubmit={true}
-                            onSubmitEditing={handleReturnKey}
-                            onBlur={() => Keyboard.dismiss()}
-                          />
-                          <Text style={styles.manualNote}>{t('packageForm.addressNote')}</Text>
-                        </View>
-                      )}
-                      {/* Mode switch buttons */}
-                      <View style={styles.toggleContainer}>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
-                          onPress={() => setMode('map')}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.pickFromMap')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
-                          onPress={() => {
-                            setMode('manual');
-                            setTimeout(() => {
-                              if (modalDropOffVisible3 && dropoffInputRef3.current) {
-                                dropoffInputRef3.current.focus();
-                              }
-                            }, 100);
-                          }}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <View style={styles.footer}>
-                        <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, paddingHorizontal: 20, alignSelf: 'center'}]} 
-                          onPress={() => setModalDropOffVisible3(false)}
-                        >
-                          <Text style={styles.toggleText}>{t('packageForm.useThisAddress')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </Modal>
                   <TouchableOpacity
                       onPress={() => { 
                         setShowLocationDropOff3(false); 
