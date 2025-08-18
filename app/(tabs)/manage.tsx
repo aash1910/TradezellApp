@@ -33,6 +33,7 @@ import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
 import { getCurrencyConfig } from '@/constants/Currency';
 import * as Location from 'expo-location';
+import { getCityAndCountry } from '@/utils/addressUtils';
 
 const HEADER_HEIGHT = 80;
 
@@ -373,7 +374,7 @@ export default function ManageScreen() {
                                   />
                                   <Text style={styles.name}>{pkg.pickup.name}</Text>
                                 </View>
-                                <Text style={styles.location}>{pkg.pickup.address}</Text>
+                                <Text style={styles.location}>{getCityAndCountry(pkg.pickup.address)}</Text>
                                 {pickupDistanceText && (
                                   <View style={styles.infoRow}>
                                     <DistanceIcon size={14} />
@@ -391,7 +392,7 @@ export default function ManageScreen() {
                                   />
                                   <Text style={styles.name}>{pkg.drop.name}</Text>
                                 </View>
-                                <Text style={styles.location}>{pkg.drop.address}</Text>
+                                <Text style={styles.location}>{getCityAndCountry(pkg.drop.address)}</Text>
                                 {dropDistanceText && (
                                   <View style={styles.infoRow}>
                                     <DistanceIcon size={14} />

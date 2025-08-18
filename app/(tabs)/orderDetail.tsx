@@ -12,7 +12,7 @@ import Animated, {
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { MoneyIcon } from '@/components/icons/MoneyIcon';
 import MapView from 'react-native-maps';
-import { Marker, MapMarker } from 'react-native-maps';
+import { Marker, MapMarker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import mapStyle from '@/components/mapStyle.json';
 import api from '@/services/api';
@@ -26,6 +26,7 @@ import { getCurrencyConfig } from '@/constants/Currency';
 import { packageService } from '@/services/package.service';
 import { uploadService } from '@/services/upload.service';
 import ImageViewing from 'react-native-image-viewing';
+import { getCityAndCountry } from '@/utils/addressUtils';
 
 const HEADER_HEIGHT = 120;
 
@@ -56,16 +57,30 @@ const calculateMapDeltas = (pickup: Coordinates, dropoff: Coordinates) => {
   console.log('Coordinate differences:', { latDiff, lngDiff });
   
   // Add more padding (50%) to ensure markers are comfortably visible
-  const latDelta = latDiff * 1.5;
-  const lngDelta = lngDiff * 1.5;
+  let latDelta = latDiff * 1.5;
+  let lngDelta = lngDiff * 1.5;
   
-  // Ensure minimum zoom level
-  const minDelta = 0.1;
-  const maxDelta = 10;
+  // Ensure minimum zoom level for close distances
+  const minDelta = 0.01;
+  
+  // For very large distances (country-to-country), use more intelligent scaling
+  if (latDiff > 10 || lngDiff > 10) {
+    // For continental distances, use a more aggressive scaling
+    latDelta = latDiff * 1.2;
+    lngDelta = lngDiff * 1.2;
+  } else if (latDiff > 5 || lngDiff > 5) {
+    // For country-to-country distances, use moderate scaling
+    latDelta = latDiff * 1.3;
+    lngDelta = lngDiff * 1.3;
+  } else if (latDiff > 1 || lngDiff > 1) {
+    // For city-to-city distances, use standard scaling
+    latDelta = latDiff * 1.5;
+    lngDelta = lngDiff * 1.5;
+  }
   
   const result = {
-    latitudeDelta: Math.min(Math.max(latDelta, minDelta), maxDelta),
-    longitudeDelta: Math.min(Math.max(lngDelta, minDelta), maxDelta)
+    latitudeDelta: Math.max(latDelta, minDelta),
+    longitudeDelta: Math.max(lngDelta, minDelta)
   };
   
   console.log('Calculated deltas:', result);
@@ -255,7 +270,7 @@ function PaymentCardModal({
           <View style={{ marginBottom: 16 }}>
             <Text style={{ fontWeight: 'bold' }}>{t('paymentPreview.packageSummary')}</Text>
             <Text>{orderData.pickup.name} → {orderData.drop.name}</Text>
-            <Text>{orderData.pickup.address} → {orderData.drop.address}</Text>
+            <Text>{getCityAndCountry(orderData.pickup.address)} → {getCityAndCountry(orderData.drop.address)}</Text>
             <Text>{t('paymentPreview.weight')}: {typeof orderData.weight === 'string' ? orderData.weight : `${orderData.weight}kg`}</Text>
             <Text>{t('paymentPreview.price')}: {currencyConfig.code} {parseFloat(orderData.price).toFixed(2)}</Text>
           </View>
@@ -319,6 +334,7 @@ export default function OrderDetailScreen() {
   const currencyConfig = getCurrencyConfig();
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
   const [imageViewerUri, setImageViewerUri] = useState<string | null>(null);
+  const [showDirectionLine, setShowDirectionLine] = useState(false);
   
   const pickupMarkerRef = useRef<MapMarker>(null);
   const dropoffMarkerRef = useRef<MapMarker>(null);
@@ -498,6 +514,7 @@ export default function OrderDetailScreen() {
     setDropoffCoords(null);
     setMapCenter(null);
     setIsMapReady(false);
+    setShowDirectionLine(false);
   }, [params.orderData]);
 
   // Auto-show payment modal for unpaid orders
@@ -659,6 +676,7 @@ export default function OrderDetailScreen() {
                 coordinate={pickupCoords}
                 title={t('packageForm.pickupDetails')}
                 description={orderData?.pickup.address || 'N/A'}
+                onPress={() => setShowDirectionLine(!showDirectionLine)}
               >
                 <Image source={require('@/assets/icons/pickup-marker.png')} style={{ width: 36, height: 36 }} />
               </Marker>
@@ -669,9 +687,21 @@ export default function OrderDetailScreen() {
                 coordinate={dropoffCoords}
                 title={t('packageForm.dropoffDetails')}
                 description={orderData?.drop.address || 'N/A'}
+                onPress={() => setShowDirectionLine(!showDirectionLine)}
               >
                 <Image source={require('@/assets/icons/dropoff-marker.png')} style={{ width: 36, height: 36 }} />
               </Marker>
+            )}
+            
+            {/* Direction Line between Pickup and Dropoff */}
+            {isMapReady && showDirectionLine && pickupCoords && dropoffCoords && (
+              <Polyline
+                coordinates={[pickupCoords, dropoffCoords]}
+                strokeColor="#55B086"
+                strokeWidth={3}
+                lineDashPattern={[5, 5]}
+                zIndex={1}
+              />
             )}
           </MapView>
         </View>
@@ -827,47 +857,6 @@ export default function OrderDetailScreen() {
               </Text>
             </View>
           </View>
-
-          {/* <View style={styles.paymentButtonContainer}>
-            {orderData?.order?.status === 'completed' ? (
-              <TouchableOpacity 
-                style={[styles.paymentButton, styles.releaseButton]} 
-                onPress={async () => {
-                  try {
-                    const response = await api.post(`/payments/release/${orderData.id}`);
-                    if (response.data.status === 'success') {
-                      Alert.alert(
-                        'Payment Released',
-                        'Payment has been successfully released to the dropper.',
-                        [{ text: 'OK' }]
-                      );
-                      // Refresh order data or navigate back
-                      router.back();
-                    }
-                  } catch (error: any) {
-                    Alert.alert('Error', error.response?.data?.message || 'Failed to release payment');
-                  }
-                }}
-              >
-                <Text style={styles.paymentButtonText}>Release Payment to Dropper</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity 
-                style={styles.paymentButton} 
-                onPress={() => {
-                  if (orderData) {
-                    router.push({
-                      pathname: '/payment-modal',
-                      params: { orderData: JSON.stringify(orderData) }
-                    });
-                  }
-                }}
-              >
-                <Text style={styles.paymentButtonText}>Payment</Text>
-              </TouchableOpacity>
-            )}
-          </View> */}
-
         </View>
       </Animated.ScrollView>
 
@@ -1109,6 +1098,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: -20,
   },
+
   paymentButtonContainer: {
     left: 0,
     right: 0,
