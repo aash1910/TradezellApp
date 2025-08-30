@@ -176,6 +176,17 @@ export default function MessageScreen() {
     useCallback(() => {
       console.log('Screen focused, resetting count to 0');
       fetchMessages();
+      
+      // Mark messages as read when conversation is opened
+      const markMessagesAsRead = async () => {
+        try {
+          await api.post(`/messages/${currentUserIdRef.current}/mark-read`);
+        } catch (error) {
+          console.error('Error marking messages as read:', error);
+        }
+      };
+      markMessagesAsRead();
+
       pollCountRef.current = 0;
       startPolling();
 

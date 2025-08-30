@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, Alert, ActivityIndicator, ScrollView, Linking } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, {
   interpolate,
@@ -27,6 +27,8 @@ import { packageService } from '@/services/package.service';
 import { uploadService } from '@/services/upload.service';
 import ImageViewing from 'react-native-image-viewing';
 import { getCityAndCountry } from '@/utils/addressUtils';
+import { MapIcon } from '@/components/icons/MapIcon';
+import { MapButtonIcon } from '@/components/icons/MapButtonIcon';
 
 const HEADER_HEIGHT = 120;
 
@@ -88,9 +90,33 @@ const calculateMapDeltas = (pickup: Coordinates, dropoff: Coordinates) => {
 };
 
 const calculateMidpoint = (pickup: Coordinates, dropoff: Coordinates) => {
-  return {
+  // Calculate the true midpoint
+  const trueMidpoint = {
     latitude: (pickup.latitude + dropoff.latitude) / 2,
     longitude: (pickup.longitude + dropoff.longitude) / 2
+  };
+  
+  // Calculate the distance between points to determine padding amount
+  const latDiff = Math.abs(pickup.latitude - dropoff.latitude);
+  
+  // Add padding only to the top by shifting the center upward (northward)
+  // The padding amount is proportional to the distance between points
+  // For small distances: 12% of the distance as padding
+  // For larger distances: 15% of the distance as padding
+  let topPadding = 0;
+  if (latDiff > 1) {
+    topPadding = latDiff * 0.15; // 15% padding for city-to-city distances
+  } else if (latDiff > 0.1) {
+    topPadding = latDiff * 0.12; // 12% padding for neighborhood distances
+  } else {
+    topPadding = latDiff * 0.10; // 10% padding for very close distances
+  }
+  
+  // Shift the center upward to create top padding
+  // This moves the view northward, showing more area above the markers
+  return {
+    latitude: trueMidpoint.latitude + topPadding,
+    longitude: trueMidpoint.longitude
   };
 };
 
@@ -332,6 +358,63 @@ export default function OrderDetailScreen() {
   const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
   const { t } = useTranslation();
   const currencyConfig = getCurrencyConfig();
+
+  // Helper function to open navigation in Google Maps
+  const openGoogleMapsNavigation = (pickupAddress: string, dropoffAddress: string) => {
+    console.log('openGoogleMapsNavigation called with:', { pickupAddress, dropoffAddress });
+    
+    const pickup = encodeURIComponent(pickupAddress);
+    const dropoff = encodeURIComponent(dropoffAddress);
+    
+    // Web URL that always works
+    const webUrl = `https://www.google.com/maps/dir/${pickup}/${dropoff}`;
+    console.log('Web URL:', webUrl);
+    
+    if (Platform.OS === 'ios') {
+      console.log('Platform: iOS');
+      // Try iOS Google Maps app first
+      const iosAppUrl = `comgooglemaps://?saddr=${pickup}&daddr=${dropoff}&directionsmode=driving`;
+      console.log('iOS Google Maps URL:', iosAppUrl);
+      
+      Linking.canOpenURL(iosAppUrl).then(supported => {
+        console.log('iOS Google Maps canOpenURL result:', supported);
+        if (supported) {
+          console.log('Opening iOS Google Maps app');
+          Linking.openURL(iosAppUrl);
+        } else {
+          console.log('Google Maps app not available, opening web version');
+          Linking.openURL(webUrl);
+        }
+      }).catch((error) => {
+        console.log('Error with Google Maps app:', error);
+        console.log('Opening web version as fallback');
+        Linking.openURL(webUrl);
+      });
+    } else {
+      console.log('Platform: Android');
+      // Try Android Google Maps app first
+      const androidAppUrl = `google.navigation:q=${dropoff}`;
+      console.log('Android Google Maps URL:', androidAppUrl);
+      
+      Linking.canOpenURL(androidAppUrl).then(supported => {
+        console.log('Android Google Maps canOpenURL result:', supported);
+        if (supported) {
+          console.log('Opening Android Google Maps app');
+          Linking.openURL(androidAppUrl);
+        } else {
+          console.log('Google Maps app not available, opening web version');
+          Linking.openURL(webUrl);
+        }
+      }).catch((error) => {
+        console.log('Error with Google Maps app:', error);
+        console.log('Opening web version as fallback');
+        Linking.openURL(webUrl);
+      });
+    }
+  };
+
+  
+  
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
   const [imageViewerUri, setImageViewerUri] = useState<string | null>(null);
   const [showDirectionLine, setShowDirectionLine] = useState(false);
@@ -406,7 +489,7 @@ export default function OrderDetailScreen() {
   });
 
   useEffect(() => {
-    StatusBar.setBarStyle('dark-content');
+    StatusBar.setBarStyle('light-content');
   }, []);
 
   useEffect(() => {
@@ -646,6 +729,15 @@ export default function OrderDetailScreen() {
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
           <Text style={styles.pageTitle}>{t('orderDetail.title')}</Text>
+          {orderData?.pickup.address && orderData?.drop.address ? (
+            <TouchableOpacity style={styles.mapIcon} onPress={() => openGoogleMapsNavigation(orderData.pickup.address, orderData.drop.address)}>
+              <MapButtonIcon size={44} color={COLORS.background} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.mapIcon}>
+              <MapButtonIcon size={44} color={COLORS.background} />
+            </View>
+          )}
         </Animated.View>
 
         <View style={styles.mapContainer}>
@@ -676,7 +768,12 @@ export default function OrderDetailScreen() {
                 coordinate={pickupCoords}
                 title={t('packageForm.pickupDetails')}
                 description={orderData?.pickup.address || 'N/A'}
-                onPress={() => setShowDirectionLine(!showDirectionLine)}
+                onPress={() => {
+                  if (orderData?.pickup.address && orderData?.drop.address) {
+                    openGoogleMapsNavigation(orderData.pickup.address, orderData.drop.address);
+                  }
+                  setShowDirectionLine(true);
+                }}
               >
                 <Image source={require('@/assets/icons/pickup-marker.png')} style={{ width: 36, height: 36 }} />
               </Marker>
@@ -687,7 +784,12 @@ export default function OrderDetailScreen() {
                 coordinate={dropoffCoords}
                 title={t('packageForm.dropoffDetails')}
                 description={orderData?.drop.address || 'N/A'}
-                onPress={() => setShowDirectionLine(!showDirectionLine)}
+                onPress={() => {
+                  if (orderData?.pickup.address && orderData?.drop.address) {
+                    openGoogleMapsNavigation(orderData.pickup.address, orderData.drop.address);
+                  }
+                  setShowDirectionLine(true);
+                }}
               >
                 <Image source={require('@/assets/icons/dropoff-marker.png')} style={{ width: 36, height: 36 }} />
               </Marker>
@@ -779,6 +881,7 @@ export default function OrderDetailScreen() {
                 ) : 'N/A'}
               </Text>
             </View>
+
             {orderData?.pickup?.image ? (
               <View style={styles.pickupDetailsRow}>
                 <Text style={styles.pickupDetailsLabel}>Image</Text>
@@ -925,7 +1028,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 52,
     paddingBottom: 24,
@@ -939,9 +1042,10 @@ const styles = StyleSheet.create({
   leftArrow: {
     width: 44,
     height: 44,
-    position: 'absolute',
-    left: 16,
-    top: 52,
+  },
+  mapIcon: {
+    width: 44,
+    height: 44,
   },
   pageTitle: {
     fontSize: 18,

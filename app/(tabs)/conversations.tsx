@@ -5,7 +5,6 @@ import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { PlusIcon } from '@/components/icons/PlusIcon';
 import { RightArrowIcon } from '@/components/icons/RightArrowIcon';
 import api from '@/services/api';
-import { useTranslation } from 'react-i18next';
 
 interface Conversation {
   user_id: number;
@@ -15,6 +14,7 @@ interface Conversation {
   last_message: string;
   last_message_time: string;
   is_support: boolean;
+  unread_count: number;
 }
 
 const COLORS = {
@@ -29,8 +29,12 @@ const COLORS = {
   cardBorder: '#F0F0F0',
 };
 
+// Function to calculate total unread count from conversations
+export const calculateUnreadCount = (conversations: Conversation[]): number => {
+  return conversations.reduce((total, conversation) => total + (conversation.unread_count || 0), 0);
+};
+
 export default function ConversationsScreen() {
-  const { t } = useTranslation();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,6 +59,8 @@ export default function ConversationsScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchConversations();
+      // Trigger a refresh of the unread count in the tab layout
+      // This will be handled by the periodic refresh in the tab layout
     }, [])
   );
 
@@ -77,7 +83,22 @@ export default function ConversationsScreen() {
     }
   };
 
-  const handleConversationPress = (conversation: Conversation) => {
+  const handleConversationPress = async (conversation: Conversation) => {
+    // Mark messages as read when conversation is opened
+    if (conversation.unread_count && conversation.unread_count > 0) {
+      try {
+        await api.post(`/messages/${conversation.user_id}/mark-read`);
+        // Update the local state to reflect the change
+        setConversations(prev => prev.map(conv => 
+          conv.user_id === conversation.user_id 
+            ? { ...conv, unread_count: 0 }
+            : conv
+        ));
+      } catch (error) {
+        console.error('Error marking messages as read:', error);
+      }
+    }
+
     router.push({
       pathname: '/(tabs)/message',
       params: {
@@ -123,6 +144,11 @@ export default function ConversationsScreen() {
       </View>
       
       <View style={styles.arrowContainer}>
+        {item.unread_count && item.unread_count > 0 && (
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
+          </View>
+        )}
         <RightArrowIcon size={16} color={COLORS.subtitle} />
       </View>
     </TouchableOpacity>
@@ -308,6 +334,26 @@ const styles = StyleSheet.create({
     height: 32,
     backgroundColor: COLORS.backgroundWrapper,
     borderRadius: 16,
+    position: 'relative',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    zIndex: 1,
+  },
+  unreadBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'nunito-bold',
+    textAlign: 'center',
   },
   separator: {
     height: 1,

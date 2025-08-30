@@ -1,5 +1,5 @@
-import { Tabs, router } from 'expo-router';
-import React from 'react';
+import { Tabs, router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -11,10 +11,40 @@ import { HomeIcon } from '@/components/icons/HomeIcon';
 import { MessageIcon } from '@/components/icons/MessageIcon';
 import { ManageIcon } from '@/components/icons/ManageIcon';
 import { AccountIcon } from '@/components/icons/AccountIcon';
+import { calculateUnreadCount } from './conversations';
+import api from '@/services/api';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { t } = useTranslation();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await api.get('/conversations');
+      if (response.data.status === 'success') {
+        const count = calculateUnreadCount(response.data.conversations);
+        setUnreadCount(count);
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchUnreadCount();
+    }, [])
+  );
+
+  // Refresh unread count every 30 seconds when app is active
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const COLORS = {
     primary: '#55B086',
@@ -71,10 +101,15 @@ export default function TabLayout() {
               //params: { userId: '1', refresh: Date.now() }
             });
           },
+          focus: () => {
+            // Refresh unread count when conversations tab is focused
+            fetchUnreadCount();
+          },
         }}
         options={{
           title: t('navigation.messages'),
           tabBarIcon: ({ color }) => <MessageIcon size={25} color={color} />,
+          tabBarBadge: unreadCount > 0 ? unreadCount.toString() : undefined,
         }}
       />
       <Tabs.Screen
