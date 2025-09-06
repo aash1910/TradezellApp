@@ -26,6 +26,17 @@ interface Message {
   updated_at: string;
 }
 
+interface Conversation {
+  user_id: number;
+  name: string;
+  image: string | null;
+  mobile: string | null;
+  last_message: string;
+  last_message_time: string;
+  is_support: boolean;
+  unread_count: number;
+}
+
 const HEADER_HEIGHT = 80;
 
 const COLORS = {
@@ -45,6 +56,7 @@ export default function MessageScreen() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
   const bottomPosition = useSharedValue(86);
@@ -52,6 +64,7 @@ export default function MessageScreen() {
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastMessageIdRef = useRef<number | null>(null);
   const currentUserIdRef = useRef<string>(typeof userId === 'string' ? userId : '1');
+  const unreadCountIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Update currentUserIdRef when userId changes
   useEffect(() => {
@@ -108,6 +121,21 @@ export default function MessageScreen() {
     }, 5000); // Poll every 5 seconds
   }, []);
 
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await api.get('/conversations');
+      if (response.data.status === 'success') {
+        const conversations: Conversation[] = response.data.conversations;
+        const currentConversation = conversations.find((conv: Conversation) => conv.user_id === parseInt(currentUserIdRef.current));
+        if (currentConversation) {
+          setUnreadCount(currentConversation.unread_count || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
+
   const fetchMessages = async () => {
     try {
       const response = await api.get(`/messages/${currentUserIdRef.current}`);
@@ -159,6 +187,9 @@ export default function MessageScreen() {
           console.log('hasNewMessages', pollCountRef.current);
           startPolling();
 
+          // Mark messages as read when new messages arrive
+          await markMessagesAsRead();
+
           setTimeout(() => {
             scrollRef.current?.scrollToEnd({ animated: true });
           }, 100);
@@ -171,24 +202,35 @@ export default function MessageScreen() {
     }
   };
 
+  const markMessagesAsRead = async () => {
+    try {
+      await api.post(`/messages/${currentUserIdRef.current}/mark-read`);
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
   // Start polling when screen is focused
   useFocusEffect(
     useCallback(() => {
       console.log('Screen focused, resetting count to 0');
       fetchMessages();
+      fetchUnreadCount();
       
       // Mark messages as read when conversation is opened
-      const markMessagesAsRead = async () => {
-        try {
-          await api.post(`/messages/${currentUserIdRef.current}/mark-read`);
-        } catch (error) {
-          console.error('Error marking messages as read:', error);
-        }
-      };
       markMessagesAsRead();
 
       pollCountRef.current = 0;
       startPolling();
+
+      // Start unread count polling
+      if (unreadCountIntervalRef.current) {
+        clearInterval(unreadCountIntervalRef.current);
+      }
+      unreadCountIntervalRef.current = setInterval(() => {
+        fetchUnreadCount();
+      }, 5000);
 
       setTimeout(() => {
         scrollRef.current?.scrollToEnd({ animated: true });
@@ -200,6 +242,10 @@ export default function MessageScreen() {
         if (pollIntervalRef.current) {
           clearInterval(pollIntervalRef.current);
           pollIntervalRef.current = null;
+        }
+        if (unreadCountIntervalRef.current) {
+          clearInterval(unreadCountIntervalRef.current);
+          unreadCountIntervalRef.current = null;
         }
       };
     }, [userId, refresh])
@@ -269,7 +315,14 @@ export default function MessageScreen() {
           })}>
             <LeftArrowIcon size={44} />
           </TouchableOpacity>
-          <Text style={styles.pageTitle}>{userName}</Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.pageTitle}>{userName}</Text>
+            {unreadCount > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+              </View>
+            )}
+          </View>
           {userMobile && (
             <TouchableOpacity style={styles.callIcon} onPress={() => Linking.openURL(`tel:${userMobile}`)}>
               <CallIcon size={44} />
@@ -385,14 +438,34 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
   },
+  titleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 14,
+  },
   pageTitle: {
     fontSize: 18,
     fontFamily: 'nunito-bold',
     color: COLORS.background,
     letterSpacing: 0.2,
     lineHeight: 25,
-    flex: 1,
-    marginLeft: 14,
+  },
+  unreadBadge: {
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    marginLeft: 8,
+  },
+  unreadBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'nunito-bold',
+    textAlign: 'center',
   },
   contentContainer: {
     flex: 1,

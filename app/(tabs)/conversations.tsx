@@ -64,6 +64,15 @@ export default function ConversationsScreen() {
     }, [])
   );
 
+  // Refresh conversations every 5 seconds when app is active
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchConversations();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchConversations();
