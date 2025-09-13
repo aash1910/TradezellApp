@@ -360,20 +360,35 @@ export default function OrderDetailScreen() {
   const currencyConfig = getCurrencyConfig();
 
   // Helper function to open navigation in Google Maps
-  const openGoogleMapsNavigation = (pickupAddress: string, dropoffAddress: string) => {
-    console.log('openGoogleMapsNavigation called with:', { pickupAddress, dropoffAddress });
+  const openGoogleMapsNavigation = (
+    pickupAddress: string, 
+    dropoffAddress: string,
+    pickupCoords?: {lat: number, lng: number},
+    dropoffCoords?: {lat: number, lng: number}
+  ) => {
+    console.log('openGoogleMapsNavigation called with:', { 
+      pickupAddress, 
+      dropoffAddress, 
+      pickupCoords, 
+      dropoffCoords 
+    });
     
-    const pickup = encodeURIComponent(pickupAddress);
-    const dropoff = encodeURIComponent(dropoffAddress);
+    // Use coordinates if available, otherwise fall back to addresses
+    const pickupLocation = pickupCoords ? `${pickupCoords.lat},${pickupCoords.lng}` : encodeURIComponent(pickupAddress);
+    const dropoffLocation = dropoffCoords ? `${dropoffCoords.lat},${dropoffCoords.lng}` : encodeURIComponent(dropoffAddress);
     
-    // Web URL that always works
-    const webUrl = `https://www.google.com/maps/dir/${pickup}/${dropoff}`;
+    // Web URL that always works - use coordinates if available for better accuracy
+    const webUrl = pickupCoords && dropoffCoords 
+      ? `https://www.google.com/maps/dir/?api=1&origin=${pickupLocation}&destination=${dropoffLocation}`
+      : `https://www.google.com/maps/dir/${pickupLocation}/${dropoffLocation}`;
     console.log('Web URL:', webUrl);
     
     if (Platform.OS === 'ios') {
       console.log('Platform: iOS');
       // Try iOS Google Maps app first
-      const iosAppUrl = `comgooglemaps://?saddr=${pickup}&daddr=${dropoff}&directionsmode=driving`;
+      const iosAppUrl = pickupCoords && dropoffCoords
+        ? `comgooglemaps://?saddr=${pickupLocation}&daddr=${dropoffLocation}&directionsmode=driving`
+        : `comgooglemaps://?saddr=${pickupLocation}&daddr=${dropoffLocation}&directionsmode=driving`;
       console.log('iOS Google Maps URL:', iosAppUrl);
       
       Linking.canOpenURL(iosAppUrl).then(supported => {
@@ -393,7 +408,7 @@ export default function OrderDetailScreen() {
     } else {
       console.log('Platform: Android');
       // Try Android Google Maps app first
-      const androidAppUrl = `google.navigation:q=${dropoff}`;
+      const androidAppUrl = `google.navigation:q=${dropoffLocation}`;
       console.log('Android Google Maps URL:', androidAppUrl);
       
       Linking.canOpenURL(androidAppUrl).then(supported => {
@@ -730,7 +745,16 @@ export default function OrderDetailScreen() {
           </TouchableOpacity>
           <Text style={styles.pageTitle}>{t('orderDetail.title')}</Text>
           {orderData?.pickup.address && orderData?.drop.address ? (
-            <TouchableOpacity style={styles.mapIcon} onPress={() => openGoogleMapsNavigation(orderData.pickup.address, orderData.drop.address)}>
+            <TouchableOpacity style={styles.mapIcon} onPress={() => openGoogleMapsNavigation(
+              orderData.pickup.address, 
+              orderData.drop.address,
+              orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng 
+                ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
+                : undefined,
+              orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng 
+                ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
+                : undefined
+            )}>
               <MapButtonIcon size={44} color={COLORS.background} />
             </TouchableOpacity>
           ) : (
@@ -769,9 +793,6 @@ export default function OrderDetailScreen() {
                 title={t('packageForm.pickupDetails')}
                 description={orderData?.pickup.address || 'N/A'}
                 onPress={() => {
-                  if (orderData?.pickup.address && orderData?.drop.address) {
-                    openGoogleMapsNavigation(orderData.pickup.address, orderData.drop.address);
-                  }
                   setShowDirectionLine(true);
                 }}
               >
@@ -785,9 +806,6 @@ export default function OrderDetailScreen() {
                 title={t('packageForm.dropoffDetails')}
                 description={orderData?.drop.address || 'N/A'}
                 onPress={() => {
-                  if (orderData?.pickup.address && orderData?.drop.address) {
-                    openGoogleMapsNavigation(orderData.pickup.address, orderData.drop.address);
-                  }
                   setShowDirectionLine(true);
                 }}
               >
@@ -871,15 +889,30 @@ export default function OrderDetailScreen() {
             </View>
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.location')}</Text>
-              <Text style={styles.pickupDetailsValue}>
-                {orderData?.pickup.address || orderData?.pickup.address2 || orderData?.pickup.address3 ? (
-                  <Text>
-                    {[orderData?.pickup.address, orderData?.pickup.address2, orderData?.pickup.address3]
-                      .filter(Boolean)
-                      .join('\n')}
-                  </Text>
-                ) : 'N/A'}
-              </Text>
+              <TouchableOpacity style={styles.pickupDetailsValue} onPress={() => {
+                if (orderData?.pickup.address && orderData?.drop.address) {
+                  openGoogleMapsNavigation(
+                    orderData.pickup.address, 
+                    orderData.drop.address,
+                    orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng 
+                      ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
+                      : undefined,
+                    orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng 
+                      ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
+                      : undefined
+                  );
+                }
+              }}>
+                <Text style={[styles.pickupDetailsValue, { color: COLORS.primary }]}>
+                  {orderData?.pickup.address || orderData?.pickup.address2 || orderData?.pickup.address3 ? (
+                    <Text>
+                      {[orderData?.pickup.address, orderData?.pickup.address2, orderData?.pickup.address3]
+                        .filter(Boolean)
+                        .join('\n')}
+                    </Text>
+                  ) : 'N/A'}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {orderData?.pickup?.image ? (
@@ -942,15 +975,30 @@ export default function OrderDetailScreen() {
             </View>
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>{t('orderDetail.dropoffDetails.location')}</Text>
-              <Text style={styles.pickupDetailsValue}>
-                {orderData?.drop.address || orderData?.drop.address2 || orderData?.drop.address3 ? (
-                  <Text>
-                    {[orderData?.drop.address, orderData?.drop.address2, orderData?.drop.address3]
-                      .filter(Boolean)
-                      .join('\n')}
-                  </Text>
-                ) : 'N/A'}
-              </Text>
+              <TouchableOpacity style={styles.pickupDetailsValue} onPress={() => {
+                if (orderData?.pickup.address && orderData?.drop.address) {
+                  openGoogleMapsNavigation(
+                    orderData.pickup.address, 
+                    orderData.drop.address,
+                    orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng 
+                      ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
+                      : undefined,
+                    orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng 
+                      ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
+                      : undefined
+                  );
+                }
+              }}>
+                <Text style={[styles.pickupDetailsValue, { color: COLORS.primary }]}>
+                  {orderData?.drop.address || orderData?.drop.address2 || orderData?.drop.address3 ? (
+                    <Text>
+                      {[orderData?.drop.address, orderData?.drop.address2, orderData?.drop.address3]
+                        .filter(Boolean)
+                        .join('\n')}
+                    </Text>
+                  ) : 'N/A'}
+                </Text>
+              </TouchableOpacity>
             </View>
             {/* Note Section */}
             <View style={styles.noteBox}>
