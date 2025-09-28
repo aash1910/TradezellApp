@@ -12,7 +12,7 @@ import Animated, {
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { MoneyIcon } from '@/components/icons/MoneyIcon';
 import MapView from 'react-native-maps';
-import { Marker, MapMarker, Polyline } from 'react-native-maps';
+import { Marker, MapMarker, Polyline, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
 import mapStyle from '@/components/mapStyle.json';
 import api from '@/services/api';
@@ -806,26 +806,74 @@ export default function OrderDetailScreen() {
               <Marker
                 ref={pickupMarkerRef}
                 coordinate={pickupCoords}
-                title={t('packageForm.pickupDetails')}
-                description={orderData?.pickup.address || 'N/A'}
                 onPress={() => {
                   setShowDirectionLine(true);
                 }}
               >
                 <Image source={require('@/assets/icons/pickup-marker.png')} style={{ width: 36, height: 36 }} />
+                <Callout
+                  onPress={() => {
+                    // Open Google Maps navigation when callout is tapped
+                    if (orderData?.pickup.address && orderData?.drop.address) {
+                      openGoogleMapsNavigation(
+                        orderData.pickup.address, 
+                        orderData.drop.address,
+                        orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng 
+                          ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
+                          : undefined,
+                        orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng 
+                          ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
+                          : undefined
+                      );
+                    }
+                  }}
+                >
+                  <View style={{ padding: 5, minWidth: 200 }}>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 5 }}>
+                      {t('packageForm.pickupDetails')}
+                    </Text>
+                    <Text style={{ color: COLORS.primary }}>
+                      {orderData?.pickup.address || 'N/A'}
+                    </Text>
+                  </View>
+                </Callout>
               </Marker>
             )}
             {isMapReady && dropoffCoords && (
               <Marker
                 ref={dropoffMarkerRef}
                 coordinate={dropoffCoords}
-                title={t('packageForm.dropoffDetails')}
-                description={orderData?.drop.address || 'N/A'}
                 onPress={() => {
                   setShowDirectionLine(true);
                 }}
               >
                 <Image source={require('@/assets/icons/dropoff-marker.png')} style={{ width: 36, height: 36 }} />
+                <Callout
+                  onPress={() => {
+                    // Open Google Maps navigation when callout is tapped
+                    if (orderData?.pickup.address && orderData?.drop.address) {
+                      openGoogleMapsNavigation(
+                        orderData.pickup.address, 
+                        orderData.drop.address,
+                        orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng 
+                          ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
+                          : undefined,
+                        orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng 
+                          ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
+                          : undefined
+                      );
+                    }
+                  }}
+                >
+                  <View style={{ padding: 5, minWidth: 200 }}>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 5 }}>
+                      {t('packageForm.dropoffDetails')}
+                    </Text>
+                    <Text style={{ color: COLORS.primary }}>
+                      {orderData?.drop.address || 'N/A'}
+                    </Text>
+                  </View>
+                </Callout>
               </Marker>
             )}
             
