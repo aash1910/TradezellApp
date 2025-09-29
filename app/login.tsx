@@ -498,9 +498,9 @@ export default function LoginScreen() {
             >
               <PhoneIcon size={24} color={COLORS.text} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon} onPress={handleFacebookLogin}>
+            {/* <TouchableOpacity style={styles.socialIcon} onPress={handleFacebookLogin}>
               <FacebookIcon size={32} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity style={styles.socialIcon} onPress={handleGoogleSignIn}>
               <GoogleIcon size={32} />
             </TouchableOpacity>
@@ -743,7 +743,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 30,
-    width: 272,
+    width: 180,
     alignSelf: 'center',
   },
   socialIcon: {
