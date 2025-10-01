@@ -49,6 +49,7 @@ export interface Package {
   order: {
     id?: number;
     status: string;
+    delivery_status?: number;
     dropper?: {
       id: number;
       name: string;

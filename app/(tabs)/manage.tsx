@@ -406,26 +406,31 @@ export default function ManageScreen() {
                         
                         <View style={styles.footer}>
                           <Text style={styles.price}>{currencyConfig.code} {pkg.price}</Text>
-                          <Text style={[
-                            styles.status,
-                            {
-                              backgroundColor: 
-                                pkg.order.status === 'ongoing' ? COLORS.buttonBackground :
-                                pkg.order.status === 'active' ? 'rgba(40, 152, 255, 0.15)' :
-                                pkg.order.status === 'completed' ? 'rgba(85, 176, 134, 0.15)' :
-                                'rgba(246, 63, 63, 0.15)',
-                              color:
-                                pkg.order.status === 'ongoing' ? COLORS.text :
-                                pkg.order.status === 'active' ? '#2898FF' :
-                                pkg.order.status === 'completed' ? '#55B086' :
-                                '#F63F3F'
-                            }
-                          ]}>
-                            {pkg.order.status === 'ongoing' ? t('managePage.orderStatus.inProgress') :
-                             pkg.order.status === 'active' ? t('managePage.orderStatus.accepted') :
-                             pkg.order.status === 'completed' ? t('managePage.orderStatus.completed') :
-                             t('managePage.orderStatus.canceled')}
-                          </Text>
+                          <View style={styles.statusContainer}>
+                            {pkg.order.delivery_status === 1 && (
+                              <Text style={styles.deliveryStatus}>Delivered</Text>
+                            )}
+                            <Text style={[
+                              styles.status,
+                              {
+                                backgroundColor: 
+                                  pkg.order.status === 'ongoing' ? COLORS.buttonBackground :
+                                  pkg.order.status === 'active' ? 'rgba(40, 152, 255, 0.15)' :
+                                  pkg.order.status === 'completed' ? 'rgba(85, 176, 134, 0.15)' :
+                                  'rgba(246, 63, 63, 0.15)',
+                                color:
+                                  pkg.order.status === 'ongoing' ? COLORS.text :
+                                  pkg.order.status === 'active' ? '#2898FF' :
+                                  pkg.order.status === 'completed' ? '#55B086' :
+                                  '#F63F3F'
+                              }
+                            ]}>
+                              {pkg.order.status === 'ongoing' ? t('managePage.orderStatus.inProgress') :
+                               pkg.order.status === 'active' ? t('managePage.orderStatus.accepted') :
+                               pkg.order.status === 'completed' ? t('managePage.orderStatus.completed') :
+                               t('managePage.orderStatus.canceled')}
+                            </Text>
+                          </View>
                         </View>
                       </View>
                     );
@@ -911,6 +916,12 @@ const styles = StyleSheet.create({
     marginTop: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   price: {
     fontFamily: 'nunito-bold',
@@ -931,6 +942,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     backgroundColor: COLORS.buttonBackground,
+  },
+  deliveryStatus: {
+    fontFamily: 'nunito-semibold',
+    fontSize: 12,
+    letterSpacing: 0.2,
+    lineHeight: 25,
+    color: '#55B086',
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(85, 176, 134, 0.15)',
   },
   modalContainer: {
     flex: 1,

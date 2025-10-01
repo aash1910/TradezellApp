@@ -26,4 +26,14 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
     console.error('Error marking notification as read:', error);
     throw error;
   }
+};
+
+export const refreshNotifications = async (): Promise<Notification[]> => {
+  try {
+    const response = await api.get('/notifications');
+    return response.data;
+  } catch (error) {
+    console.error('Error refreshing notifications:', error);
+    throw error;
+  }
 }; 

@@ -92,6 +92,7 @@ export default function UpdateProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState('map');
   const [isLoading, setIsLoading] = useState(false);
+  const [showImageOptions, setShowImageOptions] = useState(false);
   const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
@@ -331,7 +332,7 @@ export default function UpdateProfileScreen() {
         aspect: [1, 1],
         quality: 1,
       });
-
+      setShowImageOptions(false);
       if (!result.canceled) {
         setIsLoading(true);
         try {
@@ -354,6 +355,40 @@ export default function UpdateProfileScreen() {
     } catch (error) {
       console.error('Error taking picture:', error);
       Alert.alert('Error', 'Failed to take picture. Please try again.');
+      setShowImageOptions(false);
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'images',
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+      setShowImageOptions(false);
+      if (!result.canceled) {
+        setIsLoading(true);
+        try {
+          const compressedUri = await uploadService.compressImage(result.assets[0].uri);
+          const response = await authService.uploadImage(compressedUri, 'profile');
+          if (response.data.image) {
+            setSenderProfileImage(response.data.image);
+            Alert.alert('Success', 'Profile image updated successfully');
+          } else {
+            Alert.alert('Error', 'Failed to update profile image');
+          }
+        } catch (error: any) {
+          Alert.alert('Error', error.message);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      setShowImageOptions(false);
     }
   };
 
@@ -449,10 +484,10 @@ export default function UpdateProfileScreen() {
 
         <View style={styles.form}>
           <View style={styles.profileInfoRow}>
-            <TouchableOpacity style={styles.editProfile} onPress={() => takePicture()}>
+            <TouchableOpacity style={styles.editProfile} onPress={() => setShowImageOptions(true)}>
               <EditIcon size={20} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.profileImage} onPress={() => takePicture()}>
+            <TouchableOpacity style={styles.profileImage} onPress={() => setShowImageOptions(true)}>
               <Image source={{ uri: senderProfileImage ? `${baseURLWithoutApi}/${senderProfileImage}` : require('@/assets/img/profile-blank.png') }} style={styles.profileImage} />
             </TouchableOpacity>
             <Text style={styles.profileName}>{firstName} {lastName}</Text>
@@ -679,6 +714,36 @@ export default function UpdateProfileScreen() {
 
         </View>
       </Animated.ScrollView>
+
+      <Modal
+        visible={showImageOptions}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowImageOptions(false)}
+      >
+        <View style={styles.imageModalContainer}>
+          <View style={styles.imageModalContent}>
+            <TouchableOpacity 
+              style={styles.imageModalOption}
+              onPress={pickImage}
+            >
+              <Text style={styles.imageModalOptionText}>Choose from Gallery</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.imageModalOption}
+              onPress={takePicture}
+            >
+              <Text style={styles.imageModalOptionText}>Take Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.imageModalOption, styles.imageCancelOption]}
+              onPress={() => setShowImageOptions(false)}
+            >
+              <Text style={styles.imageCancelOptionText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={[styles.continueButton, isLoading && styles.disabledButton]}
@@ -981,5 +1046,37 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.7,
+  },
+  imageModalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  imageModalContent: {
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+  imageModalOption: {
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  imageModalOptionText: {
+    fontSize: 16,
+    fontFamily: 'nunito-regular',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  imageCancelOption: {
+    borderBottomWidth: 0,
+    marginTop: 10,
+  },
+  imageCancelOptionText: {
+    fontSize: 16,
+    fontFamily: 'nunito-bold',
+    color: 'red',
+    textAlign: 'center',
   },
 });

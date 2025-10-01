@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, RefreshControl } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -10,7 +10,7 @@ import Animated, {
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { SuccessIcon } from '@/components/icons/SuccessIcon';
 import { DotIcon } from '@/components/icons/DotIcon';
-import { getNotifications, Notification } from '@/services/notification.service';
+import { getNotifications, refreshNotifications, markNotificationAsRead, Notification } from '@/services/notification.service';
 
 const HEADER_HEIGHT = 80;
 
@@ -27,6 +27,7 @@ const COLORS = {
 export default function NotificationScreen() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -51,28 +52,63 @@ export default function NotificationScreen() {
 
   useEffect(() => {
     StatusBar.setBarStyle('dark-content');
-    fetchNotifications();
   }, []);
 
-  const fetchNotifications = async () => {
+  useFocusEffect(
+    useCallback(() => { 
+      // Fetch notifications when page comes into focus (initial load)
+      fetchNotifications(true);
+      
+      // Set up interval to refresh every 5 seconds while page is focused
+      const interval = setInterval(() => {
+        fetchNotifications(false); // Background refresh, not initial load
+      }, 5000);
+
+      // Cleanup interval when page loses focus
+      return () => clearInterval(interval);
+    }, [])
+  );
+
+  const fetchNotifications = async (isInitial: boolean = false) => {
     try {
-      setIsLoading(true);
-      const data = await getNotifications();
+      // Only show loading indicator on initial load, not on background refreshes
+      if (isInitial) {
+        setIsLoading(true);
+      }
+      const data = await refreshNotifications();
       setNotifications(data);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
-      setIsLoading(false);
+      if (isInitial) {
+        setIsLoading(false);
+        setIsInitialLoad(false);
+      }
     }
   };
 
   const onRefresh = async () => {
     try {
       setIsRefreshing(true);
-      const data = await getNotifications();
+      const data = await refreshNotifications();
       setNotifications(data);
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId: string) => {
+    try {
+      // Mark notification as read (which effectively deletes it from view)
+      await markNotificationAsRead(notificationId);
+      
+      // Remove the notification from local state immediately for better UX
+      setNotifications(prevNotifications => 
+        prevNotifications.filter(notification => notification.id !== notificationId)
+      );
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      // Could show an alert here if needed
     }
   };
 
@@ -125,7 +161,7 @@ export default function NotificationScreen() {
           />
         }>
         <View style={styles.form}>
-          {isLoading && !isRefreshing ? (
+          {isLoading && isInitialLoad && !isRefreshing ? (
             <Text style={styles.loadingText}>Loading notifications...</Text>
           ) : notifications.length === 0 ? (
             <Text style={styles.noNotificationsText}>No notifications found</Text>
@@ -142,9 +178,17 @@ export default function NotificationScreen() {
                       <Text style={styles.dateText}>{notification.time}</Text>
                     </View>
                   </View>
-                  {notification.isNew && (
-                    <Text style={styles.newText}>New</Text>
-                  )}
+                    {notification.isNew && (
+                      <Text style={styles.newText}>New</Text>
+                    )}
+                    <TouchableOpacity 
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteNotification(notification.id)}
+                      accessibilityLabel="Delete notification"
+                    >
+                      <Text style={styles.deleteButtonText}>×</Text>
+                    </TouchableOpacity>
+                  
                 </View>
                 <Text style={styles.successDescription}>{notification.description}</Text>
               </View>
@@ -262,5 +306,22 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     textAlign: 'center',
     marginTop: 20,
+  },
+  deleteButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    top: -24,
+    right: -16,
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    lineHeight: 16,
   },
 });
