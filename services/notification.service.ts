@@ -6,6 +6,7 @@ export interface Notification {
   description: string;
   date: string;
   time: string;
+  created_at_utc?: string;
   isNew?: boolean;
 }
 
