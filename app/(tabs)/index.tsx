@@ -11,6 +11,7 @@ import { parsePhoneNumber } from 'libphonenumber-js';
 import api from '@/services/api';
 import { packageService } from '@/services/package.service';
 import type { UserData, SettingsData } from '@/services/auth.service';
+import { getUnreadCount } from '@/services/notification.service';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -103,6 +104,8 @@ export default function HomeScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<UserData | null>(null);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const unreadCountIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Add state for showing extra pickup locations
   const [showLocation2, setShowLocation2] = useState(false);
@@ -176,6 +179,44 @@ export default function HomeScreen() {
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
   }, []);
+
+  // Function to fetch unread notification count
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      if (user) {
+        const count = await getUnreadCount();
+        setUnreadNotificationCount(count);
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  }, [user]);
+
+  // Fetch unread count when user changes or component mounts
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
+
+  // Refresh unread count when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchUnreadCount();
+      // Start polling every 5 seconds
+      if (unreadCountIntervalRef.current) {
+        clearInterval(unreadCountIntervalRef.current);
+      }
+      unreadCountIntervalRef.current = setInterval(() => {
+        fetchUnreadCount();
+      }, 5000);
+      // Cleanup polling when screen loses focus
+      return () => {
+        if (unreadCountIntervalRef.current) {
+          clearInterval(unreadCountIntervalRef.current);
+          unreadCountIntervalRef.current = null;
+        }
+      };
+    }, [fetchUnreadCount])
+  );
 
   useEffect(() => {
     (async () => {
@@ -755,6 +796,13 @@ export default function HomeScreen() {
           <Text style={styles.appName}>Welcome to PiqDrop.{'\n'}We value you.</Text>
           <TouchableOpacity style={styles.bellIcon} onPress={() => router.push('/(tabs)/notification')}>
             <BellIcon size={44} color="white" />
+            {unreadNotificationCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationCount}>
+                  {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
         <TouchableOpacity 
@@ -1381,6 +1429,29 @@ const styles = StyleSheet.create({
   },
   bellIcon: {
     marginLeft: 12,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#55B086',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    paddingHorizontal: 6,
+  },
+  notificationCount: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'nunito-bold',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   tagline: {
     color: 'rgba(255, 255, 255, 0.7)',

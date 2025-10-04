@@ -10,7 +10,7 @@ import Animated, {
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { SuccessIcon } from '@/components/icons/SuccessIcon';
 import { DotIcon } from '@/components/icons/DotIcon';
-import { getNotifications, refreshNotifications, markNotificationAsRead, Notification } from '@/services/notification.service';
+import { getNotifications, refreshNotifications, markNotificationAsRead, deleteNotification, Notification } from '@/services/notification.service';
 
 const HEADER_HEIGHT = 80;
 
@@ -99,8 +99,8 @@ export default function NotificationScreen() {
 
   const handleDeleteNotification = async (notificationId: string) => {
     try {
-      // Mark notification as read (which effectively deletes it from view)
-      await markNotificationAsRead(notificationId);
+      // Actually delete the notification from the database
+      await deleteNotification(notificationId);
       
       // Remove the notification from local state immediately for better UX
       setNotifications(prevNotifications => 

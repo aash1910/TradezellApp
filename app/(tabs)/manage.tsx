@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Pressable, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import Modal from 'react-native-modal';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -28,6 +28,7 @@ import { packageListService } from '@/services/packageList.service';
 import { packageService } from '@/services/package.service';
 import { orderService } from '@/services/order.service';
 import { paymentService } from '@/services/payment.service';
+import { getUnreadCount } from '@/services/notification.service';
 import type { Package } from '@/services/packageList.service';
 import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
@@ -79,6 +80,8 @@ export default function ManageScreen() {
   const [isCompleting, setIsCompleting] = useState(false);
 
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const unreadCountIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const TABS = [
     { id: 'ongoing', label: t('managePage.tabs.ongoing') },
@@ -116,6 +119,42 @@ export default function ManageScreen() {
   useEffect(() => {
     fetchPackages();
   }, [refresh]);
+
+  // Function to fetch unread notification count
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const count = await getUnreadCount();
+      setUnreadNotificationCount(count);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  }, []);
+
+  // Fetch unread count when component mounts
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
+
+  // Refresh unread count when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchUnreadCount();
+      // Start polling every 5 seconds
+      if (unreadCountIntervalRef.current) {
+        clearInterval(unreadCountIntervalRef.current);
+      }
+      unreadCountIntervalRef.current = setInterval(() => {
+        fetchUnreadCount();
+      }, 5000);
+      // Cleanup polling when screen loses focus
+      return () => {
+        if (unreadCountIntervalRef.current) {
+          clearInterval(unreadCountIntervalRef.current);
+          unreadCountIntervalRef.current = null;
+        }
+      };
+    }, [fetchUnreadCount])
+  );
 
   const fetchPackages = async () => {
     try {
@@ -238,6 +277,13 @@ export default function ManageScreen() {
         <Text style={styles.pageTitle}>{t('managePage.title')}</Text>
         <TouchableOpacity style={styles.leftArrow} onPress={() => router.push('/(tabs)/notification')}>
           <BellIcon size={44} />
+          {unreadNotificationCount > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationCount}>
+                {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
         <TouchableOpacity style={styles.leftArrow} onPress={() => setModalFilterVisible(true)}>
           <SocialShareIcon size={44} />
@@ -750,6 +796,29 @@ const styles = StyleSheet.create({
   leftArrow: {
     width: 44,
     height: 44,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#55B086',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    paddingHorizontal: 6,
+  },
+  notificationCount: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'nunito-bold',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   pageTitle: {
     fontSize: 18,
