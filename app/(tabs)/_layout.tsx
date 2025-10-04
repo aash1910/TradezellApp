@@ -40,7 +40,7 @@ export default function TabLayout() {
   // Refresh unread count every 5 seconds when app is active
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchUnreadCount();
+      //fetchUnreadCount();
     }, 5000);
 
     return () => clearInterval(interval);

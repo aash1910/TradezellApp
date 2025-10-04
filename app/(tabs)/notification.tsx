@@ -173,9 +173,18 @@ export default function NotificationScreen() {
                   <View style={styles.successTextContainer}>
                     <Text style={styles.successText}>{notification.title}</Text>
                     <View style={styles.dateContainer}>
-                      <Text style={styles.dateText}>{notification.date}</Text>
+                      <Text style={styles.dateText}>
+                        {notification.created_at_utc
+                          ? (() => {
+                              const d = new Date(notification.created_at_utc);
+                              return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            })()
+                          : notification.date}
+                      </Text>
                       <DotIcon size={3} />
-                      <Text style={styles.dateText}>{notification.time}</Text>
+                      <Text style={styles.dateText}>
+                        {notification.created_at_utc ? new Date(notification.created_at_utc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : notification.time}
+                      </Text>
                     </View>
                   </View>
                     {notification.isNew && (
