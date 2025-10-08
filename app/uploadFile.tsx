@@ -168,9 +168,9 @@ export default function UploadFileScreen() {
           const response = await authService.uploadImage(compressedUri, 'id_card');
           if (response.data.document) {
             setIdCardImage(response.data.document);
-            Alert.alert('Success', 'ID card image updated successfully');
+            Alert.alert('Success', 'Passport/ID card image updated successfully');
           } else {
-            Alert.alert('Error', 'Failed to update ID card image');
+            Alert.alert('Error', 'Failed to update Passport/ID card image');
           }
         } catch (error: any) {
           Alert.alert('Error', error.message);
@@ -201,9 +201,9 @@ export default function UploadFileScreen() {
           const response = await authService.uploadImage(compressedUri, 'id_card');
           if (response.data.document) {
             setIdCardImage(response.data.document);
-            Alert.alert('Success', 'ID card image updated successfully');
+            Alert.alert('Success', 'Passport/ID card image updated successfully');
           } else {
-            Alert.alert('Error', 'Failed to update ID card image');
+            Alert.alert('Error', 'Failed to update Passport/ID card image');
           }
         } catch (error: any) {
           Alert.alert('Error', error.message);
@@ -243,7 +243,7 @@ export default function UploadFileScreen() {
         </Animated.View>
 
         <View style={styles.form}>
-          <Text style={styles.label}>Upload ID <Text style={styles.requiredRedStar}>*</Text></Text>
+          <Text style={styles.label}>Upload Passport/ID <Text style={styles.requiredRedStar}>*</Text></Text>
           <Text style={styles.labelSubtitle}>We're required to ask you for some documents to sign you as a sender. Documents scans and quality photos are accepted.</Text>
           <TouchableOpacity 
             style={styles.inputContainer}
@@ -327,13 +327,13 @@ export default function UploadFileScreen() {
               style={[styles.continueButton, (!agreedToTerms || !profileImage || !idCardImage) && styles.continueButtonDisabled]}
               onPress={() => {
                 if (!profileImage && !idCardImage) {
-                  Alert.alert('Error', 'Please upload both ID document and profile picture');
+                  Alert.alert('Error', 'Please upload both Passport/ID document and profile picture');
                   return;
                 } else if (!profileImage) {
                   Alert.alert('Error', 'Please upload your profile picture');
                   return;
                 } else if (!idCardImage) {
-                  Alert.alert('Error', 'Please upload your ID document');
+                  Alert.alert('Error', 'Please upload your Passport/ID document');
                   return;
                 } else if (!agreedToTerms) {
                   Alert.alert('Error', 'Please agree to the Terms & Conditions and Privacy Policy');
@@ -355,13 +355,13 @@ export default function UploadFileScreen() {
             style={styles.continueButton}
             onPress={() => {
               if (!profileImage && !idCardImage) {
-                Alert.alert('Error', 'Please upload both ID document and profile picture');
+                Alert.alert('Error', 'Please upload both Passport/ID document and profile picture');
                 return;
               } else if (!profileImage) {
                 Alert.alert('Error', 'Please upload your profile picture');
                 return;
               } else if (!idCardImage) {
-                Alert.alert('Error', 'Please upload your ID document');
+                Alert.alert('Error', 'Please upload your Passport/ID document');
                 return;
               } else if (!agreedToTerms) {
                 Alert.alert('Error', 'Please agree to the Terms & Conditions and Privacy Policy');
