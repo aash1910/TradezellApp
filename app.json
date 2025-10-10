@@ -2,7 +2,7 @@
   "expo": {
     "name": "PiqDrop",
     "slug": "piqdrop",
-    "version": "1.0.19",
+    "version": "1.0.20",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
@@ -18,10 +18,9 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show your current location on the map.",
-        "NSLocationAlwaysUsageDescription": "This app needs access to your location to show your current location on the map.",
-        "NSCameraUsageDescription": "This app needs access to your camera to take photos of your vehicle.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save photos of your vehicle.",
+        "NSLocationWhenInUseUsageDescription": "We need your location to set pickup and delivery addresses and show your position on the map.",
+        "NSCameraUsageDescription": "We need camera access to take photos of packages for delivery documentation.",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload package photos and profile pictures.",
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [

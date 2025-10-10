@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Alert, ActivityIndicator, FlatList } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -12,7 +12,6 @@ import Animated, {
 import { LetterIcon } from '@/components/icons/LetterIcon';
 import { LockIcon } from '@/components/icons/LockIcon';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
-import { Picker } from '@react-native-picker/picker';
 import { SelectArrowIcon } from '@/components/icons/SelectArrowIcon';
 import { UserRoundedIcon } from '@/components/icons/UserRoundedIcon';
 import { COUNTRIES } from '@/components/countries';
@@ -50,8 +49,12 @@ export default function LoginScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [nationality, setNationality] = useState('');
   const [gender, setGender] = useState('');
-  const [showPicker, setShowPicker] = useState(false);
-  const [pickerType, setPickerType] = useState<'nationality' | 'gender'>('nationality');
+  const [isNationalityModalVisible, setIsNationalityModalVisible] = useState(false);
+  const [isGenderModalVisible, setIsGenderModalVisible] = useState(false);
+  const [nationalitySearchQuery, setNationalitySearchQuery] = useState('');
+  const [genderSearchQuery, setGenderSearchQuery] = useState('');
+  const [filteredNationalities, setFilteredNationalities] = useState<{label: string; value: string}[]>([]);
+  const [filteredGenders, setFilteredGenders] = useState<{label: string; value: string}[]>([]);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -114,72 +117,68 @@ export default function LoginScreen() {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-  const openPicker = (type: 'nationality' | 'gender') => {
-    try {
-      // Blur any active input to prevent keyboard conflicts
-      confirmPasswordInputRef.current?.blur();
-      emailInputRef.current?.blur();
-      passwordInputRef.current?.blur();
-      firstNameInputRef.current?.blur();
-      lastNameInputRef.current?.blur();
-      
-      setPickerType(type);
-      setShowPicker(true);
-    } catch (error) {
-      console.error('Error opening picker:', error);
-      Alert.alert('Error', 'Unable to open picker. Please try again.');
+  const getNationalityItems = () => {
+    return [
+      { label: 'Select Nationality', value: '' },
+      ...COUNTRIES.map(country => ({ label: country, value: country }))
+    ];
+  };
+
+  const getGenderItems = () => {
+    return [
+      { label: 'Select Gender', value: '' },
+      ...GENDERS.map(gender => ({ label: gender, value: gender }))
+    ];
+  };
+
+  const handleNationalitySearch = (text: string) => {
+    setNationalitySearchQuery(text);
+    if (text.trim() === '') {
+      setFilteredNationalities(getNationalityItems());
+    } else {
+      const filtered = getNationalityItems().filter(item =>
+        item.label.toLowerCase().includes(text.toLowerCase())
+      );
+      setFilteredNationalities(filtered);
     }
   };
 
-  const handlePickerChange = (value: string) => {
-    try {
-      if (pickerType === 'nationality') {
-        setNationality(value);
-      } else {
-        setGender(value);
-      }
-    } catch (error) {
-      console.error('Picker change error:', error);
-      // Fallback to prevent crash
-      if (pickerType === 'nationality') {
-        setNationality('');
-      } else {
-        setGender('');
-      }
+  const handleGenderSearch = (text: string) => {
+    setGenderSearchQuery(text);
+    if (text.trim() === '') {
+      setFilteredGenders(getGenderItems());
+    } else {
+      const filtered = getGenderItems().filter(item =>
+        item.label.toLowerCase().includes(text.toLowerCase())
+      );
+      setFilteredGenders(filtered);
     }
   };
 
-  const getPickerTitle = () => {
-    return pickerType === 'nationality' ? 'Nationality' : 'Gender';
+  const openNationalityModal = () => {
+    // Blur any active input to prevent keyboard conflicts
+    confirmPasswordInputRef.current?.blur();
+    emailInputRef.current?.blur();
+    passwordInputRef.current?.blur();
+    firstNameInputRef.current?.blur();
+    lastNameInputRef.current?.blur();
+    
+    setIsNationalityModalVisible(true);
+    setNationalitySearchQuery('');
+    setFilteredNationalities(getNationalityItems());
   };
 
-  const getPickerItems = () => {
-    try {
-      if (pickerType === 'nationality') {
-        return [
-          { label: 'Select Nationality', value: '' },
-          ...COUNTRIES.map(country => ({ label: country, value: country }))
-        ];
-      } else {
-        return [
-          { label: 'Select Gender', value: '' },
-          ...GENDERS.map(gender => ({ label: gender, value: gender }))
-        ];
-      }
-    } catch (error) {
-      console.error('Error getting picker items:', error);
-      return [{ label: 'Error loading options', value: '' }];
-    }
-  };
-
-  const getSelectedValue = () => {
-    try {
-      const value = pickerType === 'nationality' ? nationality : gender;
-      return value || '';
-    } catch (error) {
-      console.error('Error getting selected value:', error);
-      return '';
-    }
+  const openGenderModal = () => {
+    // Blur any active input to prevent keyboard conflicts
+    confirmPasswordInputRef.current?.blur();
+    emailInputRef.current?.blur();
+    passwordInputRef.current?.blur();
+    firstNameInputRef.current?.blur();
+    lastNameInputRef.current?.blur();
+    
+    setIsGenderModalVisible(true);
+    setGenderSearchQuery('');
+    setFilteredGenders(getGenderItems());
   };
 
   const validateForm = () => {
@@ -456,7 +455,7 @@ export default function LoginScreen() {
           <Text style={styles.label}>Nationality</Text>
           <TouchableOpacity 
             style={styles.inputContainer}
-            onPress={() => openPicker('nationality')}
+            onPress={openNationalityModal}
             activeOpacity={0.7}
           >
             <Text style={[styles.input, !nationality && { color: '#999' }]}>
@@ -468,7 +467,7 @@ export default function LoginScreen() {
           <Text style={styles.label}>Gender</Text>
           <TouchableOpacity 
             style={styles.inputContainer}
-            onPress={() => openPicker('gender')}
+            onPress={openGenderModal}
             activeOpacity={0.7}
           >
             <Text style={[styles.input, !gender && { color: '#999' }]}>
@@ -477,54 +476,102 @@ export default function LoginScreen() {
             <SelectArrowIcon size={20} color={COLORS.text} />
           </TouchableOpacity>
 
+          {/* Nationality Modal */}
           <Modal
-            visible={showPicker}
-            transparent={true}
+            visible={isNationalityModalVisible}
             animationType="slide"
-            onRequestClose={() => setShowPicker(false)}
+            transparent={true}
+            onRequestClose={() => setIsNationalityModalVisible(false)}
           >
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <TouchableOpacity onPress={() => setShowPicker(false)}>
-                    <Text style={styles.cancelButton}>Cancel</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.modalTitle}>{getPickerTitle()}</Text>
-                  <TouchableOpacity onPress={() => setShowPicker(false)}>
-                    <Text style={styles.doneButton}>Done</Text>
+            <KeyboardAvoidingView 
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={styles.modalOverlay}
+            >
+              <View style={styles.searchModalContent}>
+                <View style={styles.searchModalHeader}>
+                  <Text style={styles.searchModalTitle}>Select Nationality</Text>
+                  <TouchableOpacity onPress={() => setIsNationalityModalVisible(false)}>
+                    <Text style={styles.closeButton}>✕</Text>
                   </TouchableOpacity>
                 </View>
-                <Picker
-                  selectedValue={getSelectedValue()}
-                  onValueChange={handlePickerChange}
-                  style={styles.modalPicker}
-                  itemStyle={styles.pickerItem}
-                >
-                  {(() => {
-                    try {
-                      return getPickerItems().map((item, index) => (
-                        <Picker.Item 
-                          key={`${pickerType}-${index}`} 
-                          label={item.label} 
-                          value={item.value}
-                          color={item.value === '' ? '#999' : COLORS.text}
-                        />
-                      ));
-                    } catch (error) {
-                      console.error('Error rendering picker items:', error);
-                      return (
-                        <Picker.Item 
-                          key="error" 
-                          label="Error loading options" 
-                          value="" 
-                          color="#999"
-                        />
-                      );
-                    }
-                  })()}
-                </Picker>
+                
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search nationalities"
+                  value={nationalitySearchQuery}
+                  onChangeText={handleNationalitySearch}
+                  autoFocus={false}
+                />
+                
+                <FlatList
+                  data={filteredNationalities}
+                  keyExtractor={(item) => item.value}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.listItem}
+                      onPress={() => {
+                        setNationality(item.value);
+                        setIsNationalityModalVisible(false);
+                      }}
+                    >
+                      <Text style={styles.listItemText}>{item.label}</Text>
+                    </TouchableOpacity>
+                  )}
+                  showsVerticalScrollIndicator={false}
+                  style={styles.flatList}
+                  keyboardShouldPersistTaps="handled"
+                />
               </View>
-            </View>
+            </KeyboardAvoidingView>
+          </Modal>
+
+          {/* Gender Modal */}
+          <Modal
+            visible={isGenderModalVisible}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setIsGenderModalVisible(false)}
+          >
+            <KeyboardAvoidingView 
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={styles.modalOverlay}
+            >
+              <View style={styles.searchModalContent}>
+                <View style={styles.searchModalHeader}>
+                  <Text style={styles.searchModalTitle}>Select Gender</Text>
+                  <TouchableOpacity onPress={() => setIsGenderModalVisible(false)}>
+                    <Text style={styles.closeButton}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search gender"
+                  value={genderSearchQuery}
+                  onChangeText={handleGenderSearch}
+                  autoFocus={false}
+                />
+                
+                <FlatList
+                  data={filteredGenders}
+                  keyExtractor={(item) => item.value}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.listItem}
+                      onPress={() => {
+                        setGender(item.value);
+                        setIsGenderModalVisible(false);
+                      }}
+                    >
+                      <Text style={styles.listItemText}>{item.label}</Text>
+                    </TouchableOpacity>
+                  )}
+                  showsVerticalScrollIndicator={false}
+                  style={styles.flatList}
+                  keyboardShouldPersistTaps="handled"
+                />
+              </View>
+            </KeyboardAvoidingView>
           </Modal>
         </View>
         {isKeyboardVisible && (
@@ -693,42 +740,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 22,
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.inputBorder,
-  },
-  cancelButton: {
-    color: COLORS.subtitle,
-    fontSize: 16,
-    fontFamily: 'nunito-medium',
-  },
-  doneButton: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontFamily: 'nunito-bold',
-  },
-  modalPicker: {
-    width: '100%',
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontFamily: 'nunito-bold',
-    color: COLORS.text,
-  },
   errorContainer: {
     marginHorizontal: 16,
     marginTop: 10,
@@ -742,9 +753,57 @@ const styles = StyleSheet.create({
   loginButtonDisabled: {
     opacity: 0.7,
   },
-  pickerItem: {
-    fontFamily: 'nunito-medium',
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  searchModalContent: {
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+    maxHeight: '70%',
+    minHeight: 300,
+  },
+  searchModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.inputBorder,
+  },
+  searchModalTitle: {
     fontSize: 16,
+    fontFamily: 'nunito-bold',
+    color: COLORS.text,
+  },
+  closeButton: {
+    fontSize: 24,
+    color: COLORS.subtitle,
+  },
+  searchInput: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.inputBorder,
+    fontSize: 16,
+    fontFamily: 'nunito-medium',
+    color: COLORS.text,
+  },
+  flatList: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  listItem: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.inputBorder,
+  },
+  listItemText: {
+    fontSize: 16,
+    fontFamily: 'nunito-medium',
     color: COLORS.text,
   },
 });

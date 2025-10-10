@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Dimensions, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, TextInput, Alert } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, TextInput, Alert, FlatList, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
 import Animated, {
@@ -18,8 +18,6 @@ import { SelectDownArrowIcon } from '@/components/icons/SelectDownArrowIcon';
 import { LocationIcon } from '@/components/icons/LocationIcon';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker';
 import { CalendarIcon } from '@/components/icons/CalendarDateIcon';
 import { SelectArrowIcon } from '@/components/icons/SelectArrowIcon';
 import { COUNTRIES } from '@/components/countries';
@@ -62,6 +60,123 @@ interface UpdateUserData {
   longitude?: number;
 }
 
+const PickerColumn = ({ items, selectedValue, onValueChange, width = 100 }: {
+  items: (string | number)[];
+  selectedValue: number;
+  onValueChange: (value: number) => void;
+  width?: number;
+}) => {
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    const index = items.findIndex(
+      (item, idx) => (typeof item === 'number' ? item : idx) === selectedValue
+    );
+    if (index >= 0 && scrollRef.current) {
+      scrollRef.current.scrollTo({ y: index * 48, animated: true });
+    }
+  }, [selectedValue, items.length]);
+
+  return (
+    <ScrollView
+      ref={scrollRef}
+      style={[styles.pickerColumn, { width }]}
+      showsVerticalScrollIndicator={false}
+      snapToInterval={40}
+      decelerationRate="fast"
+    >
+      {items.map((item, index) => (
+        <TouchableOpacity
+          key={index}
+          style={[
+            styles.pickerItem,
+            selectedValue === (typeof item === 'number' ? item : index) && styles.pickerItemSelected
+          ]}
+          onPress={() => onValueChange(typeof item === 'number' ? item : index)}
+        >
+          <Text style={[
+            styles.pickerItemText,
+            selectedValue === (typeof item === 'number' ? item : index) && styles.pickerItemTextSelected
+          ]}>
+            {item}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+};
+
+// Custom Date Picker Component
+const CustomDatePicker = ({ value, onChange }: { value: Date; onChange: (date: Date) => void }) => {
+  const [selectedYear, setSelectedYear] = useState(value.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(value.getMonth());
+  const [selectedDay, setSelectedDay] = useState(value.getDate());
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 100 }, (_, i) => currentYear - 99 + i).reverse();
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  
+  const getDaysInMonth = (year: number, month: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+  
+  const days = Array.from({ length: getDaysInMonth(selectedYear, selectedMonth) }, (_, i) => i + 1);
+
+  const handleDateChange = () => {
+    const newDate = new Date(Date.UTC(selectedYear, selectedMonth, selectedDay));
+    onChange(newDate);
+  };
+
+  const handleValueChange = (type: 'year' | 'month' | 'day', value: number) => {
+    if (type === 'year') {
+      setSelectedYear(value);
+    } else if (type === 'month') {
+      setSelectedMonth(value);
+    } else if (type === 'day') {
+      setSelectedDay(value);
+    }
+  };
+
+  return (
+    <>
+      <View style={styles.customDatePicker}>
+        <View style={styles.pickerColumnContainer}>
+          <Text style={styles.pickerColumnLabel}>Day</Text>
+          <PickerColumn
+            items={days}
+            selectedValue={selectedDay}
+            onValueChange={(value) => handleValueChange('day', value)}
+            width={80}
+          />
+        </View>
+        <View style={styles.pickerColumnContainer}>
+          <Text style={styles.pickerColumnLabel}>Month</Text>
+          <PickerColumn
+            items={months}
+            selectedValue={selectedMonth}
+            onValueChange={(value) => handleValueChange('month', value)}
+            width={130}
+          />
+        </View>
+        <View style={styles.pickerColumnContainer}>
+          <Text style={styles.pickerColumnLabel}>Year</Text>
+          <PickerColumn
+            items={years}
+            selectedValue={selectedYear}
+            onValueChange={(value) => handleValueChange('year', value)}
+            width={90}
+          />
+        </View>
+      </View>
+      <TouchableOpacity onPress={() => handleDateChange()} style={styles.modalButton}>
+        <Text style={styles.modalButtonText}>Done</Text>
+      </TouchableOpacity>
+    </>
+  );
+};
+
 export default function UpdateProfileScreen() {
   const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -80,8 +195,12 @@ export default function UpdateProfileScreen() {
   const [gender, setGender] = useState('');
   const [nationality, setNationality] = useState('');
   const [senderProfileImage, setSenderProfileImage] = useState(require('@/assets/img/profile-blank.png'));
-  const [showPicker, setShowPicker] = useState(false);
-  const [pickerType, setPickerType] = useState<'nationality' | 'gender'>('nationality');
+  const [isNationalityModalVisible, setIsNationalityModalVisible] = useState(false);
+  const [isGenderModalVisible, setIsGenderModalVisible] = useState(false);
+  const [nationalitySearchQuery, setNationalitySearchQuery] = useState('');
+  const [genderSearchQuery, setGenderSearchQuery] = useState('');
+  const [filteredNationalities, setFilteredNationalities] = useState<{label: string; value: string}[]>([]);
+  const [filteredGenders, setFilteredGenders] = useState<{label: string; value: string}[]>([]);
   
   const [date, setDate] = useState<Date | null>(null);
   const [showDateModal, setShowDateModal] = useState(false);
@@ -118,9 +237,9 @@ export default function UpdateProfileScreen() {
     setCountry(country);
   };
 
-  const handleDateChange = (event: any, selectedDate: Date | undefined) => {
-    if (selectedDate) setDate(selectedDate);
-    if (Platform.OS !== 'ios') setShowDateModal(false);
+  const handleDateChange = (selectedDate: Date) => {
+    setDate(selectedDate);
+    setShowDateModal(false);
   };
 
   const formatDate = (d: Date | null): string => {
@@ -295,33 +414,54 @@ export default function UpdateProfileScreen() {
     Keyboard.dismiss();
   };
 
-  const openPicker = (type: 'nationality' | 'gender') => {
-    setPickerType(type);
-    setShowPicker(true);
-  };
-
-  const handlePickerChange = (value: string) => {
-    if (pickerType === 'nationality') {
-      setNationality(value);
-    } else {
-      setGender(value);
-    }
-  };
-
-  const getPickerTitle = () => {
-    return pickerType === 'nationality' ? 'Nationality' : 'Gender';
-  };
-
-  const getPickerItems = () => {
-    const items = pickerType === 'nationality' ? COUNTRIES : GENDERS;
+  const getNationalityItems = () => {
     return [
-      { label: pickerType === 'nationality' ? 'Nationality' : 'Gender', value: '' },
-      ...items.map(item => ({ label: item, value: item }))
+      { label: 'Select Nationality', value: '' },
+      ...COUNTRIES.map(country => ({ label: country, value: country }))
     ];
   };
 
-  const getSelectedValue = () => {
-    return pickerType === 'nationality' ? nationality : gender;
+  const getGenderItems = () => {
+    return [
+      { label: 'Select Gender', value: '' },
+      ...GENDERS.map(gender => ({ label: gender, value: gender }))
+    ];
+  };
+
+  const handleNationalitySearch = (text: string) => {
+    setNationalitySearchQuery(text);
+    if (text.trim() === '') {
+      setFilteredNationalities(getNationalityItems());
+    } else {
+      const filtered = getNationalityItems().filter(item =>
+        item.label.toLowerCase().includes(text.toLowerCase())
+      );
+      setFilteredNationalities(filtered);
+    }
+  };
+
+  const handleGenderSearch = (text: string) => {
+    setGenderSearchQuery(text);
+    if (text.trim() === '') {
+      setFilteredGenders(getGenderItems());
+    } else {
+      const filtered = getGenderItems().filter(item =>
+        item.label.toLowerCase().includes(text.toLowerCase())
+      );
+      setFilteredGenders(filtered);
+    }
+  };
+
+  const openNationalityModal = () => {
+    setIsNationalityModalVisible(true);
+    setNationalitySearchQuery('');
+    setFilteredNationalities(getNationalityItems());
+  };
+
+  const openGenderModal = () => {
+    setIsGenderModalVisible(true);
+    setGenderSearchQuery('');
+    setFilteredGenders(getGenderItems());
   };
 
   const takePicture = async () => {
@@ -646,16 +786,19 @@ export default function UpdateProfileScreen() {
             <Modal visible={showDateModal} transparent animationType="slide">
               <View style={styles.modalBackground}>
                 <View style={styles.modalContainer}>
-                  <DateTimePicker
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Select Date</Text>
+                    <TouchableOpacity 
+                      onPress={() => setShowDateModal(false)} 
+                      style={styles.modalCloseButton}
+                    >
+                      <Text style={styles.modalCloseButtonText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <CustomDatePicker
                     value={date || new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
                     onChange={handleDateChange}
-                    style={styles.picker}
                   />
-                  <TouchableOpacity onPress={() => setShowDateModal(false)} style={styles.modalButton}>
-                    <Text style={styles.modalButtonText}>{t('updateProfile.done')}</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
             </Modal>
@@ -664,7 +807,7 @@ export default function UpdateProfileScreen() {
           <Text style={styles.label}>{t('updateProfile.nationality')}</Text>
           <TouchableOpacity 
             style={styles.inputContainer}
-            onPress={() => openPicker('nationality')}
+            onPress={openNationalityModal}
           >
             <Text style={[styles.input, !nationality && { color: '#999' }]}>
               {nationality || t('updateProfile.nationality')}
@@ -675,7 +818,7 @@ export default function UpdateProfileScreen() {
           <Text style={styles.label}>{t('updateProfile.gender')}</Text>
           <TouchableOpacity 
             style={styles.inputContainer}
-            onPress={() => openPicker('gender')}
+            onPress={openGenderModal}
           >
             <Text style={[styles.input, !gender && { color: '#999' }]}>
               {gender || t('updateProfile.gender')}
@@ -683,33 +826,102 @@ export default function UpdateProfileScreen() {
             <SelectArrowIcon size={20} color={COLORS.text} />
           </TouchableOpacity>
 
+          {/* Nationality Modal */}
           <Modal
-            visible={showPicker}
-            transparent={true}
+            visible={isNationalityModalVisible}
             animationType="slide"
+            transparent={true}
+            onRequestClose={() => setIsNationalityModalVisible(false)}
           >
-            <View style={styles.modalPickerContainer}>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <TouchableOpacity onPress={() => setShowPicker(false)}>
-                    <Text style={styles.cancelButton}>{t('updateProfile.cancel')}</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.modalTitle}>{getPickerTitle()}</Text>
-                  <TouchableOpacity onPress={() => setShowPicker(false)}>
-                    <Text style={styles.doneButton}>{t('updateProfile.done')}</Text>
+            <KeyboardAvoidingView 
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={styles.modalOverlay}
+            >
+              <View style={styles.searchModalContent}>
+                <View style={styles.searchModalHeader}>
+                  <Text style={styles.searchModalTitle}>{t('updateProfile.nationality')}</Text>
+                  <TouchableOpacity onPress={() => setIsNationalityModalVisible(false)}>
+                    <Text style={styles.closeButton}>✕</Text>
                   </TouchableOpacity>
                 </View>
-                <Picker
-                  selectedValue={getSelectedValue()}
-                  onValueChange={handlePickerChange}
-                  style={styles.modalPicker}
-                >
-                  {getPickerItems().map((item) => (
-                    <Picker.Item key={item.label} label={item.label} value={item.value} />
-                  ))}
-                </Picker>
+                
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search nationalities"
+                  value={nationalitySearchQuery}
+                  onChangeText={handleNationalitySearch}
+                  autoFocus={false}
+                />
+                
+                <FlatList
+                  data={filteredNationalities}
+                  keyExtractor={(item) => item.value}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.listItem}
+                      onPress={() => {
+                        setNationality(item.value);
+                        setIsNationalityModalVisible(false);
+                      }}
+                    >
+                      <Text style={styles.listItemText}>{item.label}</Text>
+                    </TouchableOpacity>
+                  )}
+                  showsVerticalScrollIndicator={false}
+                  style={styles.flatList}
+                  keyboardShouldPersistTaps="handled"
+                />
               </View>
-            </View>
+            </KeyboardAvoidingView>
+          </Modal>
+
+          {/* Gender Modal */}
+          <Modal
+            visible={isGenderModalVisible}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setIsGenderModalVisible(false)}
+          >
+            <KeyboardAvoidingView 
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={styles.modalOverlay}
+            >
+              <View style={styles.searchModalContent}>
+                <View style={styles.searchModalHeader}>
+                  <Text style={styles.searchModalTitle}>{t('updateProfile.gender')}</Text>
+                  <TouchableOpacity onPress={() => setIsGenderModalVisible(false)}>
+                    <Text style={styles.closeButton}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search gender"
+                  value={genderSearchQuery}
+                  onChangeText={handleGenderSearch}
+                  autoFocus={false}
+                />
+                
+                <FlatList
+                  data={filteredGenders}
+                  keyExtractor={(item) => item.value}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.listItem}
+                      onPress={() => {
+                        setGender(item.value);
+                        setIsGenderModalVisible(false);
+                      }}
+                    >
+                      <Text style={styles.listItemText}>{item.label}</Text>
+                    </TouchableOpacity>
+                  )}
+                  showsVerticalScrollIndicator={false}
+                  style={styles.flatList}
+                  keyboardShouldPersistTaps="handled"
+                />
+              </View>
+            </KeyboardAvoidingView>
           </Modal>
 
         </View>
@@ -989,63 +1201,197 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 32,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
   },
   modalButton: {
-    marginTop: 10,
+    marginTop: 20,
     backgroundColor: COLORS.primary || '#007bff',
-    padding: 12,
-    borderRadius: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
     alignItems: 'center',
+    shadowColor: COLORS.primary || '#007bff',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   modalButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
   picker: {
     width: '100%',
   },
-  modalPickerContainer: {
+  modalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
-  modalContent: {
+  searchModalContent: {
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 20,
+    maxHeight: '70%',
+    minHeight: 300,
   },
-  modalHeader: {
+  searchModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.divider,
   },
-  cancelButton: {
-    color: COLORS.subtitle,
-    fontSize: 16,
-    fontFamily: 'nunito-medium',
-  },
-  doneButton: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontFamily: 'nunito-bold',
-  },
-  modalPicker: {
-    width: '100%',
-  },
-  modalTitle: {
+  searchModalTitle: {
     fontSize: 16,
     fontFamily: 'nunito-bold',
     color: COLORS.text,
   },
+  closeButton: {
+    fontSize: 24,
+    color: COLORS.subtitle,
+  },
+  searchInput: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+    fontSize: 16,
+    fontFamily: 'nunito-medium',
+    color: COLORS.text,
+  },
+  flatList: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  listItem: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  listItemText: {
+    fontSize: 16,
+    fontFamily: 'nunito-medium',
+    color: COLORS.text,
+  },
   disabledButton: {
     opacity: 0.7,
+  },
+  customDatePicker: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: 240,
+  },
+  pickerColumn: {
+    height: 200,
+    flex: 1,
+    marginHorizontal: 0,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  pickerItem: {
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 2,
+    borderRadius: 8,
+    marginHorizontal: 4,
+  },
+  pickerItemSelected: {
+    backgroundColor: COLORS.primary || '#007bff',
+    borderRadius: 12,
+    shadowColor: COLORS.primary || '#007bff',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  pickerItemText: {
+    fontSize: 16,
+    color: '#495057',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  pickerItemTextSelected: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 17,
+  },
+  pickerColumnContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  pickerColumnLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6c757d',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#212529',
+    letterSpacing: 0.5,
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  modalCloseButtonText: {
+    fontSize: 16,
+    color: '#6c757d',
+    fontWeight: '600',
   },
   imageModalContainer: {
     flex: 1,

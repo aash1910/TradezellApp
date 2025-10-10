@@ -1295,6 +1295,15 @@ export default function HomeScreen() {
                       });
                     }}
                   />
+                  {location ? (
+                    <TouchableOpacity
+                      onPress={() => { setLocation(''); setMarker(null); }}
+                      style={{ marginLeft: 8 }}
+                      accessibilityLabel="Clear location"
+                    >
+                      <Feather name="x-circle" size={16} color="#d32f2f" />
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
 
                 {showLocation2 && (<View style={styles.inputContainer}>
@@ -1539,6 +1548,15 @@ export default function HomeScreen() {
                       });
                     }}
                   />
+                  {locationDropOff ? (
+                    <TouchableOpacity
+                      onPress={() => { setLocationDropOff(''); setMarkerDropOff(null); }}
+                      style={{ marginLeft: 8 }}
+                      accessibilityLabel="Clear location"
+                    >
+                      <Feather name="x-circle" size={16} color="#d32f2f" />
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
                 {showLocationDropOff2 && (<View style={styles.inputContainer}>
                   <TouchableOpacity onPress={() => {
