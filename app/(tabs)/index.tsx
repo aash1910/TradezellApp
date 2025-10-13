@@ -39,6 +39,7 @@ import { SquareArrowDownIcon } from '@/components/icons/SquareArrowDownIcon';
 import { AddCircleIcon } from '@/components/icons/AddCircleIcon';
 import { ImageUploadIcon } from '@/components/icons/ImageUploadIcon';
 import * as ImagePicker from 'expo-image-picker';
+import LocationModal from '@/components/LocationModal';
 
 const HEADER_HEIGHT = 375;
 const { width: screenWidth } = Dimensions.get('window');
@@ -114,22 +115,81 @@ export default function HomeScreen() {
   const [showLocationDropOff3, setShowLocationDropOff3] = useState(false);
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
+  
+  // Location modal state
+  const [isLocationModalVisible, setIsLocationModalVisible] = useState(false);
+  const [locationModalParams, setLocationModalParams] = useState<{
+    currentLocation: string;
+    currentRegion: Region | null;
+    currentMarker: {latitude: number; longitude: number} | null;
+    type: string;
+    locationIndex: string;
+  } | null>(null);
 
-  // Helper function for modal navigation to getLocation
-  const navigateToLocationModal = (params: any) => {
-    if (isNavigating) return; // Prevent multiple presses
+  // Helper function to open location modal
+  const openLocationModal = (params: {
+    currentLocation: string;
+    currentRegion: Region | null;
+    currentMarker: {latitude: number; longitude: number} | null;
+    type: string;
+    locationIndex: string;
+  }) => {
+    setLocationModalParams(params);
+    setIsLocationModalVisible(true);
+  };
+
+  // Handle location selection from modal
+  const handleLocationSelected = (locationData: {
+    selectedLocation: string;
+    selectedRegion: Region | null;
+    selectedMarker: {latitude: number; longitude: number} | null;
+  }) => {
+    const { selectedLocation, selectedRegion, selectedMarker } = locationData;
+    const { type, locationIndex } = locationModalParams || {};
     
-    setIsNavigating(true);
-    (router as any).push({
-      pathname: '/getLocation', 
-      params: params
-    }, {
-      presentation: 'pageSheet'
-    });
+    console.log('=== LOCATION DATA RECEIVED ===');
+    console.log('Location Type:', type);
+    console.log('Location Index:', locationIndex);
+    console.log('Selected Location:', selectedLocation);
+    console.log('Selected Region:', selectedRegion);
+    console.log('Selected Marker:', selectedMarker);
+    console.log('==============================');
     
-    // Re-enable after navigation completes
-    setTimeout(() => setIsNavigating(false), 1000);
+    if (type === 'pickup') {
+      if (locationIndex === '1') {
+        setLocation(selectedLocation);
+        if (selectedRegion) setRegion(selectedRegion);
+        if (selectedMarker) setMarker(selectedMarker);
+        else setMarker(null);
+      } else if (locationIndex === '2') {
+        setLocation2(selectedLocation);
+        if (selectedRegion) setRegion2(selectedRegion);
+        if (selectedMarker) setMarker2(selectedMarker);
+        else setMarker2(null);
+      } else if (locationIndex === '3') {
+        setLocation3(selectedLocation);
+        if (selectedRegion) setRegion3(selectedRegion);
+        if (selectedMarker) setMarker3(selectedMarker);
+        else setMarker3(null);
+      }
+    } else if (type === 'dropoff') {
+      if (locationIndex === '1') {
+        setLocationDropOff(selectedLocation);
+        if (selectedRegion) setRegionDropOff(selectedRegion);
+        if (selectedMarker) setMarkerDropOff(selectedMarker);
+        else setMarkerDropOff(null);
+      } else if (locationIndex === '2') {
+        setLocationDropOff2(selectedLocation);
+        if (selectedRegion) setRegionDropOff2(selectedRegion);
+        if (selectedMarker) setMarkerDropOff2(selectedMarker);
+        else setMarkerDropOff2(null);
+      } else if (locationIndex === '3') {
+        setLocationDropOff3(selectedLocation);
+        if (selectedRegion) setRegionDropOff3(selectedRegion);
+        if (selectedMarker) setMarkerDropOff3(selectedMarker);
+        else setMarkerDropOff3(null);
+      }
+    }
   };
 
   const handleDateChange = (selectedDate: Date) => {
@@ -520,71 +580,6 @@ export default function HomeScreen() {
     })();
   }, []);
 
-  // Listen for location data when returning from getLocation screen
-  useFocusEffect(
-    useCallback(() => {
-      const checkForLocationData = async () => {
-        try {
-          const locationData = await AsyncStorage.getItem('selectedLocationData');
-          if (locationData) {
-            const { selectedLocation, selectedRegion, selectedMarker, locationType, locationIndex } = JSON.parse(locationData);
-            
-            console.log('=== LOCATION DATA RECEIVED ===');
-            console.log('Location Type:', locationType);
-            console.log('Location Index:', locationIndex);
-            console.log('Selected Location:', selectedLocation);
-            console.log('Selected Region:', selectedRegion);
-            console.log('Selected Marker:', selectedMarker);
-            console.log('==============================');
-            
-            if (locationType === 'pickup') {
-              if (locationIndex === '1' || locationIndex === 1) {
-                setLocation(selectedLocation);
-                if (selectedRegion) setRegion(selectedRegion);
-                if (selectedMarker) setMarker(selectedMarker);
-                else setMarker(null);
-              } else if (locationIndex === '2' || locationIndex === 2) {
-                setLocation2(selectedLocation);
-                if (selectedRegion) setRegion2(selectedRegion);
-                if (selectedMarker) setMarker2(selectedMarker);
-                else setMarker2(null);
-              } else if (locationIndex === '3' || locationIndex === 3) {
-                setLocation3(selectedLocation);
-                if (selectedRegion) setRegion3(selectedRegion);
-                if (selectedMarker) setMarker3(selectedMarker);
-                else setMarker3(null);
-              }
-            } else if (locationType === 'dropoff') {
-              if (locationIndex === '1' || locationIndex === 1) {
-                setLocationDropOff(selectedLocation);
-                if (selectedRegion) setRegionDropOff(selectedRegion);
-                if (selectedMarker) setMarkerDropOff(selectedMarker);
-                else setMarkerDropOff(null);
-              } else if (locationIndex === '2' || locationIndex === 2) {
-                setLocationDropOff2(selectedLocation);
-                if (selectedRegion) setRegionDropOff2(selectedRegion);
-                if (selectedMarker) setMarkerDropOff2(selectedMarker);
-                else setMarkerDropOff2(null);
-              } else if (locationIndex === '3' || locationIndex === 3) {
-                setLocationDropOff3(selectedLocation);
-                if (selectedRegion) setRegionDropOff3(selectedRegion);
-                if (selectedMarker) setMarkerDropOff3(selectedMarker);
-                else setMarkerDropOff3(null);
-              }
-            }
-            
-            // Clear the stored data to avoid reprocessing
-            await AsyncStorage.removeItem('selectedLocationData');
-          }
-        } catch (error) {
-          console.error('Error retrieving location data:', error);
-        }
-      };
-      
-      // Check for location data when screen comes into focus
-      checkForLocationData();
-    }, [])
-  );
 
   const loadUserData = async () => {
     try {
@@ -1268,15 +1263,14 @@ export default function HomeScreen() {
                 <Text style={styles.label}>{t('packageForm.location')}</Text>
                 <View style={styles.inputContainer}>
                   <TouchableOpacity onPress={() => {
-                    navigateToLocationModal({
+                    openLocationModal({
                       currentLocation: location, 
-                      currentRegion: region ? JSON.stringify(region) : null, 
-                      currentMarker: marker ? JSON.stringify(marker) : null, 
+                      currentRegion: region, 
+                      currentMarker: marker, 
                       type: 'pickup',
                       locationIndex: '1'
                     });
-                  }}
-                  disabled={isNavigating}>
+                  }}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1286,10 +1280,10 @@ export default function HomeScreen() {
                     style={styles.input} 
                     editable={false}
                     onPress={() => {
-                      navigateToLocationModal({
+                      openLocationModal({
                         currentLocation: location, 
-                        currentRegion: region ? JSON.stringify(region) : null, 
-                        currentMarker: marker ? JSON.stringify(marker) : null, 
+                        currentRegion: region, 
+                        currentMarker: marker, 
                         type: 'pickup',
                         locationIndex: '1'
                       });
@@ -1308,15 +1302,14 @@ export default function HomeScreen() {
 
                 {showLocation2 && (<View style={styles.inputContainer}>
                   <TouchableOpacity onPress={() => {
-                    navigateToLocationModal({
+                    openLocationModal({
                       currentLocation: location2, 
-                      currentRegion: region2 ? JSON.stringify(region2) : null, 
-                      currentMarker: marker2 ? JSON.stringify(marker2) : null, 
+                      currentRegion: region2, 
+                      currentMarker: marker2, 
                       type: 'pickup',
                       locationIndex: '2'
                     });
-                  }}
-                  disabled={isNavigating}>
+                  }}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1326,10 +1319,10 @@ export default function HomeScreen() {
                     style={styles.input} 
                     editable={false}
                     onPress={() => {
-                      navigateToLocationModal({
+                      openLocationModal({
                         currentLocation: location2,  
-                        currentRegion: region2 ? JSON.stringify(region2) : null, 
-                        currentMarker: marker2 ? JSON.stringify(marker2) : null, 
+                        currentRegion: region2, 
+                        currentMarker: marker2, 
                         type: 'pickup',
                         locationIndex: '2'
                       });
@@ -1340,21 +1333,20 @@ export default function HomeScreen() {
                     style={{ marginLeft: 8 }}
                     accessibilityLabel="Delete second location"
                   >
-                    <Feather name="trash-2" size={22} color="#d32f2f" />
+                    <Feather name="trash-2" size={16} color="#d32f2f" />
                   </TouchableOpacity>
                 </View>)}
 
                 {showLocation3 && (<View style={styles.inputContainer}>
                   <TouchableOpacity onPress={() => {
-                    navigateToLocationModal({
+                    openLocationModal({
                       currentLocation: location3, 
-                      currentRegion: region3 ? JSON.stringify(region3) : null, 
-                      currentMarker: marker3 ? JSON.stringify(marker3) : null, 
+                      currentRegion: region3, 
+                      currentMarker: marker3, 
                       type: 'pickup',
                       locationIndex: '3'
                     });
-                  }}
-                  disabled={isNavigating}>
+                  }}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1364,10 +1356,10 @@ export default function HomeScreen() {
                     style={styles.input} 
                     editable={false}
                     onPress={() => {
-                      navigateToLocationModal({
+                      openLocationModal({
                         currentLocation: location3, 
-                        currentRegion: region3 ? JSON.stringify(region3) : null, 
-                        currentMarker: marker3 ? JSON.stringify(marker3) : null, 
+                        currentRegion: region3, 
+                        currentMarker: marker3, 
                         type: 'pickup',
                         locationIndex: '3'
                       });
@@ -1382,7 +1374,7 @@ export default function HomeScreen() {
                       style={{ marginLeft: 8 }}
                       accessibilityLabel="Delete third location"
                     >
-                    <Feather name="trash-2" size={22} color="#d32f2f" />
+                    <Feather name="trash-2" size={16} color="#d32f2f" />
                   </TouchableOpacity>
                 </View>)}
 
@@ -1521,15 +1513,14 @@ export default function HomeScreen() {
                 <Text style={styles.label}>{t('packageForm.location')}</Text>
                 <View style={styles.inputContainer}>
                   <TouchableOpacity onPress={() => {
-                      navigateToLocationModal({
+                      openLocationModal({
                         currentLocation: locationDropOff, 
-                        currentRegion: regionDropOff ? JSON.stringify(regionDropOff) : null, 
-                        currentMarker: markerDropOff ? JSON.stringify(markerDropOff) : null, 
+                        currentRegion: regionDropOff, 
+                        currentMarker: markerDropOff, 
                         type: 'dropoff',
                         locationIndex: '1'
                       });
-                    }}
-                    disabled={isNavigating}>
+                    }}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1539,10 +1530,10 @@ export default function HomeScreen() {
                     style={styles.input} 
                     editable={false}
                     onPress={() => {
-                      navigateToLocationModal({
+                      openLocationModal({
                         currentLocation: locationDropOff, 
-                        currentRegion: regionDropOff ? JSON.stringify(regionDropOff) : null, 
-                        currentMarker: markerDropOff ? JSON.stringify(markerDropOff) : null, 
+                        currentRegion: regionDropOff, 
+                        currentMarker: markerDropOff, 
                         type: 'dropoff',
                         locationIndex: '1'
                       });
@@ -1560,15 +1551,14 @@ export default function HomeScreen() {
                 </View>
                 {showLocationDropOff2 && (<View style={styles.inputContainer}>
                   <TouchableOpacity onPress={() => {
-                      navigateToLocationModal({
+                      openLocationModal({
                         currentLocation: locationDropOff2, 
-                        currentRegion: regionDropOff2 ? JSON.stringify(regionDropOff2) : null, 
-                        currentMarker: markerDropOff2 ? JSON.stringify(markerDropOff2) : null, 
+                        currentRegion: regionDropOff2, 
+                        currentMarker: markerDropOff2, 
                         type: 'dropoff',
                         locationIndex: '2'
                       });
-                    }}
-                    disabled={isNavigating}>
+                    }}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1578,10 +1568,10 @@ export default function HomeScreen() {
                     style={styles.input} 
                     editable={false}
                     onPress={() => {
-                      navigateToLocationModal({
+                      openLocationModal({
                         currentLocation: locationDropOff2, 
-                        currentRegion: regionDropOff2 ? JSON.stringify(regionDropOff2) : null, 
-                        currentMarker: markerDropOff2 ? JSON.stringify(markerDropOff2) : null, 
+                        currentRegion: regionDropOff2, 
+                        currentMarker: markerDropOff2, 
                         type: 'dropoff',
                         locationIndex: '2'
                       });
@@ -1596,20 +1586,19 @@ export default function HomeScreen() {
                       style={{ marginLeft: 8 }}
                       accessibilityLabel="Delete third location"
                     >
-                    <Feather name="trash-2" size={22} color="#d32f2f" />
+                    <Feather name="trash-2" size={16} color="#d32f2f" />
                   </TouchableOpacity>
                 </View>)}
                 {showLocationDropOff3 && (<View style={styles.inputContainer}>
                   <TouchableOpacity onPress={() => {
-                      navigateToLocationModal({
+                      openLocationModal({
                         currentLocation: locationDropOff3, 
-                        currentRegion: regionDropOff3 ? JSON.stringify(regionDropOff3) : null, 
-                        currentMarker: markerDropOff3 ? JSON.stringify(markerDropOff3) : null, 
+                        currentRegion: regionDropOff3, 
+                        currentMarker: markerDropOff3, 
                         type: 'dropoff',
                         locationIndex: '3'
                       });
-                    }}
-                    disabled={isNavigating}>
+                    }}>
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
@@ -1619,10 +1608,10 @@ export default function HomeScreen() {
                     style={styles.input} 
                     editable={false}
                     onPress={() => {
-                      navigateToLocationModal({
+                      openLocationModal({
                         currentLocation: locationDropOff3, 
-                        currentRegion: regionDropOff3 ? JSON.stringify(regionDropOff3) : null, 
-                        currentMarker: markerDropOff3 ? JSON.stringify(markerDropOff3) : null, 
+                        currentRegion: regionDropOff3, 
+                        currentMarker: markerDropOff3, 
                         type: 'dropoff',
                         locationIndex: '3'
                       });
@@ -1637,7 +1626,7 @@ export default function HomeScreen() {
                       style={{ marginLeft: 8 }}
                       accessibilityLabel="Delete third location"
                     >
-                    <Feather name="trash-2" size={22} color="#d32f2f" />
+                    <Feather name="trash-2" size={16} color="#d32f2f" />
                   </TouchableOpacity>
                 </View>)}
 
@@ -1676,6 +1665,20 @@ export default function HomeScreen() {
 
         </View>
       </Animated.ScrollView>
+
+      {/* Location Modal */}
+      {locationModalParams && (
+        <LocationModal
+          visible={isLocationModalVisible}
+          onClose={() => setIsLocationModalVisible(false)}
+          onLocationSelected={handleLocationSelected}
+          currentLocation={locationModalParams.currentLocation}
+          currentRegion={locationModalParams.currentRegion}
+          currentMarker={locationModalParams.currentMarker}
+          type={locationModalParams.type}
+          locationIndex={locationModalParams.locationIndex}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -1693,7 +1696,8 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingHorizontal: 16,
     backgroundColor: '#000',
-    borderRadius: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     //height: HEADER_HEIGHT,
   },
   headerTopContent: {

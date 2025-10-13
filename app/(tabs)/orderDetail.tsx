@@ -744,6 +744,102 @@ export default function OrderDetailScreen() {
     }
   };
 
+  /**
+   * Renders an address row with navigation and copy functionality
+   * @param locationType - Either 'pickup' or 'drop'
+   * @param addressNumber - 1, 2, or 3 for multiple addresses
+   * @param labelKey - Translation key for the label
+   */
+  const renderAddressRow = (
+    locationType: 'pickup' | 'drop',
+    addressNumber: 1 | 2 | 3,
+    labelKey: string
+  ) => {
+    // Determine address field suffix
+    const suffix = addressNumber === 1 ? '' : String(addressNumber);
+    const addressField = `address${suffix}` as 'address' | 'address2' | 'address3';
+    const latField = addressNumber === 1 ? 'lat' : `lat${addressNumber}` as 'lat' | 'lat2' | 'lat3';
+    const lngField = addressNumber === 1 ? 'lng' : `lng${addressNumber}` as 'lng' | 'lng2' | 'lng3';
+
+    // Get the address value
+    const address = locationType === 'pickup' 
+      ? orderData?.pickup[addressField]
+      : orderData?.drop[addressField];
+
+    // Skip rendering if no address
+    if (!address && addressNumber !== 1) return null;
+
+    // Determine origin and destination for navigation
+    const getNavigationParams = () => {
+      if (locationType === 'pickup') {
+        // For pickup addresses: Navigate FROM this pickup location TO first dropoff
+        return {
+          originAddress: orderData?.pickup[addressField],
+          destAddress: orderData?.drop.address,
+          originCoords: orderData?.pickup?.coordinates?.[latField] && orderData?.pickup?.coordinates?.[lngField]
+            ? { lat: parseFloat(orderData.pickup.coordinates[latField] as string), lng: parseFloat(orderData.pickup.coordinates[lngField] as string) }
+            : undefined,
+          destCoords: orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng
+            ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
+            : undefined,
+        };
+      } else {
+        // For dropoff addresses: Navigate FROM first pickup TO this dropoff location
+        return {
+          originAddress: orderData?.pickup.address,
+          destAddress: orderData?.drop[addressField],
+          originCoords: orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng
+            ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
+            : undefined,
+          destCoords: orderData?.drop?.coordinates?.[latField] && orderData?.drop?.coordinates?.[lngField]
+            ? { lat: parseFloat(orderData.drop.coordinates[latField] as string), lng: parseFloat(orderData.drop.coordinates[lngField] as string) }
+            : undefined,
+        };
+      }
+    };
+
+    const { originAddress, destAddress, originCoords, destCoords } = getNavigationParams();
+    const label = addressNumber === 1 ? t(labelKey) : `${t(labelKey)} ${addressNumber}`;
+
+    const content = (
+      <View style={styles.pickupDetailsRow}>
+        <Text style={styles.pickupDetailsLabel}>{label}</Text>
+        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-start', gap: 8 }}>
+          <TouchableOpacity 
+            style={{ flexShrink: 1 }} 
+            onPress={() => {
+              if (originAddress && destAddress) {
+                openGoogleMapsNavigation(
+                  originAddress,
+                  destAddress,
+                  originCoords,
+                  destCoords
+                );
+              }
+            }}
+          >
+            <Text style={{ color: COLORS.primary, textAlign: 'right' }}>
+              {address ? <Text>{address}</Text> : 'N/A'}
+            </Text>
+          </TouchableOpacity>
+          {address && (
+            <TouchableOpacity
+              style={{ justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => {
+                copyAddressToClipboard(address || '');
+              }}
+            >
+              <CopyIcon size={18} color={COLORS.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+
+    // For address2 and address3, wrap in conditional rendering
+    return addressNumber === 1 ? content : address ? content : null;
+  };
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -951,48 +1047,8 @@ export default function OrderDetailScreen() {
               <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.price')}</Text>
               <Text style={styles.pickupDetailsValue}> {currencyConfig.code} {parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
             </View>
-            <View style={styles.pickupDetailsRow}>
-              <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.location')}</Text>
-              <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-start', gap: 8 }}>
-                <TouchableOpacity style={{ flexShrink: 1 }} onPress={() => {
-                  if (orderData?.pickup.address && orderData?.drop.address) {
-                    openGoogleMapsNavigation(
-                      orderData.pickup.address,
-                      orderData.drop.address,
-                      orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng
-                        ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
-                        : undefined,
-                      orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng
-                        ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
-                        : undefined
-                    );
-                  }
-                }}>
-                  <Text style={{ color: COLORS.primary, textAlign: 'right' }}>
-                    {orderData?.pickup.address || orderData?.pickup.address2 || orderData?.pickup.address3 ? (
-                      <Text>
-                        {[orderData?.pickup.address, orderData?.pickup.address2, orderData?.pickup.address3]
-                          .filter(Boolean)
-                          .join('\n')}
-                      </Text>
-                    ) : 'N/A'}
-                  </Text>
-                </TouchableOpacity>
-                {orderData?.pickup.address && (
-                  <TouchableOpacity
-                    style={{ justifyContent: 'center', alignItems: 'center' }}
-                    onPress={() => {
-                      const fullAddress = [orderData?.pickup.address, orderData?.pickup.address2, orderData?.pickup.address3]
-                        .filter(Boolean)
-                        .join('\n');
-                      copyAddressToClipboard(fullAddress);
-                    }}
-                  >
-                    <CopyIcon size={18} color={COLORS.primary} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
+            
+            {renderAddressRow('pickup', 1, 'orderDetail.pickupDetails.location')}
 
             {orderData?.pickup?.image ? (
               <View style={styles.pickupDetailsRow}>
@@ -1031,6 +1087,10 @@ export default function OrderDetailScreen() {
                 </View>
               </View>
             ) : null}
+
+            {renderAddressRow('pickup', 2, 'orderDetail.pickupDetails.location')}
+            {renderAddressRow('pickup', 3, 'orderDetail.pickupDetails.location')}
+
             {/* Note Section */}
             <View style={styles.noteBox}>
               <Text style={styles.noteLabel}>{t('orderDetail.pickupDetails.note')}</Text>
@@ -1052,48 +1112,12 @@ export default function OrderDetailScreen() {
               <Text style={styles.pickupDetailsLabel}>{t('orderDetail.dropoffDetails.number')}</Text>
               <Text style={styles.pickupDetailsValue}>{orderData?.drop.mobile || 'N/A'}</Text>
             </View>
-            <View style={styles.pickupDetailsRow}>
-              <Text style={styles.pickupDetailsLabel}>{t('orderDetail.dropoffDetails.location')}</Text>
-              <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-start', gap: 8 }}>
-                <TouchableOpacity style={{ flexShrink: 1 }} onPress={() => {
-                  if (orderData?.pickup.address && orderData?.drop.address) {
-                    openGoogleMapsNavigation(
-                      orderData.pickup.address,
-                      orderData.drop.address,
-                      orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng
-                        ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
-                        : undefined,
-                      orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng
-                        ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
-                        : undefined
-                    );
-                  }
-                }}>
-                  <Text style={{ color: COLORS.primary, textAlign: 'right' }}>
-                    {orderData?.drop.address || orderData?.drop.address2 || orderData?.drop.address3 ? (
-                      <Text>
-                        {[orderData?.drop.address, orderData?.drop.address2, orderData?.drop.address3]
-                          .filter(Boolean)
-                          .join('\n')}
-                      </Text>
-                    ) : 'N/A'}
-                  </Text>
-                </TouchableOpacity>
-                {orderData?.drop.address && (
-                  <TouchableOpacity
-                    style={{ justifyContent: 'center', alignItems: 'center' }}
-                    onPress={() => {
-                      const fullAddress = [orderData?.drop.address, orderData?.drop.address2, orderData?.drop.address3]
-                        .filter(Boolean)
-                        .join('\n');
-                      copyAddressToClipboard(fullAddress);
-                    }}
-                  >
-                    <CopyIcon size={18} color={COLORS.primary} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
+
+            {renderAddressRow('drop', 1, 'orderDetail.dropoffDetails.location')}
+            {renderAddressRow('drop', 2, 'orderDetail.dropoffDetails.location')}
+            {renderAddressRow('drop', 3, 'orderDetail.dropoffDetails.location')}
+
+
             {/* Note Section */}
             <View style={styles.noteBox}>
               <Text style={styles.noteLabel}>{t('orderDetail.dropoffDetails.note')}</Text>
