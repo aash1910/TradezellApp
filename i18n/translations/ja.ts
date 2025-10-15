@@ -169,10 +169,11 @@ export default {
       canceled: 'キャンセル済み'
     },
     actions: {
-      completeDelivery: '配達完了',
+      acceptDelivery: '配達を受け取る',
       cancelDelivery: '配達キャンセル',
       editDelivery: '配達編集',
       leaveReview: 'レビューを書く',
+      viewReview: 'レビューを見る',
       sendMessage: 'メッセージを送る'
     },
     deliveryCompleted: {
@@ -220,13 +221,17 @@ export default {
   },
   review: {
     title: 'レビューを残す',
-    dropper: '配達員',
-    experienceQuestion: '配達員との経験はいかがでしたか？',
+    viewTitle: 'あなたのレビュー',
+    rider: 'ライダー',
+    experienceQuestion: 'ライダーとの経験はいかがでしたか？',
     writeReview: 'レビューを書く',
     enterReview: 'レビューを入力',
     maybeLater: '後で',
     submitReview: 'レビューを送信',
     submitting: '送信中...',
+    yourRating: 'あなたの評価',
+    yourReview: 'あなたのレビュー',
+    close: '閉じる',
     validation: {
       selectRating: '評価を選択してください',
       writeReview: 'レビューを書いてください'
@@ -234,6 +239,9 @@ export default {
     success: {
       title: '成功',
       message: 'レビューが正常に送信されました'
+    },
+    error: {
+      fetchFailed: 'レビューの読み込みに失敗しました'
     }
   },
   updateProfile: {

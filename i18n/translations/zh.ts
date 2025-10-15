@@ -168,10 +168,11 @@ export default {
       canceled: '已取消'
     },
     actions: {
-      completeDelivery: '完成配送',
+      acceptDelivery: '接受配送',
       cancelDelivery: '取消配送',
       editDelivery: '编辑配送',
       leaveReview: '留下评价',
+      viewReview: '查看评价',
       sendMessage: '发送消息'
     },
     deliveryCompleted: {
@@ -219,13 +220,17 @@ export default {
   },
   review: {
     title: '留下评价',
-    dropper: '配送员',
-    experienceQuestion: '您与配送员的体验如何？',
+    viewTitle: '您的评价',
+    rider: '骑手',
+    experienceQuestion: '您与骑手的体验如何？',
     writeReview: '写下您的评价',
     enterReview: '输入评价',
     maybeLater: '稍后再说',
     submitReview: '提交评价',
     submitting: '提交中...',
+    yourRating: '您的评分',
+    yourReview: '您的评价',
+    close: '关闭',
     validation: {
       selectRating: '请选择评分',
       writeReview: '请写下评价'
@@ -233,6 +238,9 @@ export default {
     success: {
       title: '成功',
       message: '评价提交成功'
+    },
+    error: {
+      fetchFailed: '加载评价失败'
     }
   },
   updateProfile: {

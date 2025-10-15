@@ -168,10 +168,11 @@ export default {
       canceled: 'Cancelado'
     },
     actions: {
-      completeDelivery: 'Concluir Entrega',
+      acceptDelivery: 'Aceitar Entrega',
       cancelDelivery: 'Cancelar Entrega',
       editDelivery: 'Editar Entrega',
       leaveReview: 'Deixar Avaliação',
+      viewReview: 'Ver Avaliação',
       sendMessage: 'Enviar mensagem'
     },
     deliveryCompleted: {
@@ -219,13 +220,17 @@ export default {
   },
   review: {
     title: 'Deixar Avaliação',
-    dropper: 'Entregador',
-    experienceQuestion: 'Como foi sua experiência com o entregador?',
+    viewTitle: 'Sua Avaliação',
+    rider: 'Motociclista',
+    experienceQuestion: 'Como foi sua experiência com o motociclista?',
     writeReview: 'Escreva sua Avaliação',
     enterReview: 'Inserir Avaliação',
     maybeLater: 'Talvez depois',
     submitReview: 'Enviar avaliação',
     submitting: 'Enviando...',
+    yourRating: 'Sua Avaliação',
+    yourReview: 'Sua Avaliação',
+    close: 'Fechar',
     validation: {
       selectRating: 'Por favor, selecione uma avaliação',
       writeReview: 'Por favor, escreva uma avaliação'
@@ -233,6 +238,9 @@ export default {
     success: {
       title: 'Sucesso',
       message: 'Avaliação enviada com sucesso'
+    },
+    error: {
+      fetchFailed: 'Falha ao carregar avaliação'
     }
   },
   updateProfile: {

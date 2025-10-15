@@ -161,7 +161,7 @@ export default function ReviewScreen() {
             </View>
             <View style={styles.senderProfileTextContainer}> 
               <Text style={styles.title}>{orderData?.order?.dropper?.name}</Text>
-              <Text style={styles.subtitle}>{t('review.dropper')}</Text>
+              <Text style={styles.subtitle}>{t('review.rider')}</Text>
               <Text style={styles.price}>{orderData?.price}</Text>
             </View>
           </View>

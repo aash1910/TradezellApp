@@ -168,10 +168,12 @@ export default {
       canceled: 'Annulée'
     },
     actions: {
-      completeDelivery: 'Terminer la livraison',
+      acceptDelivery: 'Accepter la livraison',
       cancelDelivery: 'Annuler la livraison',
       editDelivery: 'Modifier la livraison',
       leaveReview: 'Laisser un avis',
+      viewReview: 'Voir votre avis',
+      viewRiderReview: 'Voir l\'avis du coursier',
       sendMessage: 'Envoyer un message'
     },
     deliveryCompleted: {
@@ -219,13 +221,22 @@ export default {
   },
   review: {
     title: 'Laisser un avis',
-    dropper: 'Livreur',
-    experienceQuestion: 'Comment était votre expérience avec le livreur ?',
+    viewTitle: 'Votre avis',
+    viewRiderReviewTitle: 'Avis du coursier',
+    rider: 'Coursier',
+    sender: 'Expéditeur',
+    experienceQuestion: 'Comment était votre expérience avec le coursier ?',
     writeReview: 'Écrire un avis',
     enterReview: 'Saisir un avis',
     maybeLater: 'Peut-être plus tard',
     submitReview: 'Soumettre l\'avis',
     submitting: 'Soumission...',
+    yourRating: 'Votre note',
+    yourReview: 'Votre avis',
+    riderRating: 'Note du coursier',
+    riderReview: 'Avis du coursier',
+    close: 'Fermer',
+    noRiderReview: 'Le coursier n\'a pas encore laissé d\'avis',
     validation: {
       selectRating: 'Veuillez sélectionner une note',
       writeReview: 'Veuillez écrire un avis'
@@ -233,6 +244,10 @@ export default {
     success: {
       title: 'Succès',
       message: 'Avis soumis avec succès'
+    },
+    error: {
+      fetchFailed: 'Échec du chargement de l\'avis',
+      noReviewAvailable: 'Aucun avis disponible'
     }
   },
   updateProfile: {

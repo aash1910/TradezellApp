@@ -168,10 +168,11 @@ export default {
       canceled: 'Storniert'
     },
     actions: {
-      completeDelivery: 'Lieferung abschließen',
+      acceptDelivery: 'Lieferung annehmen',
       cancelDelivery: 'Lieferung stornieren',
       editDelivery: 'Lieferung bearbeiten',
       leaveReview: 'Bewertung abgeben',
+      viewReview: 'Bewertung anzeigen',
       sendMessage: 'Nachricht senden'
     },
     deliveryCompleted: {
@@ -219,13 +220,17 @@ export default {
   },
   review: {
     title: 'Bewertung abgeben',
-    dropper: 'Kurier',
-    experienceQuestion: 'Wie war Ihre Erfahrung mit dem Kurier?',
+    viewTitle: 'Ihre Bewertung',
+    rider: 'Fahrer',
+    experienceQuestion: 'Wie war Ihre Erfahrung mit dem Fahrer?',
     writeReview: 'Bewertung schreiben',
     enterReview: 'Bewertung eingeben',
     maybeLater: 'Vielleicht später',
     submitReview: 'Bewertung absenden',
     submitting: 'Wird gesendet...',
+    yourRating: 'Ihre Bewertung',
+    yourReview: 'Ihre Bewertung',
+    close: 'Schließen',
     validation: {
       selectRating: 'Bitte wählen Sie eine Bewertung',
       writeReview: 'Bitte schreiben Sie eine Bewertung'
@@ -233,6 +238,9 @@ export default {
     success: {
       title: 'Erfolg',
       message: 'Bewertung erfolgreich gesendet'
+    },
+    error: {
+      fetchFailed: 'Bewertung konnte nicht geladen werden'
     }
   },
   updateProfile: {

@@ -130,7 +130,8 @@
         "locale": "en-US",
         "maxWithdrawal": 100000,
         "minWithdrawal": 100
-      }
+      },
+      "environment": "development"
     }
   }
 }

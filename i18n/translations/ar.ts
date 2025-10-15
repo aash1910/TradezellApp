@@ -168,10 +168,11 @@ export default {
       canceled: 'ملغي'
     },
     actions: {
-      completeDelivery: 'إكمال التسليم',
+      acceptDelivery: 'قبول التسليم',
       cancelDelivery: 'إلغاء التسليم',
       editDelivery: 'تعديل التسليم',
       leaveReview: 'ترك تقييم',
+      viewReview: 'عرض التقييم',
       sendMessage: 'إرسال رسالة'
     },
     deliveryCompleted: {
@@ -219,13 +220,17 @@ export default {
   },
   review: {
     title: 'ترك تقييم',
-    dropper: 'المسلم',
-    experienceQuestion: 'كيف كانت تجربتك مع المسلم؟',
+    viewTitle: 'تقييمك',
+    rider: 'السائق',
+    experienceQuestion: 'كيف كانت تجربتك مع السائق؟',
     writeReview: 'اكتب تقييمك',
     enterReview: 'أدخل التقييم',
     maybeLater: 'ربما لاحقًا',
     submitReview: 'إرسال التقييم',
     submitting: 'جاري الإرسال...',
+    yourRating: 'تقييمك',
+    yourReview: 'مراجعتك',
+    close: 'إغلاق',
     validation: {
       selectRating: 'يرجى اختيار تقييم',
       writeReview: 'يرجى كتابة تقييم'
@@ -233,6 +238,9 @@ export default {
     success: {
       title: 'نجاح',
       message: 'تم إرسال التقييم بنجاح'
+    },
+    error: {
+      fetchFailed: 'فشل تحميل التقييم'
     }
   },
   updateProfile: {

@@ -168,10 +168,11 @@ export default {
       canceled: 'Avbruten'
     },
     actions: {
-      completeDelivery: 'Slutför leverans',
+      acceptDelivery: 'Acceptera leverans',
       cancelDelivery: 'Avbryt leverans',
       editDelivery: 'Redigera leverans',
       leaveReview: 'Lämna en recension',
+      viewReview: 'Visa recension',
       sendMessage: 'Skicka meddelande'
     },
     deliveryCompleted: {
@@ -219,13 +220,17 @@ export default {
   },
   review: {
     title: 'Lämna omdöme',
-    dropper: 'Budbärare',
-    experienceQuestion: 'Hur var din upplevelse med budbäraren?',
+    viewTitle: 'Ditt omdöme',
+    rider: 'Förare',
+    experienceQuestion: 'Hur var din upplevelse med föraren?',
     writeReview: 'Skriv omdöme',
     enterReview: 'Ange omdöme',
     maybeLater: 'Kanske senare',
     submitReview: 'Skicka omdöme',
     submitting: 'Skickar...',
+    yourRating: 'Ditt betyg',
+    yourReview: 'Ditt omdöme',
+    close: 'Stäng',
     validation: {
       selectRating: 'Vänligen välj betyg',
       writeReview: 'Vänligen skriv ett omdöme'
@@ -233,6 +238,9 @@ export default {
     success: {
       title: 'Framgång',
       message: 'Omdöme skickat framgångsrikt'
+    },
+    error: {
+      fetchFailed: 'Misslyckades att ladda omdöme'
     }
   },
   updateProfile: {

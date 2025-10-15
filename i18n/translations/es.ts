@@ -168,10 +168,11 @@ export default {
       canceled: 'Cancelado'
     },
     actions: {
-      completeDelivery: 'Completar Entrega',
+      acceptDelivery: 'Aceptar Entrega',
       cancelDelivery: 'Cancelar Entrega',
       editDelivery: 'Editar Entrega',
       leaveReview: 'Dejar una reseña',
+      viewReview: 'Ver reseña',
       sendMessage: 'Enviar mensaje'
     },
     deliveryCompleted: {
@@ -219,13 +220,17 @@ export default {
   },
   review: {
     title: 'Dejar una reseña',
-    dropper: 'Repartidor',
+    viewTitle: 'Tu reseña',
+    rider: 'Repartidor',
     experienceQuestion: '¿Cómo fue tu experiencia con el repartidor?',
     writeReview: 'Escribe tu reseña',
     enterReview: 'Ingresa tu reseña',
     maybeLater: 'Quizás después',
     submitReview: 'Enviar reseña',
     submitting: 'Enviando...',
+    yourRating: 'Tu calificación',
+    yourReview: 'Tu reseña',
+    close: 'Cerrar',
     validation: {
       selectRating: 'Por favor selecciona una calificación',
       writeReview: 'Por favor escribe una reseña'
@@ -233,6 +238,9 @@ export default {
     success: {
       title: 'Éxito',
       message: 'Reseña enviada exitosamente'
+    },
+    error: {
+      fetchFailed: 'Error al cargar la reseña'
     }
   },
   updateProfile: {

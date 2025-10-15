@@ -178,10 +178,12 @@ export default {
       canceled: 'Canceled'
     },
     actions: {
-      completeDelivery: 'Complete Delivery',
+      acceptDelivery: 'Accept Delivery',
       cancelDelivery: 'Cancel Delivery',
       editDelivery: 'Edit Delivery',
       leaveReview: 'Leave a review',
+      viewReview: 'View your review',
+      viewRiderReview: 'View rider review',
       sendMessage: 'Send message'
     },
     deliveryCompleted: {
@@ -251,13 +253,22 @@ export default {
   takeOrder: 'Take order!',
   review: {
     title: 'Leave a review',
-    dropper: 'Dropper',
-    experienceQuestion: 'How was your experience with the dropper?',
+    viewTitle: 'Your Review',
+    viewRiderReviewTitle: 'Rider Review',
+    rider: 'Rider',
+    sender: 'Sender',
+    experienceQuestion: 'How was your experience with the rider?',
     writeReview: 'Write your Review',
     enterReview: 'Enter Review',
     maybeLater: 'Maybe later',
     submitReview: 'Submit review',
     submitting: 'Submitting...',
+    yourRating: 'Your Rating',
+    yourReview: 'Your Review',
+    riderRating: 'Rider Rating',
+    riderReview: 'Rider Review',
+    close: 'Close',
+    noRiderReview: 'Rider has not left a review yet',
     validation: {
       selectRating: 'Please select a rating',
       writeReview: 'Please write a review'
@@ -265,6 +276,10 @@ export default {
     success: {
       title: 'Success',
       message: 'Review submitted successfully'
+    },
+    error: {
+      fetchFailed: 'Failed to load review',
+      noReviewAvailable: 'No review available'
     }
   },
   updateProfile: {

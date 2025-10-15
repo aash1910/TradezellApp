@@ -57,6 +57,7 @@ export interface Package {
       mobile: string;
     };
     review_submitted?: boolean;
+    review_submitted_rider?: boolean;
     created_at?: string;
     updated_at?: string;
   };

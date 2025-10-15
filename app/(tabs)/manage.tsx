@@ -24,6 +24,7 @@ import { MessageIcon } from '@/components/icons/MessageIcon';
 import { ProfileIcon } from '@/components/icons/ProfileIcon';
 import { SimpleCheckIcon } from '@/components/icons/SimpleCheckIcon';
 import { SuccessBadgeIcon } from '@/components/icons/SuccessBadgeIcon';
+import { StarIcon } from '@/components/icons/StarIcon';
 import { packageListService } from '@/services/packageList.service';
 import { packageService } from '@/services/package.service';
 import { orderService } from '@/services/order.service';
@@ -35,6 +36,7 @@ import { useTranslation } from 'react-i18next';
 import { getCurrencyConfig } from '@/constants/Currency';
 import * as Location from 'expo-location';
 import { getCityAndCountry } from '@/utils/addressUtils';
+import Constants from 'expo-constants';
 
 const HEADER_HEIGHT = 80;
 
@@ -63,13 +65,20 @@ export default function ManageScreen() {
   const [modalDeliveryCompletedVisible, setModalDeliveryCompletedVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalCancelDeliveryVisible, setModalCancelDeliveryVisible] = useState(false);
+  const [modalViewReviewVisible, setModalViewReviewVisible] = useState(false);
+  const [modalViewRiderReviewVisible, setModalViewRiderReviewVisible] = useState(false);
   const [shouldOpenSecond, setShouldOpenSecond] = useState(false);
   const [shouldOpenThird, setShouldOpenThird] = useState(false);
+  const [shouldOpenReviewModal, setShouldOpenReviewModal] = useState(false);
+  const [shouldOpenRiderReviewModal, setShouldOpenRiderReviewModal] = useState(false);
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reviewData, setReviewData] = useState<{rating: number, review_text: string} | null>(null);
+  const [riderReviewData, setRiderReviewData] = useState<{rating: number, review_text: string, reviewer: {name: string, image: string}} | null>(null);
+  const [loadingReview, setLoadingReview] = useState(false);
 
   const [activeTab, setActiveTab] = useState(0);
   const translateX = useSharedValue(0);
@@ -139,13 +148,20 @@ export default function ManageScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchUnreadCount();
-      // Start polling every 5 seconds
-      if (unreadCountIntervalRef.current) {
-        clearInterval(unreadCountIntervalRef.current);
+      
+      const environment = Constants.expoConfig?.extra?.environment;
+      
+      // Only start polling if not in development mode
+      if (environment !== 'development') {
+        // Start polling every 5 seconds
+        if (unreadCountIntervalRef.current) {
+          clearInterval(unreadCountIntervalRef.current);
+        }
+        unreadCountIntervalRef.current = setInterval(() => {
+          fetchUnreadCount();
+        }, 5000);
       }
-      unreadCountIntervalRef.current = setInterval(() => {
-        fetchUnreadCount();
-      }, 5000);
+      
       // Cleanup polling when screen loses focus
       return () => {
         if (unreadCountIntervalRef.current) {
@@ -167,6 +183,56 @@ export default function ManageScreen() {
       console.error('Error fetching packages:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReview = async (orderId: number) => {
+    try {
+      setLoadingReview(true);
+      const response = await api.get(`/reviews/order/${orderId}`);
+      if (response.data.status === 'success' && response.data.data) {
+        setReviewData({
+          rating: response.data.data.rating,
+          review_text: response.data.data.review_text
+        });
+        setModalViewReviewVisible(true);
+      } else {
+        Alert.alert(t('common.error'), t('review.error.fetchFailed'));
+      }
+    } catch (err) {
+      console.error('Error fetching review:', err);
+      Alert.alert(t('common.error'), t('review.error.fetchFailed'));
+    } finally {
+      setLoadingReview(false);
+    }
+  };
+
+  const fetchRiderReview = async (orderId: number) => {
+    try {
+      setLoadingReview(true);
+      const response = await api.get(`/reviews/order/${orderId}/received`);
+      
+      if (response.data.status === 'success' && response.data.has_review && response.data.data) {
+        setRiderReviewData({
+          rating: response.data.data.rating,
+          review_text: response.data.data.review_text,
+          reviewer: {
+            name: response.data.data.reviewer?.name || 'Rider',
+            image: response.data.data.reviewer?.image || ''
+          }
+        });
+        setModalViewRiderReviewVisible(true);
+      } else if (response.data.status === 'success' && !response.data.has_review) {
+        // Rider hasn't reviewed yet - this is expected
+        Alert.alert(t('review.noRiderReview'), t('review.error.noReviewAvailable'));
+      } else {
+        Alert.alert(t('common.error'), t('review.error.fetchFailed'));
+      }
+    } catch (err: any) {
+      console.error('Error fetching rider review:', err);
+      Alert.alert(t('common.error'), t('review.error.fetchFailed'));
+    } finally {
+      setLoadingReview(false);
     }
   };
 
@@ -512,6 +578,18 @@ export default function ManageScreen() {
                   setModalCancelDeliveryVisible(true);
                   setShouldOpenThird(false); // reset flag
                 }
+                if (shouldOpenReviewModal) {
+                  if (selectedPackage?.order?.id) {
+                    fetchReview(selectedPackage.order.id);
+                  }
+                  setShouldOpenReviewModal(false); // reset flag
+                }
+                if (shouldOpenRiderReviewModal) {
+                  if (selectedPackage?.order?.id) {
+                    fetchRiderReview(selectedPackage.order.id);
+                  }
+                  setShouldOpenRiderReviewModal(false); // reset flag
+                }
               }}
               swipeDirection="down"
               isVisible={modalVisible}
@@ -569,7 +647,7 @@ export default function ManageScreen() {
                     {isCompleting ? (
                       <ActivityIndicator color={COLORS.text} style={styles.modalOptionText} />
                     ) : (
-                      <Text style={styles.modalOptionText}>{t('managePage.actions.completeDelivery')}</Text>
+                      <Text style={styles.modalOptionText}>{t('managePage.actions.acceptDelivery')}</Text>
                     )}
                    </TouchableOpacity>
                    <TouchableOpacity style={[styles.modalOption, {borderBottomWidth: 0}]} onPress={() => {
@@ -607,19 +685,38 @@ export default function ManageScreen() {
                   )}
                   {selectedPackage?.order.status === 'completed' && (
                     <>
-                    <TouchableOpacity style={styles.modalOption} onPress={() => {
-                      setModalVisible(false);
-                      if (selectedPackage?.order.review_submitted) {
-                        Alert.alert('Review already submitted');
-                        return;
-                      }
-                      router.push({
-                        pathname: '/review',
-                        params: { orderData: JSON.stringify(selectedPackage) }
-                      });
-                    }}>
+                    {!selectedPackage?.order.review_submitted ? (
+                      <TouchableOpacity style={styles.modalOption} onPress={() => {
+                        setModalVisible(false);
+                        router.push({
+                          pathname: '/review',
+                          params: { orderData: JSON.stringify(selectedPackage) }
+                        });
+                      }}>
+                        <RoundedEditIcon size={20} />
+                        <Text style={styles.modalOptionText}>{t('managePage.actions.leaveReview')}</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity 
+                        style={styles.modalOption} 
+                        onPress={() => {
+                          setModalVisible(false);
+                          setShouldOpenReviewModal(true);
+                        }}
+                      >
+                        <RoundedEditIcon size={20} />
+                        <Text style={styles.modalOptionText}>{t('managePage.actions.viewReview')}</Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity 
+                      style={styles.modalOption} 
+                      onPress={() => {
+                        setModalVisible(false);
+                        setShouldOpenRiderReviewModal(true);
+                      }}
+                    >
                       <RoundedEditIcon size={20} />
-                      <Text style={styles.modalOptionText}>{t('managePage.actions.leaveReview')}</Text>
+                      <Text style={styles.modalOptionText}>{t('managePage.actions.viewRiderReview')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.modalOption, {borderBottomWidth: 0}]} onPress={() => {
                       setModalVisible(false);
@@ -760,6 +857,120 @@ export default function ManageScreen() {
                     </TouchableOpacity>
                   </View>
 
+                </View>
+              </View>
+            </Modal>
+
+            <Modal
+              onSwipeComplete={() => setModalViewReviewVisible(false)}
+              swipeDirection="down"
+              isVisible={modalViewReviewVisible}
+              style={{ justifyContent: 'flex-end', margin: 0 }}
+            >
+              <View style={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <View style={styles.modalToggleButton}></View>
+                  <Text style={styles.modalTitle}>{t('review.viewTitle')}</Text>
+                  
+                  {/* Rider Profile */}
+                  <View style={styles.senderProfileContainer}>
+                    <View style={styles.senderProfileImageContainer}>
+                      <Image 
+                        source={riderReviewData?.reviewer?.image ? { uri: `${(api.defaults.baseURL || '').replace('/api', '')}/${riderReviewData.reviewer.image}` } : require('@/assets/img/profile-blank.png')} 
+                        style={styles.senderProfileImage} 
+                      />
+                    </View>
+                    <View style={styles.senderProfileTextContainer}>
+                      <Text style={styles.riderName}>{riderReviewData?.reviewer?.name}</Text>
+                      <Text style={styles.riderLabel}>{t('review.rider')}</Text>
+                    </View>
+                  </View>
+
+                  {/* Rating Display */}
+                  <View style={styles.reviewRatingContainer}>
+                    <Text style={styles.reviewLabel}>{t('review.yourRating')}</Text>
+                    <View style={styles.reviewStarContainer}>
+                      {Array(5).fill(0).map((_, index) => (
+                        <StarIcon 
+                          key={index}
+                          width={40} 
+                          height={40} 
+                          color={index < (reviewData?.rating || 0) ? COLORS.primary : "#E6E6E6"} 
+                        />
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Review Text */}
+                  <View style={styles.reviewTextDisplayContainer}>
+                    <Text style={styles.reviewLabel}>{t('review.yourReview')}</Text>
+                    <Text style={styles.reviewTextDisplay}>{reviewData?.review_text}</Text>
+                  </View>
+
+                  {/* Close Button */}
+                  <TouchableOpacity 
+                    style={[styles.loginButton, { marginTop: 24 }]} 
+                    onPress={() => setModalViewReviewVisible(false)}
+                  >
+                    <Text style={styles.loginText}>{t('review.close')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+
+            <Modal
+              onSwipeComplete={() => setModalViewRiderReviewVisible(false)}
+              swipeDirection="down"
+              isVisible={modalViewRiderReviewVisible}
+              style={{ justifyContent: 'flex-end', margin: 0 }}
+            >
+              <View style={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <View style={styles.modalToggleButton}></View>
+                  <Text style={styles.modalTitle}>{t('review.viewRiderReviewTitle')}</Text>
+                  
+                  {/* Rider Profile */}
+                  <View style={styles.senderProfileContainer}>
+                    <View style={styles.senderProfileImageContainer}>
+                      <Image 
+                        source={riderReviewData?.reviewer?.image ? { uri: `${(api.defaults.baseURL || '').replace('/api', '')}/${riderReviewData.reviewer.image}` } : require('@/assets/img/profile-blank.png')} 
+                        style={styles.senderProfileImage} 
+                      />
+                    </View>
+                    <View style={styles.senderProfileTextContainer}>
+                      <Text style={styles.riderName}>{riderReviewData?.reviewer?.name}</Text>
+                      <Text style={styles.riderLabel}>{t('review.rider')}</Text>
+                    </View>
+                  </View>
+
+                  {/* Rating Display */}
+                  <View style={styles.reviewRatingContainer}>
+                    <Text style={styles.reviewLabel}>{t('review.riderRating')}</Text>
+                    <View style={styles.reviewStarContainer}>
+                      {Array(5).fill(0).map((_, index) => (
+                        <StarIcon 
+                          key={index}
+                          width={40} 
+                          height={40} 
+                          color={index < (riderReviewData?.rating || 0) ? COLORS.primary : "#E6E6E6"} 
+                        />
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Review Text */}
+                  <View style={styles.reviewTextDisplayContainer}>
+                    <Text style={styles.reviewLabel}>{t('review.riderReview')}</Text>
+                    <Text style={styles.reviewTextDisplay}>{riderReviewData?.review_text}</Text>
+                  </View>
+
+                  {/* Close Button */}
+                  <TouchableOpacity 
+                    style={[styles.loginButton, { marginTop: 24 }]} 
+                    onPress={() => setModalViewRiderReviewVisible(false)}
+                  >
+                    <Text style={styles.loginText}>{t('review.close')}</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </Modal>
@@ -1245,5 +1456,71 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     flex: 1,
     textAlign: 'right',
+  },
+  senderProfileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(238, 238, 238, 0.50)',
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 24,
+  },
+  senderProfileImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#D9D9D9',
+  },
+  senderProfileImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  senderProfileTextContainer: {
+    marginLeft: 14,
+    flex: 1,
+  },
+  riderName: {
+    fontSize: 16,
+    fontFamily: 'nunito-bold',
+    letterSpacing: 0.2,
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  riderLabel: {
+    fontSize: 12,
+    fontFamily: 'nunito-medium',
+    color: COLORS.subtitle,
+    letterSpacing: 0.2,
+  },
+  reviewRatingContainer: {
+    marginBottom: 24,
+  },
+  reviewLabel: {
+    fontSize: 14,
+    fontFamily: 'nunito-bold',
+    letterSpacing: 0.2,
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  reviewStarContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  reviewTextDisplayContainer: {
+    marginBottom: 8,
+  },
+  reviewTextDisplay: {
+    backgroundColor: 'rgba(238, 238, 238, 0.50)',
+    borderRadius: 12,
+    padding: 14,
+    fontFamily: 'nunito-regular',
+    fontSize: 14,
+    lineHeight: 20,
+    color: COLORS.text,
+    letterSpacing: 0.2,
+    minHeight: 100,
   },
 });

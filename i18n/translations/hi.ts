@@ -168,10 +168,11 @@ export default {
       canceled: 'रद्द'
     },
     actions: {
-      completeDelivery: 'डिलीवरी पूरी करें',
+      acceptDelivery: 'डिलीवरी स्वीकार करें',
       cancelDelivery: 'डिलीवरी रद्द करें',
       editDelivery: 'डिलीवरी संपादित करें',
       leaveReview: 'समीक्षा छोड़ें',
+      viewReview: 'समीक्षा देखें',
       sendMessage: 'संदेश भेजें'
     },
     deliveryCompleted: {
@@ -219,13 +220,17 @@ export default {
   },
   review: {
     title: 'समीक्षा छोड़ें',
-    dropper: 'ड्रॉपर',
-    experienceQuestion: 'ड्रॉपर के साथ आपका अनुभव कैसा रहा?',
+    viewTitle: 'आपकी समीक्षा',
+    rider: 'राइडर',
+    experienceQuestion: 'राइडर के साथ आपका अनुभव कैसा रहा?',
     writeReview: 'अपनी समीक्षा लिखें',
     enterReview: 'समीक्षा दर्ज करें',
     maybeLater: 'शायद बाद में',
     submitReview: 'समीक्षा जमा करें',
     submitting: 'जमा कर रहे हैं...',
+    yourRating: 'आपकी रेटिंग',
+    yourReview: 'आपकी समीक्षा',
+    close: 'बंद करें',
     validation: {
       selectRating: 'कृपया रेटिंग चुनें',
       writeReview: 'कृपया समीक्षा लिखें'
@@ -233,6 +238,9 @@ export default {
     success: {
       title: 'सफलता',
       message: 'समीक्षा सफलतापूर्वक जमा की गई'
+    },
+    error: {
+      fetchFailed: 'समीक्षा लोड करने में विफल'
     }
   },
   updateProfile: {

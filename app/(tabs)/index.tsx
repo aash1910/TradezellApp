@@ -14,6 +14,7 @@ import type { UserData, SettingsData } from '@/services/auth.service';
 import { getUnreadCount } from '@/services/notification.service';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import Animated, {
@@ -527,13 +528,20 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchUnreadCount();
-      // Start polling every 5 seconds
-      if (unreadCountIntervalRef.current) {
-        clearInterval(unreadCountIntervalRef.current);
+      
+      const environment = Constants.expoConfig?.extra?.environment;
+      
+      // Only start polling if not in development mode
+      if (environment !== 'development') {
+        // Start polling every 5 seconds
+        if (unreadCountIntervalRef.current) {
+          clearInterval(unreadCountIntervalRef.current);
+        }
+        unreadCountIntervalRef.current = setInterval(() => {
+          fetchUnreadCount();
+        }, 5000);
       }
-      unreadCountIntervalRef.current = setInterval(() => {
-        fetchUnreadCount();
-      }, 5000);
+      
       // Cleanup polling when screen loses focus
       return () => {
         if (unreadCountIntervalRef.current) {

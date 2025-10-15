@@ -2,6 +2,7 @@ import { Tabs, router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import Constants from 'expo-constants';
 
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
@@ -37,13 +38,18 @@ export default function TabLayout() {
     }, [])
   );
 
-  // Refresh unread count every 5 seconds when app is active
+  // Refresh unread count every 5 seconds when app is active (only in production)
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchUnreadCount();
-    }, 5000);
+    const environment = Constants.expoConfig?.extra?.environment;
+    
+    // Only start polling if not in development mode
+    if (environment !== 'development') {
+      const interval = setInterval(() => {
+        fetchUnreadCount();
+      }, 5000);
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   const COLORS = {

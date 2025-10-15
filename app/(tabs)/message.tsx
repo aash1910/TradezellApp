@@ -16,6 +16,7 @@ import { CameraIcon } from '@/components/icons/CameraIcon';
 import { MicrophoneIcon } from '@/components/icons/MicrophoneIcon';
 import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
+import Constants from 'expo-constants';
 
 interface Message {
   id: number;
@@ -93,6 +94,14 @@ export default function MessageScreen() {
   }, []);
 
   const startPolling = useCallback(() => {
+    const environment = Constants.expoConfig?.extra?.environment;
+    
+    // Only start polling if not in development mode
+    if (environment === 'development') {
+      console.log('Skipping polling in development mode');
+      return;
+    }
+    
     console.log('Starting polling, current count:', pollCountRef.current);
     // Clear any existing interval
     if (pollIntervalRef.current) {
