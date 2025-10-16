@@ -1282,30 +1282,19 @@ export default function HomeScreen() {
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
-                    placeholder={t('packageForm.location')} 
+                    placeholder="Tap icon or type location" 
                     value={location} 
-                    onChangeText={setLocation} 
+                    onChangeText={(text) => {
+                      setLocation(text);
+                      setMarker(null);
+                    }} 
                     style={styles.input} 
-                    editable={false}
-                    onPress={() => {
-                      openLocationModal({
-                        currentLocation: location, 
-                        currentRegion: region, 
-                        currentMarker: marker, 
-                        type: 'pickup',
-                        locationIndex: '1'
-                      });
-                    }}
+                    editable={true}
+                    clearButtonMode="always"
+                    selectionColor={COLORS.primary}
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey}
                   />
-                  {location ? (
-                    <TouchableOpacity
-                      onPress={() => { setLocation(''); setMarker(null); }}
-                      style={{ marginLeft: 8 }}
-                      accessibilityLabel="Clear location"
-                    >
-                      <Feather name="x-circle" size={16} color="#d32f2f" />
-                    </TouchableOpacity>
-                  ) : null}
                 </View>
 
                 {showLocation2 && (<View style={styles.inputContainer}>
@@ -1321,20 +1310,18 @@ export default function HomeScreen() {
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
-                    placeholder={t('packageForm.location')} 
+                    placeholder="Tap icon or type location" 
                     value={location2} 
-                    onChangeText={setLocation2} 
+                    onChangeText={(text) => {
+                      setLocation2(text);
+                      setMarker2(null);
+                    }} 
                     style={styles.input} 
-                    editable={false}
-                    onPress={() => {
-                      openLocationModal({
-                        currentLocation: location2,  
-                        currentRegion: region2, 
-                        currentMarker: marker2, 
-                        type: 'pickup',
-                        locationIndex: '2'
-                      });
-                    }}
+                    editable={true}
+                    clearButtonMode="always"
+                    selectionColor={COLORS.primary}
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey}
                   />
                   <TouchableOpacity
                     onPress={() => { setShowLocation2(false); setLocation2(''); setMarker2(null); }}
@@ -1358,20 +1345,18 @@ export default function HomeScreen() {
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
-                    placeholder={t('packageForm.location')} 
+                    placeholder="Tap icon or type location" 
                     value={location3} 
-                    onChangeText={setLocation3} 
+                    onChangeText={(text) => {
+                      setLocation3(text);
+                      setMarker3(null);
+                    }} 
                     style={styles.input} 
-                    editable={false}
-                    onPress={() => {
-                      openLocationModal({
-                        currentLocation: location3, 
-                        currentRegion: region3, 
-                        currentMarker: marker3, 
-                        type: 'pickup',
-                        locationIndex: '3'
-                      });
-                    }}
+                    editable={true}
+                    clearButtonMode="always"
+                    selectionColor={COLORS.primary}
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey}
                   />
                   <TouchableOpacity
                       onPress={() => { 
@@ -1532,30 +1517,19 @@ export default function HomeScreen() {
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
-                    placeholder={t('packageForm.location')} 
+                    placeholder="Tap icon or type location" 
                     value={locationDropOff} 
-                    onChangeText={setLocationDropOff} 
+                    onChangeText={(text) => {
+                      setLocationDropOff(text);
+                      setMarkerDropOff(null);
+                    }} 
                     style={styles.input} 
-                    editable={false}
-                    onPress={() => {
-                      openLocationModal({
-                        currentLocation: locationDropOff, 
-                        currentRegion: regionDropOff, 
-                        currentMarker: markerDropOff, 
-                        type: 'dropoff',
-                        locationIndex: '1'
-                      });
-                    }}
+                    editable={true}
+                    clearButtonMode="always"
+                    selectionColor={COLORS.primary}
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey}
                   />
-                  {locationDropOff ? (
-                    <TouchableOpacity
-                      onPress={() => { setLocationDropOff(''); setMarkerDropOff(null); }}
-                      style={{ marginLeft: 8 }}
-                      accessibilityLabel="Clear location"
-                    >
-                      <Feather name="x-circle" size={16} color="#d32f2f" />
-                    </TouchableOpacity>
-                  ) : null}
                 </View>
                 {showLocationDropOff2 && (<View style={styles.inputContainer}>
                   <TouchableOpacity onPress={() => {
@@ -1570,20 +1544,18 @@ export default function HomeScreen() {
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
-                    placeholder={t('packageForm.location')} 
+                    placeholder="Tap icon or type location" 
                     value={locationDropOff2} 
-                    onChangeText={setLocationDropOff2} 
+                    onChangeText={(text) => {
+                      setLocationDropOff2(text);
+                      setMarkerDropOff2(null);
+                    }} 
                     style={styles.input} 
-                    editable={false}
-                    onPress={() => {
-                      openLocationModal({
-                        currentLocation: locationDropOff2, 
-                        currentRegion: regionDropOff2, 
-                        currentMarker: markerDropOff2, 
-                        type: 'dropoff',
-                        locationIndex: '2'
-                      });
-                    }}
+                    editable={true}
+                    clearButtonMode="always"
+                    selectionColor={COLORS.primary}
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey}
                   />
                   <TouchableOpacity
                       onPress={() => { 
@@ -1610,20 +1582,18 @@ export default function HomeScreen() {
                     <LocationIcon size={20} color={COLORS.text} /> 
                   </TouchableOpacity>
                   <TextInput 
-                    placeholder={t('packageForm.location')} 
+                    placeholder="Tap icon or type location" 
                     value={locationDropOff3} 
-                    onChangeText={setLocationDropOff3} 
+                    onChangeText={(text) => {
+                      setLocationDropOff3(text);
+                      setMarkerDropOff3(null);
+                    }} 
                     style={styles.input} 
-                    editable={false}
-                    onPress={() => {
-                      openLocationModal({
-                        currentLocation: locationDropOff3, 
-                        currentRegion: regionDropOff3, 
-                        currentMarker: markerDropOff3, 
-                        type: 'dropoff',
-                        locationIndex: '3'
-                      });
-                    }}
+                    editable={true}
+                    clearButtonMode="always"
+                    selectionColor={COLORS.primary}
+                    returnKeyType="done"
+                    onSubmitEditing={handleReturnKey}
                   />
                   <TouchableOpacity
                       onPress={() => { 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "PiqDrop",
     "slug": "piqdrop",
-    "version": "1.0.21",
+    "version": "1.0.22",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
@@ -131,7 +131,8 @@
         "maxWithdrawal": 100000,
         "minWithdrawal": 100
       },
-      "environment": "development"
+      "environment2": "development",
+      "environment": "production"
     }
   }
 }

@@ -84,6 +84,7 @@ export default function ManageScreen() {
   const translateX = useSharedValue(0);
 
   const [filterBy, setFilterBy] = useState('orderDate');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const [isCanceling, setIsCanceling] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -252,18 +253,35 @@ export default function ManageScreen() {
   const getFilteredPackages = (): Package[] => {
     if (!packages) return [];
     
+    let filtered: Package[] = [];
     switch (activeTab) {
       case 0: // On going
-        return packages.filter(pkg => pkg.order.status === 'ongoing');
+        filtered = packages.filter(pkg => pkg.order.status === 'ongoing');
+        break;
       case 1: // Accepted
-        return packages.filter(pkg => pkg.order.status === 'active');
+        filtered = packages.filter(pkg => pkg.order.status === 'active');
+        break;
       case 2: // Completed
-        return packages.filter(pkg => pkg.order.status === 'completed');
+        filtered = packages.filter(pkg => pkg.order.status === 'completed');
+        break;
       case 3: // Canceled
-        return packages.filter(pkg => pkg.order.status === 'canceled');
+        filtered = packages.filter(pkg => pkg.order.status === 'canceled');
+        break;
       default:
-        return [];
+        filtered = [];
     }
+
+    // Sort by order date
+    if (filterBy === 'orderDate' && filtered.length > 0) {
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.order.created_at || a.created_at).getTime();
+        const dateB = new Date(b.order.created_at || b.created_at).getTime();
+        
+        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+      });
+    }
+
+    return filtered;
   };
 
   useEffect(() => {
@@ -368,9 +386,20 @@ export default function ManageScreen() {
                 <Text style={[styles.modalOptionText, {color: filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text}]}>Delivery date</Text>
                 <SimpleCheckIcon size={20} color={filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text} />
               </TouchableOpacity> */}
-              <TouchableOpacity style={styles.modalOption} onPress={() => setFilterBy('orderDate')}>
+              <TouchableOpacity style={styles.modalOption} onPress={() => {
+                // Toggle sort order if already on orderDate, otherwise set to orderDate with desc
+                if (filterBy === 'orderDate') {
+                  setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+                } else {
+                  setFilterBy('orderDate');
+                  setSortOrder('desc');
+                }
+                setModalFilterVisible(false);
+              }}>
                 <CalendarIcon size={20} color={filterBy === 'orderDate' ? COLORS.primary : COLORS.text} />
-                <Text style={[styles.modalOptionText, {color: filterBy === 'orderDate' ? COLORS.primary : COLORS.text}]}>Order date</Text>
+                <Text style={[styles.modalOptionText, {color: filterBy === 'orderDate' ? COLORS.primary : COLORS.text}]}>
+                  Order date {filterBy === 'orderDate' ? `(${sortOrder === 'desc' ? 'Newest first' : 'Oldest first'})` : ''}
+                </Text>
                 <SimpleCheckIcon size={20} color={filterBy === 'orderDate' ? COLORS.primary : COLORS.text} />
               </TouchableOpacity>
             </View>
