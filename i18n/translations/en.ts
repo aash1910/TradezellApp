@@ -182,8 +182,8 @@ export default {
       cancelDelivery: 'Cancel Delivery',
       editDelivery: 'Edit Delivery',
       leaveReview: 'Leave a review',
-      viewReview: 'View your review',
-      viewRiderReview: 'View rider review',
+      viewReview: 'View Review',
+      viewRiderReview: 'View Rider Review',
       sendMessage: 'Send message'
     },
     deliveryCompleted: {

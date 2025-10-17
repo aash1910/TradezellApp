@@ -905,12 +905,12 @@ export default function ManageScreen() {
                   <View style={styles.senderProfileContainer}>
                     <View style={styles.senderProfileImageContainer}>
                       <Image 
-                        source={riderReviewData?.reviewer?.image ? { uri: `${(api.defaults.baseURL || '').replace('/api', '')}/${riderReviewData.reviewer.image}` } : require('@/assets/img/profile-blank.png')} 
+                        source={selectedPackage?.order.dropper?.image ? { uri: `${(api.defaults.baseURL || '').replace('/api', '')}/${selectedPackage.order.dropper.image}` } : require('@/assets/img/profile-blank.png')} 
                         style={styles.senderProfileImage} 
                       />
                     </View>
                     <View style={styles.senderProfileTextContainer}>
-                      <Text style={styles.riderName}>{riderReviewData?.reviewer?.name}</Text>
+                      <Text style={styles.riderName}>{selectedPackage?.order.dropper?.name}</Text>
                       <Text style={styles.riderLabel}>{t('review.rider')}</Text>
                     </View>
                   </View>
