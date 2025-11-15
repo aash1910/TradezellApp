@@ -55,6 +55,8 @@ const COLORS = {
   subtitle: '#616161',
 };
 
+const isPickupCompleted = (pickupStatus?: number | string | null) => Number(pickupStatus ?? 0) === 1;
+
 export default function ManageScreen() {
   const { t } = useTranslation();
   const { refresh } = useLocalSearchParams();
@@ -546,8 +548,13 @@ export default function ManageScreen() {
                         </TouchableOpacity>
                         
                         <View style={styles.footer}>
-                          <Text style={styles.price}>{currencyConfig.code} {pkg.price}</Text>
+                          <Text style={styles.price}>{currencyConfig.symbol}{pkg.price}</Text>
                           <View style={styles.statusContainer}>
+                            {activeTab === 1 && isPickupCompleted(pkg.order?.pickup_status) && (
+                              <Text style={styles.pickupStatus}>
+                                {t('managePage.orderStatus.pickedUp', { defaultValue: 'Picked up' })}
+                              </Text>
+                            )}
                             {pkg.order.delivery_status === 1 && (
                               <Text style={styles.deliveryStatus}>Delivered</Text>
                             )}
@@ -817,7 +824,7 @@ export default function ManageScreen() {
                         <View style={styles.orderSummaryUserColumn}>
                           <Text style={styles.orderSummaryUserName}>{selectedPackage?.pickup.name}</Text>
                           <View style={styles.orderSummaryPriceBox}>
-                            <Text style={styles.orderSummaryPrice}>{currencyConfig.code} {selectedPackage?.price}</Text>
+                            <Text style={styles.orderSummaryPrice}>{currencyConfig.symbol}{selectedPackage?.price}</Text>
                           </View>
                         </View>
                       </View>
@@ -1261,6 +1268,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     backgroundColor: 'rgba(85, 176, 134, 0.15)',
+  },
+  pickupStatus: {
+    fontFamily: 'nunito-semibold',
+    fontSize: 12,
+    letterSpacing: 0.2,
+    lineHeight: 25,
+    color: '#F2A03D',
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(242, 160, 61, 0.15)',
   },
   modalContainer: {
     flex: 1,

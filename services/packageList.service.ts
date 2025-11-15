@@ -6,6 +6,8 @@ export interface Package {
   weight: string | number;
   price: string;
   status: string;
+  pickup_status?: number | string | null;
+  pickupStatus?: number | string | null;
   payment_status: string;
   sender: {
     id: number;
@@ -49,6 +51,7 @@ export interface Package {
   order: {
     id?: number;
     status: string;
+    pickup_status?: number;
     delivery_status?: number;
     dropper?: {
       id: number;

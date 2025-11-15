@@ -2,7 +2,7 @@
   "expo": {
     "name": "PiqDrop",
     "slug": "piqdrop",
-    "version": "1.0.24",
+    "version": "1.0.27",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
@@ -107,8 +107,7 @@
           "scheme": "fb1087628436894472",
           "advertiserIDCollectionEnabled": false,
           "autoLogAppEventsEnabled": false,
-          "isAutoInitEnabled": true,
-          "iosUserTrackingPermission": "This identifier will be used to deliver personalized ads to you."
+          "isAutoInitEnabled": true
         }
       ],
       "expo-secure-store"

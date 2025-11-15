@@ -300,7 +300,7 @@ function PaymentCardModal({
             <Text>{orderData.pickup.name} → {orderData.drop.name}</Text>
             <Text>{getCityAndCountry(orderData.pickup.address)} → {getCityAndCountry(orderData.drop.address)}</Text>
             <Text>{t('paymentPreview.weight')}: {typeof orderData.weight === 'string' ? orderData.weight : `${orderData.weight}kg`}</Text>
-            <Text>{t('paymentPreview.price')}: {currencyConfig.code} {parseFloat(orderData.price).toFixed(2)}</Text>
+            <Text>{t('paymentPreview.price')}: {currencyConfig.symbol}{parseFloat(orderData.price).toFixed(2)}</Text>
           </View>
           <View style={{ marginBottom: 16 }}>
             <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>{t('paymentPreview.cardDetails') || 'Card Details'}</Text>
@@ -328,7 +328,7 @@ function PaymentCardModal({
               </>
             ) : (
               <Text style={{ color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold' }}>
-                {t('paymentPreview.payNow')} {currencyConfig.code} {parseFloat(orderData.price).toFixed(2)}
+                {t('paymentPreview.payNow')} {currencyConfig.symbol}{parseFloat(orderData.price).toFixed(2)}
               </Text>
             )}
           </TouchableOpacity>
@@ -1016,7 +1016,7 @@ export default function OrderDetailScreen() {
               )}
 
               <View style={styles.orderSummaryPriceBox}>
-                <Text style={styles.orderSummaryPrice}>{currencyConfig.code} {parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
+                <Text style={styles.orderSummaryPrice}>{currencyConfig.symbol}{parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
               </View>
             </View>
           </View>
@@ -1045,7 +1045,7 @@ export default function OrderDetailScreen() {
             </View>
             <View style={styles.pickupDetailsRow}>
               <Text style={styles.pickupDetailsLabel}>{t('orderDetail.pickupDetails.price')}</Text>
-              <Text style={styles.pickupDetailsValue}> {currencyConfig.code} {parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
+              <Text style={styles.pickupDetailsValue}>{currencyConfig.symbol}{parseFloat(orderData?.price || '0.00').toFixed(2)}</Text>
             </View>
             
             {renderAddressRow('pickup', 1, 'orderDetail.pickupDetails.location')}
@@ -1159,7 +1159,7 @@ export default function OrderDetailScreen() {
               <>
                 <MoneyIcon size={20} color={COLORS.buttonText} />
                 <Text style={[styles.paymentButtonText, { marginLeft: 8 }]}>
-                  {t('paymentPreview.payNow')} {currencyConfig.code} {parseFloat(orderData.price).toFixed(2)}
+                  {t('paymentPreview.payNow')} {currencyConfig.symbol}{parseFloat(orderData.price).toFixed(2)}
                 </Text>
               </>
             )}
