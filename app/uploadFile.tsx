@@ -89,7 +89,7 @@ export default function UploadFileScreen() {
     try {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: 'images',
-        allowsEditing: true,
+        allowsEditing: Platform.OS === 'ios',
         aspect: [1, 1],
         quality: 1,
       });
@@ -123,7 +123,7 @@ export default function UploadFileScreen() {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: 'images',
-        allowsEditing: true,
+        allowsEditing: Platform.OS === 'ios',
         aspect: [1, 1],
         quality: 1,
       });
@@ -156,7 +156,7 @@ export default function UploadFileScreen() {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: 'images',
-        allowsEditing: true,
+        allowsEditing: Platform.OS === 'ios',
         aspect: [1, 1],
         quality: 1,
       });
@@ -189,7 +189,7 @@ export default function UploadFileScreen() {
     try {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: 'images',
-        allowsEditing: true,
+        allowsEditing: Platform.OS === 'ios',
         aspect: [1, 1],
         quality: 1,
       });
@@ -435,7 +435,7 @@ export default function UploadFileScreen() {
                 <Icon name="x" size={24} color={COLORS.text} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.legalModalContent}>
+            <ScrollView style={styles.legalModalContent} contentContainerStyle={styles.legalModalContentContainer}>
               <Text style={styles.legalModalText}>{legalContent.content}</Text>
             </ScrollView>
           </View>
@@ -639,6 +639,9 @@ const styles = StyleSheet.create({
   },
   legalModalContent: {
     padding: 20,
+  },
+  legalModalContentContainer: {
+    paddingBottom: 48,
   },
   legalModalText: {
     fontSize: 16,

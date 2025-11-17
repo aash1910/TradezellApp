@@ -1015,7 +1015,7 @@ export default function HomeScreen() {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: 'images',
-        allowsEditing: true,
+        allowsEditing: Platform.OS === 'ios',
         aspect: [1, 1],
         quality: 1,
       });
@@ -1039,7 +1039,7 @@ export default function HomeScreen() {
       }
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: 'images',
-        allowsEditing: true,
+        allowsEditing: Platform.OS === 'ios',
         aspect: [1, 1],
         quality: 1,
       });

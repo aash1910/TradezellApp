@@ -715,7 +715,7 @@ export default function AccountScreen() {
                 <Icon name="x" size={24} color={COLORS.text} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.legalModalContent}>
+            <ScrollView style={styles.legalModalContent} contentContainerStyle={styles.legalModalContentContainer}>
               <Text style={styles.legalModalText}>{legalContent.content}</Text>
             </ScrollView>
           </View>
@@ -1186,6 +1186,9 @@ const styles = StyleSheet.create({
   },
   legalModalContent: {
     padding: 20,
+  },
+  legalModalContentContainer: {
+    paddingBottom: 48,
   },
   legalModalText: {
     fontSize: 16,

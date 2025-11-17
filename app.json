@@ -52,6 +52,7 @@
       },
       "package": "com.piqdrop.app",
       "versionCode": 1,
+      "softwareKeyboardLayoutMode": "pan",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -130,8 +131,8 @@
         "maxWithdrawal": 100000,
         "minWithdrawal": 100
       },
-      "environment2": "development",
-      "environment": "production"
+      "environment": "development",
+      "environment2": "production"
     },
     "owner": "masum_advance"
   }

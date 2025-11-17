@@ -307,7 +307,7 @@ function PaymentCardModal({
             <CardField
               postalCodeEnabled={false}
               placeholders={{ number: '4242 4242 4242 4242' }}
-              cardStyle={{ backgroundColor: '#fff', textColor: '#212121', borderRadius: 8, borderWidth: 1, borderColor: '#eee' }}
+              cardStyle={{ backgroundColor: '#ffffff', textColor: '#212121', borderRadius: 8, borderWidth: 1, borderColor: '#eeeeee' }}
               style={{ height: 50, marginBottom: 8 }}
               onCardChange={(cardDetails) => setCardComplete(cardDetails.complete)}
             />
@@ -357,6 +357,7 @@ export default function OrderDetailScreen() {
   const [isMapReady, setIsMapReady] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedMarker, setSelectedMarker] = useState<'pickup' | 'dropoff' | null>(null);
   const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
   const { t } = useTranslation();
   const currencyConfig = getCurrencyConfig();
@@ -615,6 +616,7 @@ export default function OrderDetailScreen() {
     setMapCenter(null);
     setIsMapReady(false);
     setShowDirectionLine(false);
+    setSelectedMarker(null);
   }, [params.orderData]);
 
   // Auto-show payment modal for unpaid orders
@@ -897,6 +899,11 @@ export default function OrderDetailScreen() {
             rotateEnabled={true}
             customMapStyle={mapStyle}
             onLayout={() => setIsMapReady(true)}
+            onPress={() => {
+              if (Platform.OS === 'android') {
+                setSelectedMarker(null);
+              }
+            }}
           >
             {isMapReady && pickupCoords && (
               <Marker
@@ -904,35 +911,40 @@ export default function OrderDetailScreen() {
                 coordinate={pickupCoords}
                 onPress={() => {
                   setShowDirectionLine(true);
+                  if (Platform.OS === 'android') {
+                    setSelectedMarker('pickup');
+                  }
                 }}
               >
                 <Image source={require('@/assets/icons/pickup-marker.png')} style={{ width: 36, height: 36 }} />
-                <Callout
-                  onPress={() => {
-                    // Open Google Maps navigation when callout is tapped
-                    if (orderData?.pickup.address && orderData?.drop.address) {
-                      openGoogleMapsNavigation(
-                        orderData.pickup.address, 
-                        orderData.drop.address,
-                        orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng 
-                          ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
-                          : undefined,
-                        orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng 
-                          ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
-                          : undefined
-                      );
-                    }
-                  }}
-                >
-                  <View style={{ padding: 5, minWidth: 200 }}>
-                    <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 5 }}>
-                      {t('packageForm.pickupDetails')}
-                    </Text>
-                    <Text style={{ color: COLORS.primary }}>
-                      {orderData?.pickup.address || 'N/A'}
-                    </Text>
-                  </View>
-                </Callout>
+                {Platform.OS === 'ios' && (
+                  <Callout
+                    onPress={() => {
+                      // Open Google Maps navigation when callout is tapped
+                      if (orderData?.pickup.address && orderData?.drop.address) {
+                        openGoogleMapsNavigation(
+                          orderData.pickup.address, 
+                          orderData.drop.address,
+                          orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng 
+                            ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
+                            : undefined,
+                          orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng 
+                            ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
+                            : undefined
+                        );
+                      }
+                    }}
+                  >
+                    <View style={{ padding: 5, minWidth: 200 }}>
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 5 }}>
+                        {t('packageForm.pickupDetails')}
+                      </Text>
+                      <Text style={{ color: COLORS.primary }}>
+                        {orderData?.pickup.address || 'N/A'}
+                      </Text>
+                    </View>
+                  </Callout>
+                )}
               </Marker>
             )}
             {isMapReady && dropoffCoords && (
@@ -941,35 +953,40 @@ export default function OrderDetailScreen() {
                 coordinate={dropoffCoords}
                 onPress={() => {
                   setShowDirectionLine(true);
+                  if (Platform.OS === 'android') {
+                    setSelectedMarker('dropoff');
+                  }
                 }}
               >
                 <Image source={require('@/assets/icons/dropoff-marker.png')} style={{ width: 36, height: 36 }} />
-                <Callout
-                  onPress={() => {
-                    // Open Google Maps navigation when callout is tapped
-                    if (orderData?.pickup.address && orderData?.drop.address) {
-                      openGoogleMapsNavigation(
-                        orderData.pickup.address, 
-                        orderData.drop.address,
-                        orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng 
-                          ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
-                          : undefined,
-                        orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng 
-                          ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
-                          : undefined
-                      );
-                    }
-                  }}
-                >
-                  <View style={{ padding: 5, minWidth: 200 }}>
-                    <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 5 }}>
-                      {t('packageForm.dropoffDetails')}
-                    </Text>
-                    <Text style={{ color: COLORS.primary }}>
-                      {orderData?.drop.address || 'N/A'}
-                    </Text>
-                  </View>
-                </Callout>
+                {Platform.OS === 'ios' && (
+                  <Callout
+                    onPress={() => {
+                      // Open Google Maps navigation when callout is tapped
+                      if (orderData?.pickup.address && orderData?.drop.address) {
+                        openGoogleMapsNavigation(
+                          orderData.pickup.address, 
+                          orderData.drop.address,
+                          orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng 
+                            ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
+                            : undefined,
+                          orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng 
+                            ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
+                            : undefined
+                        );
+                      }
+                    }}
+                  >
+                    <View style={{ padding: 5, minWidth: 200 }}>
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 5 }}>
+                        {t('packageForm.dropoffDetails')}
+                      </Text>
+                      <Text style={{ color: COLORS.primary }}>
+                        {orderData?.drop.address || 'N/A'}
+                      </Text>
+                    </View>
+                  </Callout>
+                )}
               </Marker>
             )}
             
@@ -984,6 +1001,53 @@ export default function OrderDetailScreen() {
               />
             )}
           </MapView>
+
+          {/* Custom Callout Overlay - Android only */}
+          {Platform.OS === 'android' && selectedMarker && (
+            <View style={styles.customCalloutContainer}>
+              <TouchableOpacity
+                style={styles.customCallout}
+                onPress={() => {
+                  // Open Google Maps navigation when callout is tapped
+                  if (orderData?.pickup.address && orderData?.drop.address) {
+                    openGoogleMapsNavigation(
+                      orderData.pickup.address, 
+                      orderData.drop.address,
+                      orderData?.pickup?.coordinates?.lat && orderData?.pickup?.coordinates?.lng 
+                        ? { lat: parseFloat(orderData.pickup.coordinates.lat), lng: parseFloat(orderData.pickup.coordinates.lng) }
+                        : undefined,
+                      orderData?.drop?.coordinates?.lat && orderData?.drop?.coordinates?.lng 
+                        ? { lat: parseFloat(orderData.drop.coordinates.lat), lng: parseFloat(orderData.drop.coordinates.lng) }
+                        : undefined
+                    );
+                  }
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.customCalloutHeader}>
+                  <Text style={styles.customCalloutTitle}>
+                    {selectedMarker === 'pickup' ? t('packageForm.pickupDetails') : t('packageForm.dropoffDetails')}
+                  </Text>
+                  <TouchableOpacity 
+                    onPress={() => setSelectedMarker(null)}
+                    style={styles.customCalloutClose}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Text style={styles.customCalloutCloseText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.customCalloutAddress}>
+                  {selectedMarker === 'pickup' 
+                    ? (orderData?.pickup.address || 'N/A')
+                    : (orderData?.drop.address || 'N/A')
+                  }
+                </Text>
+                <Text style={styles.customCalloutTap}>
+                  Tap to navigate
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View style={styles.contentContainer}>
@@ -1367,6 +1431,65 @@ const styles = StyleSheet.create({
     height: 220,
     overflow: 'hidden',
     marginTop: -20,
+    position: 'relative',
+  },
+  customCalloutContainer: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    zIndex: 1000,
+  },
+  customCallout: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+  },
+  customCalloutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  customCalloutTitle: {
+    fontSize: 16,
+    fontFamily: 'nunito-bold',
+    color: COLORS.text,
+    letterSpacing: 0.2,
+    flex: 1,
+  },
+  customCalloutClose: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  customCalloutCloseText: {
+    fontSize: 18,
+    color: COLORS.textSecondary,
+    fontWeight: 'bold',
+  },
+  customCalloutAddress: {
+    fontSize: 14,
+    fontFamily: 'nunito-medium',
+    color: COLORS.primary,
+    letterSpacing: 0.2,
+    marginBottom: 8,
+  },
+  customCalloutTap: {
+    fontSize: 12,
+    fontFamily: 'nunito-regular',
+    color: COLORS.textSecondary,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
   },
 
   paymentButtonContainer: {

@@ -78,17 +78,11 @@ export default function TabLayout() {
           width: 25,
           height: 25,
         },
-        tabBarStyle: Platform.select({
-          ios: {
-            position: 'absolute',
-            borderTopWidth: 0,
-            height: 86,
-          },
-          default: {
-            borderTopWidth: 0,
-            height: 86,
-          },
-        }),
+        tabBarStyle: {
+          position: 'absolute',
+          borderTopWidth: 0,
+          height: 86,
+        },
       }}>
       <Tabs.Screen
         name="index"
