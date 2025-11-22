@@ -8,6 +8,7 @@ import Animated, {
   useAnimatedStyle,
   useScrollViewOffset,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { UserRoundedIcon } from '@/components/icons/UserRoundedIcon';
 import { RightArrowIcon } from '@/components/icons/RightArrowIcon';
@@ -178,6 +179,7 @@ const CustomDatePicker = ({ value, onChange }: { value: Date; onChange: (date: D
 };
 
 export default function UpdateProfileScreen() {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -612,7 +614,7 @@ export default function UpdateProfileScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 86) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
@@ -751,7 +753,7 @@ export default function UpdateProfileScreen() {
                     />
                   </View>
                 )}
-                <View style={styles.toggleContainer}>
+                <View style={[styles.toggleContainer, { paddingBottom: Math.max(insets.bottom, 30) }]}>
                   <TouchableOpacity
                     style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
                     onPress={() => setModalVisible(false)}
@@ -785,7 +787,7 @@ export default function UpdateProfileScreen() {
 
             <Modal visible={showDateModal} transparent animationType="slide">
               <View style={styles.modalBackground}>
-                <View style={styles.modalContainer}>
+                <View style={[styles.modalContainer, { paddingBottom: Math.max(insets.bottom, 32) }]}>
                   <View style={styles.modalHeader}>
                     <Text style={styles.modalTitle}>Select Date</Text>
                     <TouchableOpacity 
@@ -837,7 +839,7 @@ export default function UpdateProfileScreen() {
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={styles.modalOverlay}
             >
-              <View style={styles.searchModalContent}>
+              <View style={[styles.searchModalContent, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 <View style={styles.searchModalHeader}>
                   <Text style={styles.searchModalTitle}>{t('updateProfile.nationality')}</Text>
                   <TouchableOpacity onPress={() => setIsNationalityModalVisible(false)}>
@@ -886,7 +888,7 @@ export default function UpdateProfileScreen() {
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={styles.modalOverlay}
             >
-              <View style={styles.searchModalContent}>
+              <View style={[styles.searchModalContent, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 <View style={styles.searchModalHeader}>
                   <Text style={styles.searchModalTitle}>{t('updateProfile.gender')}</Text>
                   <TouchableOpacity onPress={() => setIsGenderModalVisible(false)}>
@@ -934,7 +936,7 @@ export default function UpdateProfileScreen() {
         onRequestClose={() => setShowImageOptions(false)}
       >
         <View style={styles.imageModalContainer}>
-          <View style={styles.imageModalContent}>
+          <View style={[styles.imageModalContent, { paddingBottom: Math.max(insets.bottom, 20) }]}>
             <TouchableOpacity 
               style={styles.imageModalOption}
               onPress={pickImage}
@@ -956,7 +958,7 @@ export default function UpdateProfileScreen() {
           </View>
         </View>
       </Modal>
-      <View style={styles.buttonContainer}>
+      <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
         <TouchableOpacity 
           style={[styles.continueButton, isLoading && styles.disabledButton]}
           onPress={handleUpdate}
@@ -1010,7 +1012,7 @@ const styles = StyleSheet.create({
   form: {
     flex: 1,
     paddingTop: 24,
-    paddingBottom: 24,
+    paddingBottom: 24 + (Platform.OS === 'android' ? 24 : 0),
     paddingHorizontal: 16,
     backgroundColor: COLORS.backgroundWrapper,
   },

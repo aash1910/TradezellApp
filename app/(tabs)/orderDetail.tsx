@@ -31,6 +31,7 @@ import { MapIcon } from '@/components/icons/MapIcon';
 import { MapButtonIcon } from '@/components/icons/MapButtonIcon';
 import * as Clipboard from 'expo-clipboard';
 import { CopyIcon } from '@/components/icons/CopyIcon';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const HEADER_HEIGHT = 120;
 
@@ -135,12 +136,14 @@ function PaymentCardModal({
   onPaymentSuccess: (orderData: any) => void;
   currencyConfig: ReturnType<typeof getCurrencyConfig>;
 }) {
+  const insets = useSafeAreaInsets();
   const { confirmPayment } = useStripe();
   const { t } = useTranslation();
   const [paymentIntent, setPaymentIntent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error' | 'polling'>('idle');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     if (visible && orderData) {
@@ -148,6 +151,24 @@ function PaymentCardModal({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
+
+  // Listen to keyboard events to manually move modal on Android
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const keyboardWillShow = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+
+    const keyboardWillHide = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, []);
 
   const createPaymentIntent = async () => {
     try {
@@ -282,14 +303,20 @@ function PaymentCardModal({
       isVisible={visible}
       onBackdropPress={onClose}
       onBackButtonPress={onClose}
-      style={{ justifyContent: 'flex-end', margin: 0 }}
+      style={{ 
+        justifyContent: 'flex-end', 
+        margin: 0,
+        ...(Platform.OS === 'android' && keyboardHeight > 0 && {
+          marginBottom: keyboardHeight + insets.bottom 
+        })
+      }}
       backdropOpacity={0.5}
       propagateSwipe
     >
       <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, minHeight: 400 }}
+          style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: Math.max(insets.bottom, 20), minHeight: 400 }}
         >
           <View style={{ alignItems: 'center', marginBottom: 16 }}>
             <View style={{ width: 40, height: 4, backgroundColor: '#ccc', borderRadius: 2, marginBottom: 8 }} />
@@ -344,6 +371,7 @@ function PaymentCardModal({
 }
 
 export default function OrderDetailScreen() {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const [orderData, setOrderData] = useState<Package | null>(null);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -850,7 +878,7 @@ export default function OrderDetailScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 80) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
@@ -1206,7 +1234,7 @@ export default function OrderDetailScreen() {
 
       {/* Pay Now Button for unpaid orders */}
       {orderData && orderData.payment_status === 'pending' && (
-        <View style={[styles.paymentButtonContainer, { bottom: 80 }]}> 
+        <View style={[styles.paymentButtonContainer, { bottom: Platform.OS === 'ios' ? 80 : Math.max(insets.bottom, 64) }]}> 
           <TouchableOpacity 
             style={[styles.paymentButton, isProcessing && styles.disabledButton]}
             onPress={handlePayNow}

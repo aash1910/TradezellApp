@@ -9,6 +9,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { authService } from '@/services/auth.service';
 import api from '@/services/api';
@@ -28,6 +29,7 @@ const COLORS = {
 let tabWidth = 0;
 
 export default function SafetyScreen() {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -106,7 +108,7 @@ export default function SafetyScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: (Platform.OS === 'android' ? insets.bottom : 0) }]}
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl enabled={false} refreshing={false} onRefresh={() => {}} />}
         showsVerticalScrollIndicator={false}>

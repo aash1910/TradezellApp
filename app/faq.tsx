@@ -10,6 +10,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { HeadphonesRoundIcon } from '@/components/icons/HeadphonesRoundIcon';
 import { SelectUpArrowIcon } from '@/components/icons/SelectUpArrowIcon';
@@ -39,6 +40,7 @@ interface FAQ {
 }
 
 export default function SafetyScreen() {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -141,7 +143,7 @@ export default function SafetyScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom , 86) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -207,7 +209,7 @@ export default function SafetyScreen() {
           </View>
         </View>
         {isKeyboardVisible && (
-          <View style={styles.buttonContainer}>
+          <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom , 22) }]}>
             <TouchableOpacity 
               style={styles.continueButton}
               onPress={() => router.push('/supportService')} 
@@ -219,7 +221,7 @@ export default function SafetyScreen() {
         )}
       </Animated.ScrollView>
       {!isKeyboardVisible && (
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom , 22) }]}>
           <TouchableOpacity 
             style={styles.continueButton}
             onPress={() => router.replace('/(tabs)/message')} 

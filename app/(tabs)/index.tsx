@@ -15,6 +15,7 @@ import { getUnreadCount } from '@/services/notification.service';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import Animated, {
@@ -60,6 +61,7 @@ const COLORS = {
 };
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -1111,7 +1113,7 @@ export default function HomeScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 24) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
 
@@ -1229,7 +1231,7 @@ export default function HomeScreen() {
                 {/* Date Modal */}
                 <Modal visible={showDateModal} transparent animationType="slide">
                   <View style={styles.modalBackground}>
-                    <View style={styles.modalContainer}>
+                    <View style={[styles.modalContainer, { paddingBottom: Math.max(insets.bottom, 32) }]}>
                       <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Select Date</Text>
                         <TouchableOpacity 
@@ -1250,7 +1252,7 @@ export default function HomeScreen() {
                 {/* Time Modal */}
                 <Modal visible={showTimeModal} transparent animationType="slide">
                   <View style={styles.modalBackground}>
-                    <View style={styles.modalContainer}>
+                    <View style={[styles.modalContainer, { paddingBottom: Math.max(insets.bottom, 32) }]}>
                       <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Select Time</Text>
                         <TouchableOpacity 
@@ -1413,7 +1415,7 @@ export default function HomeScreen() {
                     onRequestClose={() => setShowPhotoOptions(false)}
                   >
                     <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                      <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+                      <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: Math.max(insets.bottom, 20) }}>
                         <TouchableOpacity style={{ paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#eee' }} onPress={pickPhotoFromGallery}>
                           <Text style={{ fontSize: 16, textAlign: 'center' }}>Choose from Gallery</Text>
                         </TouchableOpacity>

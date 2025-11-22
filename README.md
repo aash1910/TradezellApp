@@ -25,6 +25,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 6. To create only the ios folder: npx expo prebuild --platform ios
 
 7.1. Build to Expo for submit to Appstore: eas build --platform ios --profile production
+eas build --platform ios --profile production --clear-cache
 
 7.2. Submit to App Store: eas submit --platform ios --profile production
 
@@ -64,3 +65,5 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+App UI was developed by testing ios device and everything working fine.

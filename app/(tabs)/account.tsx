@@ -7,6 +7,7 @@ import Animated, {
   useAnimatedStyle,
   useScrollViewOffset,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import Icon from 'react-native-vector-icons/Feather'; // or any icon library
 import { UserRoundedIcon } from '@/components/icons/UserRoundedIcon';
@@ -61,6 +62,7 @@ interface SavedPlaces {
 }
 
 export default function AccountScreen() {
+  const insets = useSafeAreaInsets();
   const { t, i18n } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -406,7 +408,7 @@ export default function AccountScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 86) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
@@ -715,7 +717,7 @@ export default function AccountScreen() {
                 <Icon name="x" size={24} color={COLORS.text} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.legalModalContent} contentContainerStyle={styles.legalModalContentContainer}>
+            <ScrollView style={styles.legalModalContent} contentContainerStyle={[styles.legalModalContentContainer, { paddingBottom: Math.max(insets.bottom, 48) }]}>
               <Text style={styles.legalModalText}>{legalContent.content}</Text>
             </ScrollView>
           </View>
@@ -739,7 +741,7 @@ export default function AccountScreen() {
                 <Icon name="x" size={24} color={COLORS.text} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.savedPlacesList}>
+            <ScrollView style={styles.savedPlacesList} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}>
               {/* Pickup Location */}
               <View style={styles.savedPlaceItem}>
                 <View style={styles.savedPlaceInfo}>

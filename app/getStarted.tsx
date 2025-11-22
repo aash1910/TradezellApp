@@ -5,35 +5,40 @@ import { ThemedText } from '@/components/ThemedText';
 import { router } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import React, { useEffect } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_DELIVERY_HEIGHT = height / 100 * 25;
 
 export default function GetStartedScreen() {
+  const insets = useSafeAreaInsets();
+  
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
   }, []);
 
   return (
-    <ParallaxScrollViewNormal
-      headerBackgroundColor={{ light: '#55B086', dark: '#4CAF8C' }}
-      curveHeight={height / 100 * 11.7}
-      headerImage={
-        <Image
-          source={require('@/assets/img/delivery-man-bg.png')} 
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText style={styles.titleText}>Manage with ease</ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="default" style={styles.stepText}> 
-          Stay updated and manage your {'\n'}delivery seamlessly from pickup to {'\n'}delivery.
-        </ThemedText>
-      </ThemedView>
+    <View style={styles.container}>
+      <ParallaxScrollViewNormal
+        headerBackgroundColor={{ light: '#55B086', dark: '#4CAF8C' }}
+        curveHeight={height / 100 * 11.7}
+        headerImage={
+          <Image
+            source={require('@/assets/img/delivery-man-bg.png')} 
+            style={styles.headerImage}
+          />
+        }>
+        <ThemedView style={styles.titleContainer}>
+          <ThemedText style={styles.titleText}>Manage with ease</ThemedText>
+        </ThemedView>
+        <ThemedView style={styles.stepContainer}>
+          <ThemedText type="default" style={styles.stepText}> 
+            Stay updated and manage your {'\n'}delivery seamlessly from pickup to {'\n'}delivery.
+          </ThemedText>
+        </ThemedView>
+      </ParallaxScrollViewNormal>
 
-      <ThemedView style={styles.buttonBackgroundContainer}>
+      <ThemedView style={[styles.buttonBackgroundContainer, { paddingBottom: Math.max(insets.bottom, 28) }]}>
         <TouchableOpacity 
           style={styles.buttonContainer}
           onPress={() => router.replace('/login')}
@@ -44,11 +49,15 @@ export default function GetStartedScreen() {
           </Svg> 
         </TouchableOpacity>
       </ThemedView>
-    </ParallaxScrollViewNormal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    position: 'relative',
+  },
   headerImage: {
     height: HEADER_DELIVERY_HEIGHT,
     width: '100%',
@@ -72,7 +81,7 @@ const styles = StyleSheet.create({
   },
   stepContainer: {
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 120,
     paddingHorizontal: 37,
     backgroundColor: '#F5F5F5',
   },

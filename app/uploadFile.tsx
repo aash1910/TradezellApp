@@ -14,6 +14,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import api from '@/services/api';
 import { authService } from '@/services/auth.service';
 import { uploadService } from '@/services/upload.service';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const HEADER_HEIGHT = 207;
 
@@ -29,6 +30,7 @@ const COLORS = {
 };
 
 export default function UploadFileScreen() {
+  const insets = useSafeAreaInsets();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [idCardImage, setIdCardImage] = useState<string | null>(null);
@@ -232,7 +234,7 @@ export default function UploadFileScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 86) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={styles.header}>
@@ -322,7 +324,7 @@ export default function UploadFileScreen() {
           </View>
         </View>
         {isKeyboardVisible && (
-          <View style={styles.buttonContainer}>
+          <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
             <TouchableOpacity 
               style={[styles.continueButton, (!agreedToTerms || !profileImage || !idCardImage) && styles.continueButtonDisabled]}
               onPress={() => {
@@ -350,7 +352,7 @@ export default function UploadFileScreen() {
       </Animated.ScrollView>
 
       {!isKeyboardVisible && (
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
           <TouchableOpacity 
             style={styles.continueButton}
             onPress={() => {
@@ -382,7 +384,7 @@ export default function UploadFileScreen() {
         onRequestClose={() => setShowImageOptions(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 20) }]}>
             <TouchableOpacity 
               style={styles.modalOption}
               onPress={() => {

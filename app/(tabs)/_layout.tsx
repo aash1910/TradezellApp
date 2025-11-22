@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Constants from 'expo-constants';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
@@ -16,6 +17,7 @@ import { calculateUnreadCount } from './conversations';
 import api from '@/services/api';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const { t } = useTranslation();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -81,7 +83,7 @@ export default function TabLayout() {
         tabBarStyle: {
           position: 'absolute',
           borderTopWidth: 0,
-          height: 86,
+          height: Platform.OS === 'ios' ? 86 : insets.bottom + 64,
         },
       }}>
       <Tabs.Screen

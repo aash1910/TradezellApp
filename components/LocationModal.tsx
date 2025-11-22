@@ -14,6 +14,7 @@ import * as Location from 'expo-location';
 import { SelectArrowIcon } from '@/components/icons/SelectArrowIcon';
 import { COUNTRIES } from '@/components/countries';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const HEADER_HEIGHT = 80;
 const { width, height } = Dimensions.get('window');
@@ -55,6 +56,7 @@ export default function LocationModal({
   type = 'pickup',
   locationIndex = '1',
 }: LocationModalProps) {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -264,7 +266,7 @@ export default function LocationModal({
         <Animated.ScrollView
           ref={scrollRef}
           scrollEventThrottle={16}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 86) }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <Animated.View style={[styles.header, headerAnimatedStyle]}>
@@ -436,7 +438,7 @@ export default function LocationModal({
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={styles.modalOverlay}
                   >
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                       <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>{t('packageForm.selectCountry')}</Text>
                         <TouchableOpacity onPress={() => setIsCountryModalVisible(false)}>
@@ -478,7 +480,7 @@ export default function LocationModal({
             </View>
           </View>
           {isKeyboardVisible && (
-            <View style={styles.buttonContainer}>
+            <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
               <TouchableOpacity 
                 style={[styles.continueButton, isLoading && styles.disabledButton]}
                 onPress={handleUpdate}
@@ -492,7 +494,7 @@ export default function LocationModal({
           )}
         </Animated.ScrollView>
         {!isKeyboardVisible && (
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
           <TouchableOpacity 
             style={[styles.continueButton, isLoading && styles.disabledButton]}
             onPress={handleUpdate}

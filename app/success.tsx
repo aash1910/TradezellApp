@@ -8,6 +8,7 @@ import Animated, {
   useScrollViewOffset,
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = {
   primary: '#55B086',
@@ -21,6 +22,7 @@ const COLORS = {
 };
 
 export default function SuccessScreen() {
+  const insets = useSafeAreaInsets();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
@@ -57,7 +59,7 @@ export default function SuccessScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 86) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={styles.header}>
@@ -70,7 +72,7 @@ export default function SuccessScreen() {
         </Animated.View>
         <View style={styles.form}></View>
         {isKeyboardVisible && (
-          <View style={styles.buttonContainer}>
+          <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
             <TouchableOpacity 
               style={styles.continueButton}
               onPress={() => router.replace('/uploadFile')}
@@ -82,7 +84,7 @@ export default function SuccessScreen() {
       </Animated.ScrollView>
 
       {!isKeyboardVisible && (
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
           <TouchableOpacity 
             style={styles.continueButton}
             onPress={() => router.replace('/uploadFile')}

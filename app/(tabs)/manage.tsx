@@ -10,6 +10,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BellIcon } from '@/components/icons/BellIcon';
 import { SocialShareIcon } from '@/components/icons/SocialShareIcon';
 import { MoreVerticalIcon } from '@/components/icons/MoreVerticalIcon';
@@ -58,6 +59,7 @@ const COLORS = {
 const isPickupCompleted = (pickupStatus?: number | string | null) => Number(pickupStatus ?? 0) === 1;
 
 export default function ManageScreen() {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { refresh } = useLocalSearchParams();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -381,7 +383,7 @@ export default function ManageScreen() {
           style={{ justifyContent: 'flex-end', margin: 0 }}
         >
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 46) }]}>
               <View style={styles.modalToggleButton}></View>
               {/* <TouchableOpacity style={styles.modalOption} onPress={() => setFilterBy('deliveryDate')}>
                 <ProfileIcon size={20} color={filterBy === 'deliveryDate' ? COLORS.primary : COLORS.text} />
@@ -411,7 +413,7 @@ export default function ManageScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 86) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -632,7 +634,7 @@ export default function ManageScreen() {
               style={{ justifyContent: 'flex-end', margin: 0 }}
             >
               <View style={styles.modalContainer}>
-                <View style={styles.modalContent}>
+                <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 46) }]}>
                   <View style={styles.modalToggleButton}></View>
                   {selectedPackage?.order.status === 'active' && (
                     <>
@@ -806,7 +808,7 @@ export default function ManageScreen() {
               style={{ justifyContent: 'flex-end', margin: 0 }}
             >
               <View style={styles.modalContainer}>
-                <View style={[styles.modalContent, {paddingBottom: 24}]}>
+                <View style={[styles.modalContent, {paddingBottom: Math.max(insets.bottom, 24)}]}>
                   <View style={[styles.modalToggleButton, {marginBottom: 24}]}></View>
                   <Text style={styles.modalTitle}>{t('managePage.cancelConfirmation.title')}</Text>
                   {/* Order Summary Card */}
@@ -904,7 +906,7 @@ export default function ManageScreen() {
               style={{ justifyContent: 'flex-end', margin: 0 }}
             >
               <View style={styles.modalContainer}>
-                <View style={styles.modalContent}>
+                <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 46) }]}>
                   <View style={styles.modalToggleButton}></View>
                   <Text style={styles.modalTitle}>{t('review.viewTitle')}</Text>
                   
@@ -961,7 +963,7 @@ export default function ManageScreen() {
               style={{ justifyContent: 'flex-end', margin: 0 }}
             >
               <View style={styles.modalContainer}>
-                <View style={styles.modalContent}>
+                <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 46) }]}>
                   <View style={styles.modalToggleButton}></View>
                   <Text style={styles.modalTitle}>{t('review.viewRiderReviewTitle')}</Text>
                   
@@ -1120,6 +1122,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     marginTop: 24,
     flex: 1,
+    marginBottom: Platform.OS === 'android' ? 24 : 0,
   },
   emptyContainer: {
     alignItems: 'center',

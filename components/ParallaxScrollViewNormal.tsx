@@ -10,6 +10,7 @@ import Animated, {
 import { ThemedView } from '@/components/ThemedView';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import Svg, { Ellipse } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const { width, height } = Dimensions.get('window');
 
 const HEADER_HEIGHT = height / 100 * 52;
@@ -51,8 +52,9 @@ export default function ParallaxScrollViewNormal({
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
+        showsVerticalScrollIndicator={true}
         scrollIndicatorInsets={{ bottom: 0 }}
-        contentContainerStyle={{ paddingBottom: 0 }}>
+        contentContainerStyle={{ paddingBottom: 120 }}>
         <Animated.View
           style={[
             styles.header,
@@ -94,12 +96,10 @@ const styles = StyleSheet.create({
     right: 0,
   },
   content: {
-    height: height - HEADER_HEIGHT,
-    flex: 1,
+    minHeight: height - HEADER_HEIGHT,
     paddingTop: 42,
     gap: 16,
     alignItems: 'center',
-    overflow: 'hidden',
     position: 'relative',
     backgroundColor: '#F5F5F5',
   },

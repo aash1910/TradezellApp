@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvo
 import { Button, Checkbox } from 'react-native-paper';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -38,7 +39,8 @@ const GENDERS = [
   'Other'
 ];
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
+  const insets = useSafeAreaInsets();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -320,6 +322,7 @@ export default function LoginScreen() {
   };
 
   return (
+    <>
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
@@ -590,8 +593,9 @@ export default function LoginScreen() {
           </View>
         )}
       </Animated.ScrollView>
+    </KeyboardAvoidingView>
       {!isKeyboardVisible && (
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
           <TouchableOpacity 
             style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
             onPress={handleRegister}
@@ -605,7 +609,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
       )}
-    </KeyboardAvoidingView>
+    </>
   );
 }
 
@@ -617,7 +621,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 0,
-    paddingBottom: 86,
+    paddingBottom: Platform.OS === 'ios' ? 86 : 0,
   },
   header: {
     paddingTop: 47,

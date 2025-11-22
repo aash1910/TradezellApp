@@ -9,6 +9,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { RightArrowIcon } from '@/components/icons/RightArrowIcon';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +31,7 @@ const screenWidth = Dimensions.get('window').width;
 const TAB_WIDTH = (screenWidth - 32 - 8) / TABS.length;
 
 export default function SafetyScreen() {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -97,7 +99,7 @@ export default function SafetyScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 86) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
@@ -157,7 +159,7 @@ export default function SafetyScreen() {
           </View>
         </View>
       </Animated.ScrollView>
-      <View style={styles.buttonContainer}>
+      <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
         <TouchableOpacity 
           style={styles.continueButton}
           onPress={() => setModalVisible(true)}
@@ -172,7 +174,7 @@ export default function SafetyScreen() {
         onRequestClose={() => setModalVisible(false)}
       >
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPressOut={() => setModalVisible(false)}>
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { paddingBottom: Math.max(insets.bottom, 32) }]}>
             <Text style={styles.modalTitle}>{t('report.modal.title')}</Text>
             <TouchableOpacity style={styles.modalOption} onPress={() => {
               setModalVisible(false);
@@ -243,7 +245,7 @@ const styles = StyleSheet.create({
   form: {
     flex: 1,
     paddingTop: 24,
-    paddingBottom: 24,
+    paddingBottom: 24 + (Platform.OS === 'android' ? 24 : 0),
     paddingHorizontal: 16,
     backgroundColor: COLORS.backgroundWrapper,
   },

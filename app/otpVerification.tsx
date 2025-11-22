@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { authService } from '@/services/auth.service';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const HEADER_HEIGHT = 207;
 
@@ -24,6 +25,7 @@ const COLORS = {
 };
 
 export default function OTPVerificationScreen() {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const email = params.email as string;
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -167,7 +169,7 @@ export default function OTPVerificationScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 86) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={styles.header}>
@@ -226,7 +228,7 @@ export default function OTPVerificationScreen() {
           </View>
         </View>
         {isKeyboardVisible && (
-          <View style={styles.buttonContainer}>
+          <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
             <TouchableOpacity 
               style={[styles.continueButton, isLoading && styles.continueButtonDisabled]}
               onPress={handleVerifyOtp}
@@ -243,7 +245,7 @@ export default function OTPVerificationScreen() {
       </Animated.ScrollView>
 
       {!isKeyboardVisible && (
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
           <TouchableOpacity 
             style={[styles.continueButton, isLoading && styles.continueButtonDisabled]}
             onPress={handleVerifyOtp}

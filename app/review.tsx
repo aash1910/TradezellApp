@@ -13,6 +13,7 @@ import { LetterIcon } from '@/components/icons/LetterIcon';
 import { StarIcon } from '@/components/icons/StarIcon';
 import { Package } from '@/services/packageList.service';
 import api from '@/services/api';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const HEADER_HEIGHT = 120;
 
@@ -28,6 +29,7 @@ const COLORS = {
 };
 
 export default function ReviewScreen() {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const [orderData, setOrderData] = useState<Package | null>(null);
@@ -145,7 +147,7 @@ export default function ReviewScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 86, 86) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
@@ -184,7 +186,7 @@ export default function ReviewScreen() {
           </View>
         </View>
         {isKeyboardVisible && (
-          <View style={styles.buttonContainer}>
+          <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom + 22, 22) }]}>
             <TouchableOpacity 
               style={[styles.loginButton, {backgroundColor: '#E6E6E6'}]} 
               onPress={() => router.push('/(tabs)/manage')}
@@ -204,7 +206,7 @@ export default function ReviewScreen() {
       </Animated.ScrollView>
 
       {!isKeyboardVisible && (
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom + 22, 22) }]}>
           <TouchableOpacity 
             style={[styles.loginButton, {backgroundColor: '#E6E6E6'}]} 
             onPress={() => router.push('/(tabs)/manage')}

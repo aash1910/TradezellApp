@@ -12,6 +12,7 @@ import api from '@/services/api';
 import { packageService } from '@/services/package.service';
 import { Package } from '@/services/packageList.service';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import Animated, {
@@ -60,6 +61,7 @@ interface RouteParams {
 }
 
 export default function PackageEditScreen() {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -728,7 +730,7 @@ export default function PackageEditScreen() {
                         </View>
                       )}
                       {/* Mode switch buttons */}
-                      <View style={styles.toggleContainer}>
+                      <View style={[styles.toggleContainer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
                         <TouchableOpacity
                           style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
                           onPress={() => setMode('map')}
@@ -742,7 +744,7 @@ export default function PackageEditScreen() {
                           <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
                         </TouchableOpacity>
                       </View>
-                      <View style={styles.footer}>
+                      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
                         <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, width: 220, alignSelf: 'center'}]} 
                           onPress={() => setModalVisible(false)}
                         >
@@ -949,7 +951,7 @@ export default function PackageEditScreen() {
                         </View>
                       )}
                       {/* Mode switch buttons */}
-                      <View style={styles.toggleContainer}>
+                      <View style={[styles.toggleContainer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
                         <TouchableOpacity
                           style={[styles.toggleButton, mode === 'map' && styles.activeToggle]}
                           onPress={() => setMode('map')}
@@ -963,7 +965,7 @@ export default function PackageEditScreen() {
                           <Text style={styles.toggleText}>{t('packageForm.enterManually')}</Text>
                         </TouchableOpacity>
                       </View>
-                      <View style={styles.footer}>
+                      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
                         <TouchableOpacity style={[styles.toggleButton, {backgroundColor: COLORS.primary, width: 220, alignSelf: 'center'}]} 
                           onPress={() => setModalDropOffVisible(false)}
                         >

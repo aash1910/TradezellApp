@@ -4,6 +4,7 @@ import { Button, Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Animated, {
   interpolate,
@@ -50,6 +51,7 @@ const COLORS = {
 };
 
 export default function LoginScreen() {
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [rememberMe, setRememberMe] = React.useState(true);
@@ -402,7 +404,7 @@ export default function LoginScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="always"
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 22) }]}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
           <Text style={styles.appName}>PiqDrop</Text>

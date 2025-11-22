@@ -1,4 +1,4 @@
-import { View, Text, Image, StyleSheet, Dimensions, StatusBar, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions, StatusBar, ActivityIndicator, Alert, TouchableOpacity, Platform } from 'react-native';
 import ParallaxScrollViewNormal from '@/components/ParallaxScrollViewNormal';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
@@ -6,11 +6,13 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { authService } from '@/services/auth.service';
 import Svg, { Path } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_DELIVERY_HEIGHT = height / 100 * 22;
 
 export default function WelcomeScreen() {
+  const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(true);
   const [showContent, setShowContent] = useState(true);
 
@@ -88,25 +90,27 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <ParallaxScrollViewNormal
-      headerBackgroundColor={{ light: '#55B086', dark: '#4CAF8C' }}
-      curveHeight={height / 100 * 14.7}
-      headerImage={
-        <Image
-          source={require('@/assets/img/delivery-bg.png')}
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText style={styles.titleText}>Effortless Global{'\n'}Delivery</ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="default" style={styles.stepText}> 
-          Send your package anywhere in the {'\n'}world through travellers and {'\n'}freelancers with just a few clicks. {'\n'}Quick and easy.
-        </ThemedText>
-      </ThemedView>
+    <View style={styles.container}>
+      <ParallaxScrollViewNormal
+        headerBackgroundColor={{ light: '#55B086', dark: '#4CAF8C' }}
+        curveHeight={height / 100 * 14.7}
+        headerImage={
+          <Image
+            source={require('@/assets/img/delivery-bg.png')}
+            style={styles.headerImage}
+          />
+        }>
+        <ThemedView style={styles.titleContainer}>
+          <ThemedText style={styles.titleText}>Effortless Global{'\n'}Delivery</ThemedText>
+        </ThemedView>
+        <ThemedView style={styles.stepContainer}>
+          <ThemedText type="default" style={styles.stepText}> 
+            Send your package anywhere in the {'\n'}world through travellers and {'\n'}freelancers with just a few clicks. {'\n'}Quick and easy.
+          </ThemedText>
+        </ThemedView>
+      </ParallaxScrollViewNormal>
 
-      <ThemedView style={styles.buttonBackgroundContainer}>
+      <ThemedView style={[styles.buttonBackgroundContainer, { paddingBottom: Math.max(insets.bottom, 28) }]}>
         <TouchableOpacity 
           style={styles.buttonContainer}
           onPress={() => router.replace('/getStarted')}
@@ -117,11 +121,15 @@ export default function WelcomeScreen() {
           </Svg> 
         </TouchableOpacity>
       </ThemedView>
-    </ParallaxScrollViewNormal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    position: 'relative',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -160,7 +168,8 @@ const styles = StyleSheet.create({
   stepContainer: {
     backgroundColor: '#F5F5F5',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 120,
+    paddingHorizontal: 20,
   },
   stepText: {
     textAlign: 'center',

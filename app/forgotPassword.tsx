@@ -10,6 +10,7 @@ import Animated, {
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { LetterIcon } from '@/components/icons/LetterIcon';
 import { authService } from '@/services/auth.service';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = {
   primary: '#55B086',
@@ -23,6 +24,7 @@ const COLORS = {
 };
 
 export default function ForgotPasswordScreen() {
+  const insets = useSafeAreaInsets();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -92,7 +94,7 @@ export default function ForgotPasswordScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <Animated.View style={styles.header}>
@@ -116,19 +118,19 @@ export default function ForgotPasswordScreen() {
           </View>
           <Text style={styles.labelSubtitle}>Enter the email associated with your account.{'\n'}we'll send you a token to help you reset your password.</Text>
         </View>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={styles.continueButton}
-              onPress={handleForgotPassword}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={COLORS.buttonText} />
-              ) : (
-                <Text style={styles.continueButtonText}>Send Token</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+        <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
+          <TouchableOpacity 
+            style={styles.continueButton}
+            onPress={handleForgotPassword}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color={COLORS.buttonText} />
+            ) : (
+              <Text style={styles.continueButtonText}>Send Token</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
   );

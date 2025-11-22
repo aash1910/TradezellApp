@@ -17,6 +17,7 @@ import { MicrophoneIcon } from '@/components/icons/MicrophoneIcon';
 import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
 import Constants from 'expo-constants';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Message {
   id: number;
@@ -66,7 +67,7 @@ export default function MessageScreen() {
   const lastMessageIdRef = useRef<number | null>(null);
   const currentUserIdRef = useRef<string>(typeof userId === 'string' ? userId : '1');
   const unreadCountIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
+  const insets = useSafeAreaInsets();
   // Update currentUserIdRef when userId changes
   useEffect(() => {
     currentUserIdRef.current = typeof userId === 'string' ? userId : '1';
@@ -272,7 +273,7 @@ export default function MessageScreen() {
       'keyboardDidHide',
       () => {
         setKeyboardVisible(false);
-        bottomPosition.value = withTiming(86, { duration: 250 });
+        bottomPosition.value = withTiming( 86, { duration: 250 });
       }
     );
 
@@ -395,7 +396,7 @@ export default function MessageScreen() {
         </View>
       </Animated.ScrollView>
         {/* Message Input Bar */}
-        <Animated.View style={[styles.inputBarWrapper, inputBarAnimatedStyle]}>
+        <Animated.View style={[styles.inputBarWrapper, { paddingBottom: Math.max(insets.bottom, 10) }, inputBarAnimatedStyle]}>
           <View style={styles.inputBar}>
             <TextInput
               style={styles.input}
@@ -403,12 +404,6 @@ export default function MessageScreen() {
               value={input}
               onChangeText={setInput}
             />
-            {/* <TouchableOpacity>
-              <MicrophoneIcon size={20}  />
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <CameraIcon size={20} />
-            </TouchableOpacity> */}
           </View>
           <TouchableOpacity style={styles.sendBtn} onPress={handleSendMessage}>
             <SentBtnIcon size={44} />

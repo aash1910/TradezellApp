@@ -2,7 +2,7 @@
   "expo": {
     "name": "PiqDrop",
     "slug": "piqdrop",
-    "version": "1.0.27",
+    "version": "1.0.31",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
@@ -16,7 +16,11 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.piqdrop.com",
       "googleServicesFile": "./GoogleService-Info.plist",
+      "deploymentTarget": "15.1",
       "infoPlist": {
+        "UIDeviceFamily": [
+          1
+        ],
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "We need your location to set pickup and delivery addresses and show your position on the map.",
         "NSCameraUsageDescription": "We need camera access to take photos of packages for delivery documentation.",
@@ -51,8 +55,12 @@
         "backgroundColor": "#55B086"
       },
       "package": "com.piqdrop.app",
-      "versionCode": 1,
       "softwareKeyboardLayoutMode": "pan",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAzS_jfMrleaPh0xWe57BQ8aM5VzpwUzk0"
+        }
+      },
       "intentFilters": [
         {
           "action": "VIEW",
@@ -87,7 +95,7 @@
           },
           "android": {
             "backgroundColor": "#55B086",
-            "image": "./assets/icons/splash-icon-dark.png",
+            "image": "./assets/icons/splash-icon-android.png",
             "imageWidth": 200
           }
         }
