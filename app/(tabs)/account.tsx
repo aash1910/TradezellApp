@@ -33,6 +33,7 @@ import { authService } from '@/services/auth.service';
 import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES } from '@/constants/languages';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HEADER_HEIGHT = 156;
 const { width } = Dimensions.get('window');
@@ -68,6 +69,7 @@ export default function AccountScreen() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [showLegalModal, setShowLegalModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [showSavedPlacesModal, setShowSavedPlacesModal] = useState(false);
   const [showAddPlaceModal, setShowAddPlaceModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
@@ -400,6 +402,60 @@ export default function AccountScreen() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      t('account.modals.deleteAccount.title'),
+      'Are you sure you want to delete your account? This action cannot be undone. Your account will be permanently deleted within 30 days.',
+      [
+        {
+          text: t('account.modals.deleteAccount.cancel'),
+          style: 'cancel',
+          onPress: () => setShowDeleteAccountModal(false),
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDeletingAccount(true);
+              setShowDeleteAccountModal(false);
+              
+              // Call the authenticated delete endpoint
+              await api.delete('/account/delete');
+              
+              // Clear local storage
+              await AsyncStorage.multiRemove(['auth_token', 'user', 'remember_me']);
+              
+              // Show success message
+              Alert.alert(
+                'Account Deleted',
+                'Your account has been deleted successfully. You will be logged out now.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Navigate to login
+                      router.replace('/login');
+                    },
+                  },
+                ]
+              );
+            } catch (error: any) {
+              console.error('Delete account error:', error);
+              Alert.alert(
+                'Error',
+                error.response?.data?.message || error.message || 'Failed to delete account. Please try again.',
+                [{ text: 'OK' }]
+              );
+            } finally {
+              setIsDeletingAccount(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -678,22 +734,31 @@ export default function AccountScreen() {
               <TrashBinMinimalistic2Icon size={48} color={'#FF4949'} />
             </View>
             <Text style={styles.modalTitle}>{t('account.modals.deleteAccount.title')}</Text>
-            <Text style={styles.modalText}>{t('account.modals.deleteAccount.message')}</Text>
+            <Text style={styles.modalText}>
+              Are you sure you want to delete your account? This action cannot be undone. Your account and all associated data will be permanently deleted within 30 days.
+            </Text>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.modalButtonCancel]} 
                 onPress={() => setShowDeleteAccountModal(false)}
+                disabled={isDeletingAccount}
               >
-                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>{t('account.modals.deleteAccount.cancel')}</Text>
+                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                  {t('account.modals.deleteAccount.cancel')}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.modalButton, { backgroundColor: '#FF4949' }]} 
-                onPress={() => {
-                  setShowDeleteAccountModal(false);
-                  router.push('/faq');
-                }}
+                onPress={handleDeleteAccount}
+                disabled={isDeletingAccount}
               >
-                <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>{t('account.modals.deleteAccount.contactSupport')}</Text>
+                {isDeletingAccount ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>
+                    Delete Account
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

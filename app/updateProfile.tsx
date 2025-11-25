@@ -55,8 +55,8 @@ interface UpdateUserData {
   mobile: string;
   address: string;
   date_of_birth: string | null;
-  nationality: string;
-  gender: string;
+  nationality?: string;
+  gender?: string;
   latitude?: number;
   longitude?: number;
 }
@@ -286,8 +286,14 @@ export default function UpdateProfileScreen() {
           setFirstName(user.first_name);
           setLastName(user.last_name);
           setEmail(user.email);
-          setGender(user.gender === 'male' ? 'Male' : user.gender === 'female' ? 'Female' : 'Other');
-          setNationality(user.nationality);
+          // Only set gender if it exists, otherwise leave it empty
+          if (user.gender) {
+            setGender(user.gender === 'male' ? 'Male' : user.gender === 'female' ? 'Female' : 'Other');
+          } else {
+            setGender('');
+          }
+          // Only set nationality if it exists
+          setNationality(user.nationality || '');
           setDate(user.date_of_birth ? new Date(user.date_of_birth) : null);
 
           if (user.image) {
@@ -563,9 +569,15 @@ export default function UpdateProfileScreen() {
         mobile: mobile,
         address: location,
         date_of_birth: date && date instanceof Date ? date.toISOString().split('T')[0] : null,
-        nationality: nationality,
-        gender: gender.toLowerCase(),
       };
+
+      // Only include nationality and gender if they are provided
+      if (nationality) {
+        userData.nationality = nationality;
+      }
+      if (gender) {
+        userData.gender = gender.toLowerCase();
+      }
 
       if (marker) {
         userData.latitude = marker.latitude;

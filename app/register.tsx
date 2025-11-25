@@ -217,12 +217,7 @@ export default function RegisterScreen() {
     if (password !== confirmPassword) {
       errors.push('- Passwords do not match');
     }
-    if (!nationality) {
-      errors.push('- Nationality is required');
-    }
-    if (!gender) {
-      errors.push('- Gender is required');
-    }
+    // Nationality and gender are now optional - removed validation
 
     if (errors.length > 0) {
       Alert.alert(
@@ -251,10 +246,17 @@ export default function RegisterScreen() {
         email: email.trim(),
         password,
         password_confirmation: confirmPassword,
-        nationality,
-        gender: gender.toLowerCase(),
         role: 'sender',
       };
+      
+      // Only include nationality and gender if they are provided
+      if (nationality) {
+        payload.nationality = nationality;
+      }
+      if (gender) {
+        payload.gender = gender.toLowerCase();
+      }
+      
       if (mobile) {
         payload.mobile = mobile;
       }

@@ -17,6 +17,7 @@ import { LockIcon } from '@/components/icons/LockIcon';
 import { PhoneIcon } from '@/components/icons/PhoneIcon';
 import { FacebookIcon } from '@/components/icons/FacebookIcon';
 import { GoogleIcon } from '@/components/icons/GoogleIcon';
+import { AppleIcon } from '@/components/icons/AppleIcon';
 import { authService } from '@/services/auth.service';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Linking from 'expo-linking';
@@ -34,6 +35,11 @@ import {
   handleFacebookLogin as handleFacebookLoginUtil,
   showFacebookLoginUnavailableAlert 
 } from '@/utils/facebookLogin';
+import { 
+  isAppleSignInAvailable, 
+  handleAppleSignIn as handleAppleSignInUtil,
+  showAppleSignInUnavailableAlert 
+} from '@/utils/appleSignIn';
 
 const HEADER_HEIGHT = 230;
 
@@ -195,7 +201,8 @@ export default function LoginScreen() {
       setPhonePassword('');
       setPhoneNumber('');
       // Handle login success (same as email login)
-      if (response.user.image == null || response.user.document == null) {
+      const loginResponse = response as any;
+      if (loginResponse.user.image == null || loginResponse.user.document == null) {
         Alert.alert('Please upload your profile image and document to continue.');
         router.replace('/uploadFile');
       } else {
@@ -226,19 +233,77 @@ export default function LoginScreen() {
       }
 
       console.log('Making login request...', { email, password: '****' });
-      const response = await authService.login({ 
+      const response: any = await authService.login({ 
         email: email.trim(), 
         password,
         role: 'sender',
         remember: rememberMe
       });
       
+      // Check if account restoration is required
+      if (response.requires_restore_confirmation) {
+        Alert.alert(
+          'Account Deleted',
+          'Your account was previously deleted. Would you like to restore it?',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => {
+                setError('You can sign up again with a new account if you prefer.');
+              }
+            },
+            {
+              text: 'Restore Account',
+              onPress: async () => {
+                try {
+                  setIsLoading(true);
+                  // Restore the account
+                  const restoreResponse = await authService.restoreAccount({
+                    email: email.trim(),
+                    password,
+                    role: 'sender',
+                    remember: rememberMe
+                  });
+
+                  if (restoreResponse.user.is_verified == 0) {
+                    try {
+                      await authService.resendOtp(restoreResponse.user.email);
+                      Alert.alert('Account Restored', 'Welcome back! Your account is not verified. Please enter the OTP sent to your email to verify your account.');
+                    } catch (error) {
+                      console.error('Error resending OTP:', error);
+                    }
+                    router.replace({
+                      pathname: '/otpVerification',
+                      params: { email: restoreResponse.user.email }
+                    });
+                  } else if (restoreResponse.user.image == null || restoreResponse.user.document == null) {
+                    Alert.alert('Account Restored', 'Welcome back! Please upload your profile image and document to continue.');
+                    router.replace('/uploadFile');
+                  } else {
+                    Alert.alert('Account Restored', 'Welcome back! Your account has been successfully restored.');
+                    router.replace('/(tabs)');
+                  }
+                } catch (restoreError: any) {
+                  console.error('Restore Error:', restoreError);
+                  setError(restoreError.response?.data?.message || 'Failed to restore your account. Please try again or contact support.');
+                } finally {
+                  setIsLoading(false);
+                }
+              }
+            }
+          ]
+        );
+        setIsLoading(false);
+        return;
+      }
+      
       console.log('Login successful:', { 
-        token: response.access_token ? 'exists' : 'missing',
-        user: response.user ? 'exists' : 'missing'
+        token: (response as any).access_token ? 'exists' : 'missing',
+        user: (response as any).user ? 'exists' : 'missing'
       });
 
-      if( response.user.is_verified == 0 ) {
+      if( (response as any).user.is_verified == 0 ) {
         console.log('User is not verified');
         console.log(response.user.email);
         try {
@@ -250,10 +315,10 @@ export default function LoginScreen() {
 
         router.replace({
           pathname: '/otpVerification',
-          params: { email: response.user.email }
+          params: { email: (response as any).user.email }
         });
       }
-      else if( response.user.image == null || response.user.document == null ) {
+      else if( (response as any).user.image == null || (response as any).user.document == null ) {
         Alert.alert('Please upload your profile image and document to continue.');
         router.replace('/uploadFile');
       }
@@ -397,6 +462,106 @@ export default function LoginScreen() {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    try {
+      const appleData = await handleAppleSignInUtil();
+      
+      if (appleData && appleData.identityToken) {
+        console.log('Apple Sign-In Success');
+        
+        // Send identityToken to backend for verification
+        const backendResponse = await authService.appleLogin({
+          identity_token: appleData.identityToken,
+          email: appleData.email,
+          first_name: appleData.fullName?.givenName || '',
+          last_name: appleData.fullName?.familyName || '',
+          role: 'sender',
+        });
+
+        // Check if account restoration is required
+        if (backendResponse.requires_restore_confirmation) {
+          Alert.alert(
+            'Account Deleted',
+            'Your account was previously deleted. Would you like to restore it?',
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel',
+                onPress: () => {
+                  Alert.alert(
+                    'Account Not Restored',
+                    'You can sign up again with a new account if you prefer.'
+                  );
+                }
+              },
+              {
+                text: 'Restore Account',
+                onPress: async () => {
+                  try {
+                    // Restore the account
+                    const restoreResponse = await authService.restoreAppleAccount({
+                      identity_token: appleData.identityToken,
+                      email: backendResponse.user_email || appleData.email || null,
+                      role: 'sender',
+                    });
+
+                    if (restoreResponse.user.image == null || restoreResponse.user.document == null) {
+                      Alert.alert('Account Restored', 'Welcome back! Please upload your profile image and document to continue.');
+                      router.replace('/uploadFile');
+                    } else {
+                      Alert.alert('Account Restored', 'Welcome back! Your account has been successfully restored.');
+                      router.replace('/(tabs)');
+                    }
+                  } catch (restoreError: any) {
+                    console.error('Restore Error:', restoreError);
+                    Alert.alert(
+                      'Restore Failed',
+                      restoreError.response?.data?.message || 'Failed to restore your account. Please try again or contact support.'
+                    );
+                  }
+                }
+              }
+            ]
+          );
+          return;
+        }
+
+        // Normal login flow
+        if( backendResponse.user.image == null || backendResponse.user.document == null ) {
+          Alert.alert('Please upload your profile image and document to continue.');
+          router.replace('/uploadFile');
+        }
+        else {
+          router.replace('/(tabs)');
+        }
+      }
+    } catch (error: any) {
+      console.error('Apple Sign-In Error:', error);
+      
+      // Extract user-friendly error message from backend response
+      let errorMessage = 'An error occurred during Apple Sign-In. Please try again.';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 409) {
+        errorMessage = 'An account with this email already exists. If you previously deleted your account, please contact support to restore it.';
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Email is required for first-time sign in. Please try again.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Apple sign-in verification failed. Please try again.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Unable to complete sign in. Please try again or contact support if the problem persists.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert(
+        'Apple Sign-In Error', 
+        errorMessage
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Animated.ScrollView
@@ -500,9 +665,12 @@ export default function LoginScreen() {
             >
               <PhoneIcon size={24} color={COLORS.text} />
             </TouchableOpacity>
-            {/* <TouchableOpacity style={styles.socialIcon} onPress={handleFacebookLogin}>
-              <FacebookIcon size={32} />
-            </TouchableOpacity> */}
+            <TouchableOpacity 
+              style={styles.socialIcon} 
+              onPress={handleAppleSignIn}
+            >
+              <AppleIcon size={32} color={COLORS.text} />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.socialIcon} onPress={handleGoogleSignIn}>
               <GoogleIcon size={32} />
             </TouchableOpacity>
@@ -746,7 +914,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 30,
-    width: 180,
+    width: 260,
     alignSelf: 'center',
   },
   socialIcon: {

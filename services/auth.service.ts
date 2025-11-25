@@ -81,6 +81,13 @@ interface LoginResponse {
   user: UserData;
 }
 
+interface RestoreConfirmationResponse {
+  requires_restore_confirmation: boolean;
+  message: string;
+  deleted_at: string;
+  user_email: string;
+}
+
 class AuthService {
   async login(credentials: LoginCredentials) {
     console.log('Login Request:', { 
@@ -97,7 +104,18 @@ class AuthService {
         data: response.data
       });
 
-      const { access_token, user } = response.data;
+      // Check if account restoration is required
+      const responseData = response.data as any;
+      if (responseData.requires_restore_confirmation) {
+        return {
+          requires_restore_confirmation: true,
+          message: responseData.message,
+          deleted_at: responseData.deleted_at,
+          user_email: responseData.user_email,
+        } as RestoreConfirmationResponse;
+      }
+
+      const { access_token, user } = response.data as LoginResponse;
       
       // Store the token without Bearer prefix (will be added by API interceptor)
       await AsyncStorage.setItem('auth_token', access_token);
@@ -123,6 +141,34 @@ class AuthService {
         }
       });
 
+      throw error;
+    }
+  }
+
+  async restoreAccount(credentials: LoginCredentials) {
+    try {
+      const response = await api.post<LoginResponse>('/restore-account', credentials, {
+        timeout: 30000,
+      });
+
+      const { access_token, user } = response.data;
+      
+      await AsyncStorage.setItem('auth_token', access_token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      
+      if (credentials.remember) {
+        await AsyncStorage.setItem('remember_me', 'true');
+      } else {
+        await AsyncStorage.removeItem('remember_me');
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Restore Account Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       throw error;
     }
   }
@@ -488,6 +534,64 @@ class AuthService {
       return response.data;
     } catch (error: any) {
       console.error('Google Login Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw error;
+    }
+  }
+
+  async appleLogin(data: { identity_token: string; email?: string | null; first_name?: string; last_name?: string; role: string }) {
+    try {
+      const response = await api.post('/apple-login', data, {
+        timeout: 30000,
+      });
+
+      // Check if account restoration is required
+      if (response.data.requires_restore_confirmation) {
+        return {
+          requires_restore_confirmation: true,
+          message: response.data.message,
+          deleted_at: response.data.deleted_at,
+          user_email: response.data.user_email,
+        };
+      }
+
+      const { access_token, user } = response.data;
+      await AsyncStorage.setItem('auth_token', access_token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      
+      // Store remember me flag
+      await AsyncStorage.setItem('remember_me', 'true');
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Apple Login Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw error;
+    }
+  }
+
+  async restoreAppleAccount(data: { identity_token: string; email?: string | null; role: string }) {
+    try {
+      const response = await api.post('/apple-restore', data, {
+        timeout: 30000,
+      });
+
+      const { access_token, user } = response.data;
+      await AsyncStorage.setItem('auth_token', access_token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      
+      // Store remember me flag
+      await AsyncStorage.setItem('remember_me', 'true');
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Restore Apple Account Error:', {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,

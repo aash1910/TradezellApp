@@ -2,42 +2,26 @@
   "expo": {
     "name": "PiqDrop",
     "slug": "piqdrop",
-    "version": "1.0.31",
+    "version": "1.0.33",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "facebookAppId": "1087628436894472",
-    "facebookDisplayName": "PiqDrop",
-    "facebookClientToken": "dbe9f242f374128a5b8564438461e0f6",
+    "cli": {
+      "appVersionSource": "local"
+    },
     "ios": {
       "CFBundleDisplayName": "PiqDrop",
-      "supportsTablet": false,
       "bundleIdentifier": "com.piqdrop.com",
       "googleServicesFile": "./GoogleService-Info.plist",
       "deploymentTarget": "15.1",
+      "usesAppleSignIn": true,
       "infoPlist": {
-        "UIDeviceFamily": [
-          1
-        ],
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "We need your location to set pickup and delivery addresses and show your position on the map.",
         "NSCameraUsageDescription": "We need camera access to take photos of packages for delivery documentation.",
         "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload package photos and profile pictures.",
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLSchemes": [
-              "fb1087628436894472"
-            ]
-          }
-        ],
-        "LSApplicationQueriesSchemes": [
-          "fbapi",
-          "fb-messenger-share-api",
-          "fbauth2",
-          "fbshareextension"
-        ],
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         },
@@ -55,27 +39,17 @@
         "backgroundColor": "#55B086"
       },
       "package": "com.piqdrop.app",
+      "versionCode": 2,
       "softwareKeyboardLayoutMode": "pan",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyAzS_jfMrleaPh0xWe57BQ8aM5VzpwUzk0"
         }
-      },
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "fb1087628436894472"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
-      ]
+      }
     },
     "web": {
       "bundler": "metro",
@@ -107,19 +81,8 @@
           "iosUrlScheme": "com.googleusercontent.apps.885136208940-c07brsdi2plaqiijmfq9rslnmnlvi7bt"
         }
       ],
-      [
-        "react-native-fbsdk-next",
-        {
-          "appID": "1087628436894472",
-          "clientToken": "your_client_token_here",
-          "displayName": "PiqDrop",
-          "scheme": "fb1087628436894472",
-          "advertiserIDCollectionEnabled": false,
-          "autoLogAppEventsEnabled": false,
-          "isAutoInitEnabled": true
-        }
-      ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true
@@ -139,8 +102,8 @@
         "maxWithdrawal": 100000,
         "minWithdrawal": 100
       },
-      "environment": "development",
-      "environment2": "production"
+      "environment2": "development",
+      "environment": "production"
     },
     "owner": "masum_advance"
   }

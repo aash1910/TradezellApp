@@ -79,7 +79,12 @@ export default function ProfileScreen() {
         // Set name by combining first_name and last_name
         setName(`${user.first_name} ${user.last_name}`);
         setEmail(user.email);
-        setGender(user.gender === 'male' ? 'Male' : user.gender === 'female' ? 'Female' : 'Other');
+        // Only set gender if it exists, otherwise leave it empty
+        if (user.gender) {
+          setGender(user.gender === 'male' ? 'Male' : user.gender === 'female' ? 'Female' : 'Other');
+        } else {
+          setGender('');
+        }
 
         if (user.image) {
           const baseURLWithoutApi = (api.defaults.baseURL || '').replace('/api', '');
@@ -196,6 +201,7 @@ export default function ProfileScreen() {
             </View>
           </View>
 
+          {gender && (
           <View style={styles.innerContainer}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('profile.sections.gender')}</Text>
@@ -210,6 +216,7 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          )}
 
           {phone && (
           <View style={styles.innerContainer}>

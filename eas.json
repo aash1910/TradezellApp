@@ -1,12 +1,15 @@
 {
     "cli": {
       "version": ">= 16.3.2",
-      "appVersionSource": "remote"
+      "appVersionSource": "local"
     },
     "build": {
       "development": {
         "developmentClient": true,
-        "distribution": "internal"
+        "distribution": "internal",
+        "env": {
+          "APPLE_TEAM_ID": "Y7V7F3HVRJ"
+        }
       },
       "preview": {
         "ios": {
