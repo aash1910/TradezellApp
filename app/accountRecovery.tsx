@@ -66,7 +66,7 @@ export default function AccountRecoveryScreen() {
           </TouchableOpacity>
           <Image source={require('@/assets/img/recovery-bg.png')} style={styles.logo} />
           <Text style={styles.appName}>Account recovery</Text>
-          <Text style={styles.tagline}>Change your phone number or lost access to your Facebook account ? we can help you log in with your email.</Text>
+          <Text style={styles.tagline}>Change your phone number or lost access to your account? We can help you log in with your email.</Text>
         </Animated.View>
         <View style={styles.form}></View>
         {isKeyboardVisible && (

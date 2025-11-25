@@ -15,7 +15,6 @@ import Animated, {
 import { LetterIcon } from '@/components/icons/LetterIcon';
 import { LockIcon } from '@/components/icons/LockIcon';
 import { PhoneIcon } from '@/components/icons/PhoneIcon';
-import { FacebookIcon } from '@/components/icons/FacebookIcon';
 import { GoogleIcon } from '@/components/icons/GoogleIcon';
 import { AppleIcon } from '@/components/icons/AppleIcon';
 import { authService } from '@/services/auth.service';
@@ -30,11 +29,6 @@ import {
   getGoogleSignInModule, 
   showGoogleSignInUnavailableAlert 
 } from '@/utils/googleSignIn';
-import { 
-  isFacebookLoginAvailable, 
-  handleFacebookLogin as handleFacebookLoginUtil,
-  showFacebookLoginUnavailableAlert 
-} from '@/utils/facebookLogin';
 import { 
   isAppleSignInAvailable, 
   handleAppleSignIn as handleAppleSignInUtil,
@@ -52,7 +46,6 @@ const COLORS = {
   subtitle: '#616161',
   inputBorder: '#EEEEEE',
   iconBackground: '#F0F0F0',
-  facebook: '#1877F2',
   google: '#DB4437',
 };
 
@@ -425,40 +418,6 @@ export default function LoginScreen() {
         console.log("an error that's not related to google sign in occurred");
         Alert.alert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In');
       }
-    }
-  };
-
-  const handleFacebookLogin = async () => {
-    try {
-      const data = await handleFacebookLoginUtil();
-      
-      if (data) {
-        console.log('Facebook Sign-In Response', JSON.stringify(data, null, 2));
-        //Alert.alert('Facebook Sign-In Response', JSON.stringify(data, null, 2));
-
-        // Use authService.facebookLogin instead of direct fetch
-        // Note: email and picture are now available with the new SDK
-        const backendResponse = await authService.facebookLogin({
-          id: data.id,
-          name: data.name,
-          email: data.email || '', // Email is now available with the new SDK
-          picture: data.picture?.data?.url || '', // Picture is now available with the new SDK
-          role: 'sender',
-          remember: true, // or use rememberMe state if you want
-        });
-
-        if( backendResponse.user.image == null || backendResponse.user.document == null ) {
-          Alert.alert('Please upload your profile image and document to continue.');
-          router.replace('/uploadFile');
-        }
-        else {
-          router.replace('/(tabs)');
-        }
-
-      }
-    } catch (error: any) {
-      //Alert.alert('Facebook Login Error', error.message || 'An error occurred during Facebook login');
-      console.log('Facebook Login Error', error.message);
     }
   };
 

@@ -9,15 +9,6 @@ interface LoginCredentials {
   remember?: boolean;
 }
 
-interface FacebookLoginCredentials {
-  id: string;
-  name: string;
-  email?: string; // Made optional since unverified Facebook apps can't access email
-  picture?: string;
-  role?: string;
-  remember?: boolean;
-}
-
 interface RegisterData {
   first_name: string;
   last_name: string;
@@ -439,51 +430,6 @@ class AuthService {
       }
       
       throw new Error(errorMessage);
-    }
-  }
-
-  async facebookLogin(credentials: FacebookLoginCredentials) {
-    console.log('Facebook Login Request:', { 
-      url: '/facebook-login',
-      data: { ...credentials, id: credentials.id, email: credentials.email } 
-    });
-
-    try {
-      const response = await api.post<LoginResponse>('/facebook-login', credentials, {
-        timeout: 30000, // 30 seconds timeout
-      });
-      console.log('Facebook Login Response:', {
-        status: response.status,
-        data: response.data
-      });
-
-      const { access_token, user } = response.data;
-      
-      // Store the token with Bearer prefix
-      await AsyncStorage.setItem('auth_token', `Bearer ${access_token}`);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-      
-      // If remember me is true, store a flag
-      if (credentials.remember) {
-        await AsyncStorage.setItem('remember_me', 'true');
-      } else {
-        await AsyncStorage.removeItem('remember_me');
-      }
-      
-      return response.data;
-    } catch (error: any) {
-      console.error('Facebook Login Error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          timeout: error.config?.timeout
-        }
-      });
-
-      throw error;
     }
   }
 

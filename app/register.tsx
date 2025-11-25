@@ -29,7 +29,6 @@ const COLORS = {
   subtitle: '#616161',
   inputBorder: '#EEEEEE',
   iconBackground: '#F0F0F0',
-  facebook: '#1877F2',
   google: '#DB4437',
 };
 
