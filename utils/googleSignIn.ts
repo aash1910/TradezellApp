@@ -26,6 +26,9 @@ export const isGoogleSignInAvailable = () => {
 export const configureGoogleSignIn = () => {
   if (GoogleSignin) {
     GoogleSignin.configure({
+      // webClientId is used for Android authentication
+      // Android-specific OAuth client ID (885136208940-8c1nd9jlhn41dfg77rk8i47vmdrnhgr7) 
+      // should have SHA fingerprints added in Google Cloud Console, but webClientId is used in code
       webClientId: '885136208940-5ru8ijrkjmkdkhqi9aar0c1t62fth09n.apps.googleusercontent.com',
       iosClientId: '885136208940-c07brsdi2plaqiijmfq9rslnmnlvi7bt.apps.googleusercontent.com',
       profileImageSize: 150,
