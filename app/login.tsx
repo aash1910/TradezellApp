@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator, Alert, Platform, Modal, KeyboardAvoidingView, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator, Alert, Platform, Modal, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
@@ -522,13 +522,19 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Animated.ScrollView
-        ref={scrollRef}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 22) }]}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <Animated.ScrollView
+          ref={scrollRef}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 22) }]}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
           <Text style={styles.appName}>PiqDrop</Text>
@@ -556,10 +562,8 @@ export default function LoginScreen() {
               autoCorrect={false}
               autoFocus={true}
               keyboardType="email-address"
-              returnKeyType="next"
-              onSubmitEditing={() => {
-                passwordInputRef.current?.focus();
-              }}
+              returnKeyType="done"
+              onSubmitEditing={() => Keyboard.dismiss()}
             />
           </View>
 
@@ -577,6 +581,7 @@ export default function LoginScreen() {
               autoComplete="password"
               autoCorrect={false}
               returnKeyType="done"
+              onSubmitEditing={() => Keyboard.dismiss()}
             />
             <TouchableOpacity onPress={togglePasswordVisibility}>
               <Feather 
@@ -643,6 +648,7 @@ export default function LoginScreen() {
           </View>
         </View>
       </Animated.ScrollView>
+      </TouchableWithoutFeedback>
 
       <Modal
         visible={isPhoneModalVisible}
@@ -735,7 +741,7 @@ export default function LoginScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -747,6 +753,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 0,
+    minHeight: '100%',
   },
   header: {
     alignItems: 'center',
@@ -781,6 +788,7 @@ const styles = StyleSheet.create({
     paddingBottom: 22,
     paddingHorizontal: 16,
     backgroundColor: COLORS.backgroundWrapper,
+    minHeight: 500,
   },
   title: {
     fontSize: 24,

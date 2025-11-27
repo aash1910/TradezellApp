@@ -619,6 +619,7 @@ export default function UpdateProfileScreen() {
   };
 
   return (
+    <>
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
@@ -939,6 +940,19 @@ export default function UpdateProfileScreen() {
           </Modal>
 
         </View>
+        {isKeyboardVisible && (
+          <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
+            <TouchableOpacity 
+              style={[styles.continueButton, isLoading && styles.disabledButton]}
+              onPress={handleUpdate}
+              disabled={isLoading}
+            >
+              <Text style={styles.continueButtonText}>
+                {isLoading ? t('updateProfile.updating') : t('updateProfile.update')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </Animated.ScrollView>
 
       <Modal
@@ -970,6 +984,8 @@ export default function UpdateProfileScreen() {
           </View>
         </View>
       </Modal>
+    </KeyboardAvoidingView>
+    {!isKeyboardVisible && (
       <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
         <TouchableOpacity 
           style={[styles.continueButton, isLoading && styles.disabledButton]}
@@ -981,7 +997,8 @@ export default function UpdateProfileScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    )}
+    </>
   );
 }
 
