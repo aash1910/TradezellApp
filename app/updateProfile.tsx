@@ -495,14 +495,22 @@ export default function UpdateProfileScreen() {
             Alert.alert('Error', 'Failed to update profile image');
           }
         } catch (error: any) {
-          Alert.alert('Error', error.message);
+          Alert.alert(
+            'Upload Failed', 
+            'Failed to upload profile image. Please try uploading again.',
+            [{ text: 'OK' }]
+          );
         } finally {
             setIsLoading(false);
         }
       }
     } catch (error) {
       console.error('Error taking picture:', error);
-      Alert.alert('Error', 'Failed to take picture. Please try again.');
+      Alert.alert(
+        'Error', 
+        'Failed to take picture. Please try uploading again.',
+        [{ text: 'OK' }]
+      );
       setShowImageOptions(false);
     }
   };
@@ -528,14 +536,22 @@ export default function UpdateProfileScreen() {
             Alert.alert('Error', 'Failed to update profile image');
           }
         } catch (error: any) {
-          Alert.alert('Error', error.message);
+          Alert.alert(
+            'Upload Failed', 
+            'Failed to upload profile image. Please try uploading again.',
+            [{ text: 'OK' }]
+          );
         } finally {
           setIsLoading(false);
         }
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      Alert.alert(
+        'Error', 
+        'Failed to pick image. Please try uploading again.',
+        [{ text: 'OK' }]
+      );
       setShowImageOptions(false);
     }
   };

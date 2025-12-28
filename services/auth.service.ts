@@ -402,6 +402,7 @@ class AuthService {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 60000, // Increase to 60 seconds for image uploads
       });
 
       // If this is a profile image upload, update the user's image in auth service

@@ -109,14 +109,22 @@ export default function UploadFileScreen() {
             Alert.alert('Error', 'Failed to update profile image');
           }
         } catch (error: any) {
-          Alert.alert('Error', error.message);
+          Alert.alert(
+            'Upload Failed', 
+            'Failed to upload profile image. Please try uploading again.',
+            [{ text: 'OK' }]
+          );
         } finally {
           setIsLoadingProfile(false);
         }
       }
     } catch (error) {
       console.error('Error taking picture:', error);
-      Alert.alert('Error', 'Failed to take picture. Please try again.');
+      Alert.alert(
+        'Error', 
+        'Failed to take picture. Please try uploading again.',
+        [{ text: 'OK' }]
+      );
       setShowImageOptions(false);
     }
   };
@@ -142,14 +150,22 @@ export default function UploadFileScreen() {
             Alert.alert('Error', 'Failed to update profile image');
           }
         } catch (error: any) {
-          Alert.alert('Error', error.message);
+          Alert.alert(
+            'Upload Failed', 
+            'Failed to upload profile image. Please try uploading again.',
+            [{ text: 'OK' }]
+          );
         } finally {
           setIsLoadingProfile(false);
         }
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      Alert.alert(
+        'Error', 
+        'Failed to pick image. Please try uploading again.',
+        [{ text: 'OK' }]
+      );
       setShowImageOptions(false);
     }
   };
@@ -175,14 +191,22 @@ export default function UploadFileScreen() {
             Alert.alert('Error', 'Failed to update Passport/ID card image');
           }
         } catch (error: any) {
-          Alert.alert('Error', error.message);
+          Alert.alert(
+            'Upload Failed', 
+            'Failed to upload Passport/ID card image. Please try uploading again.',
+            [{ text: 'OK' }]
+          );
         } finally {
           setIsLoadingId(false);
         }
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      Alert.alert(
+        'Error', 
+        'Failed to pick image. Please try uploading again.',
+        [{ text: 'OK' }]
+      );
       setShowImageOptions(false);
     }
   };
@@ -208,7 +232,11 @@ export default function UploadFileScreen() {
             Alert.alert('Error', 'Failed to update Passport/ID card image');
           }
         } catch (error: any) {
-          Alert.alert('Error', error.message);
+          Alert.alert(
+            'Upload Failed', 
+            'Failed to upload Passport/ID card image. Please try uploading again.',
+            [{ text: 'OK' }]
+          );
         } finally {
           setIsLoadingId(false);
         }
@@ -216,7 +244,11 @@ export default function UploadFileScreen() {
       
     } catch (error) {
       console.error('Error taking picture:', error);
-      Alert.alert('Error', 'Failed to take picture. Please try again.');
+      Alert.alert(
+        'Error', 
+        'Failed to take picture. Please try uploading again.',
+        [{ text: 'OK' }]
+      );
       setShowImageOptions(false);
     }
   };

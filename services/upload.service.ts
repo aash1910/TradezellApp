@@ -27,7 +27,7 @@ class UploadService {
       // Compress and resize the image
       const manipResult = await manipulateAsync(
         uri,
-        [{ resize: { width: 1200 } }], // Resize to reasonable dimensions
+        [{ resize: { width: 800 } }], // Resize to reasonable dimensions
         {
           compress: quality,
           format: SaveFormat.JPEG
