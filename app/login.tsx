@@ -376,17 +376,37 @@ export default function LoginScreen() {
         // Call backend
         const idToken = response.data.idToken;
         if(idToken){
-          const backendResponse = await authService.googleLogin({
-            id_token: idToken,
-            role: 'sender',
-          });
+          try {
+            const backendResponse = await authService.googleLogin({
+              id_token: idToken,
+              role: 'sender',
+            });
 
-          if( backendResponse.user.image == null || backendResponse.user.document == null ) {
-            Alert.alert('Please upload your profile image and document to continue.');
-            router.replace('/uploadFile');
-          }
-          else {
-            router.replace('/(tabs)');
+            if( backendResponse.user.image == null || backendResponse.user.document == null ) {
+              Alert.alert('Please upload your profile image and document to continue.');
+              router.replace('/uploadFile');
+            }
+            else {
+              router.replace('/(tabs)');
+            }
+          } catch (backendError: any) {
+            // Sign out from Google to allow user to choose a different account
+            await GoogleSignin.signOut();
+            console.error('Backend authentication error:', backendError);
+            
+            // Show user-friendly error message
+            let errorMessage = 'An error occurred during sign in. Please try again.';
+            
+            if (backendError.response?.status === 403) {
+              errorMessage = 'This Google account is already registered with a different role (Sender/Rider). Please use a different Google account or sign in with email/password.';
+            } else if (backendError.response?.data?.message) {
+              errorMessage = backendError.response.data.message;
+            } else if (backendError.message) {
+              errorMessage = backendError.message;
+            }
+            
+            Alert.alert('Google Sign-In Error', errorMessage);
+            throw backendError; // Re-throw to be caught by outer catch block
           }
         }
 
@@ -415,8 +435,11 @@ export default function LoginScreen() {
         }
       } else {
         // an error that's not related to google sign in occurred
-        console.log("an error that's not related to google sign in occurred");
-        Alert.alert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In');
+        // Only show alert if it wasn't already shown in the backend error handling
+        if (!error.response) {
+          console.log("an error that's not related to google sign in occurred");
+          Alert.alert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In');
+        }
       }
     }
   };
