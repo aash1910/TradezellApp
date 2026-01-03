@@ -398,7 +398,7 @@ export default function LoginScreen() {
             let errorMessage = 'An error occurred during sign in. Please try again.';
             
             if (backendError.response?.status === 403) {
-              errorMessage = 'This Google account is already registered with a different role (Sender/Rider). Please use a different Google account or sign in with email/password.';
+              errorMessage = 'This Google account is already registered with a different role in Rider App. Please use a different Google account or sign in with email/password.';
             } else if (backendError.response?.data?.message) {
               errorMessage = backendError.response.data.message;
             } else if (backendError.message) {
@@ -406,7 +406,8 @@ export default function LoginScreen() {
             }
             
             Alert.alert('Google Sign-In Error', errorMessage);
-            throw backendError; // Re-throw to be caught by outer catch block
+            // Don't re-throw - we've already handled the error and shown the alert
+            return;
           }
         }
 
@@ -436,10 +437,14 @@ export default function LoginScreen() {
       } else {
         // an error that's not related to google sign in occurred
         // Only show alert if it wasn't already shown in the backend error handling
-        if (!error.response) {
-          console.log("an error that's not related to google sign in occurred");
-          Alert.alert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In');
+        // Check if it's a backend error that was already handled (403 from google-login)
+        if (!error.response || (error.response?.status === 403 && error.config?.url?.includes('/google-login'))) {
+          // This is not a backend error or it's a 403 from google-login that we already handled
+          // Don't show another alert
+          return;
         }
+        console.log("an error that's not related to google sign in occurred");
+        Alert.alert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In');
       }
     }
   };

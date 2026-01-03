@@ -2,7 +2,7 @@
   "expo": {
     "name": "PiqDrop",
     "slug": "piqdrop",
-    "version": "1.0.35",
+    "version": "1.1.1", 
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
     "scheme": "piqdrop",
@@ -39,7 +39,7 @@
         "backgroundColor": "#55B086"
       },
       "package": "com.piqdrop.app",
-      "versionCode": 4,
+      "versionCode": 6,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "ACCESS_FINE_LOCATION",

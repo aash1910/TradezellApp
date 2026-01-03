@@ -16,13 +16,16 @@ class UploadService {
       const fileSizeInMB = (fileInfo as FileSystem.FileInfo).size / (1024 * 1024);
       console.log('Original image size:', fileSizeInMB, 'MB');
 
-      if (fileSizeInMB <= 2) {
-        return uri; // If image is already under 2MB, return as is
+      // Set maximum size to 0.5MB for safety buffer (server accepts up to 2MB)
+      const MAX_SIZE_MB = 0.5;
+      
+      // Always compress images for optimization, even if under threshold
+      let quality = 0.8; // Default quality for images under threshold
+      
+      // For larger files, calculate more aggressive compression
+      if (fileSizeInMB > MAX_SIZE_MB) {
+        quality = Math.max(0.3, Math.min(0.7, MAX_SIZE_MB / fileSizeInMB));
       }
-
-      // Calculate compression quality based on file size
-      // The larger the file, the more we compress
-      let quality = Math.min(0.9, 2 / fileSizeInMB);
       
       // Compress and resize the image
       const manipResult = await manipulateAsync(
@@ -34,12 +37,41 @@ class UploadService {
         }
       );
 
-      // Verify the new file size
-      const compressedInfo = await FileSystem.getInfoAsync(manipResult.uri, { size: true });
-      const compressedSize = (compressedInfo as FileSystem.FileInfo).size / (1024 * 1024);
-      console.log('Compressed image size:', compressedSize, 'MB');
+      // Verify the compressed size and compress again if still too large
+      let finalUri = manipResult.uri;
+      let attempts = 0;
+      const maxAttempts = 3;
+      let currentQuality = quality;
+      
+      while (attempts < maxAttempts) {
+        const compressedInfo = await FileSystem.getInfoAsync(finalUri, { size: true });
+        const compressedSize = (compressedInfo as FileSystem.FileInfo).size / (1024 * 1024);
+        console.log('Compressed image size (attempt ' + (attempts + 1) + '):', compressedSize, 'MB');
+        
+        if (compressedSize <= MAX_SIZE_MB) {
+          return finalUri;
+        }
+        
+        // If still too large, compress more aggressively
+        currentQuality = Math.max(0.3, currentQuality * 0.7);
+        const recompressed = await manipulateAsync(
+          finalUri,
+          [{ resize: { width: 800 } }],
+          {
+            compress: currentQuality,
+            format: SaveFormat.JPEG
+          }
+        );
+        finalUri = recompressed.uri;
+        attempts++;
+      }
 
-      return manipResult.uri;
+      // Return the best result even if we couldn't get it under threshold
+      const finalInfo = await FileSystem.getInfoAsync(finalUri, { size: true });
+      const finalSize = (finalInfo as FileSystem.FileInfo).size / (1024 * 1024);
+      console.log('Final compressed image size:', finalSize, 'MB');
+      
+      return finalUri;
     } catch (error) {
       console.error('Error compressing image:', error);
       throw error;
