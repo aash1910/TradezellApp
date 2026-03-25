@@ -186,7 +186,7 @@ export default function LoginScreen() {
       const response = await authService.login({
         phone: validatedPhone,
         password: phonePassword,
-        role: 'sender',
+        account_role: 'trader',
         remember: true,
       });
       setIsPhoneModalVisible(false);
@@ -229,7 +229,7 @@ export default function LoginScreen() {
       const response: any = await authService.login({ 
         email: email.trim(), 
         password,
-        role: 'sender',
+        account_role: 'trader',
         remember: rememberMe
       });
       
@@ -255,7 +255,7 @@ export default function LoginScreen() {
                   const restoreResponse = await authService.restoreAccount({
                     email: email.trim(),
                     password,
-                    role: 'sender',
+                    account_role: 'trader',
                     remember: rememberMe
                   });
 
@@ -379,7 +379,7 @@ export default function LoginScreen() {
           try {
             const backendResponse = await authService.googleLogin({
               id_token: idToken,
-              role: 'sender',
+              account_role: 'trader',
             });
 
             if( backendResponse.user.image == null || backendResponse.user.document == null ) {
@@ -398,7 +398,7 @@ export default function LoginScreen() {
             let errorMessage = 'An error occurred during sign in. Please try again.';
             
             if (backendError.response?.status === 403) {
-              errorMessage = 'This Google account is already registered with a different role in Rider App. Please use a different Google account or sign in with email/password.';
+              errorMessage = 'This Google account is already registered with a different role in Tradezell. Please use a different Google account or sign in with email/password.';
             } else if (backendError.response?.data?.message) {
               errorMessage = backendError.response.data.message;
             } else if (backendError.message) {
@@ -462,7 +462,7 @@ export default function LoginScreen() {
           email: appleData.email,
           first_name: appleData.fullName?.givenName || '',
           last_name: appleData.fullName?.familyName || '',
-          role: 'sender',
+          account_role: 'trader',
         });
 
         // Check if account restoration is required
@@ -489,7 +489,7 @@ export default function LoginScreen() {
                     const restoreResponse = await authService.restoreAppleAccount({
                       identity_token: appleData.identityToken,
                       email: backendResponse.user_email || appleData.email || null,
-                      role: 'sender',
+                      account_role: 'trader',
                     });
 
                     if (restoreResponse.user.image == null || restoreResponse.user.document == null) {
@@ -565,7 +565,7 @@ export default function LoginScreen() {
           contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 22) }]}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
-          <Text style={styles.appName}>PiqDrop</Text>
+          <Text style={styles.appName}>Tradezell</Text>
           <Text style={styles.tagline}>Making delivery simple</Text>
         </Animated.View>
 

@@ -1,37 +1,29 @@
 import { Tabs, router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Platform, TouchableOpacity } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { HomeIcon } from '@/components/icons/HomeIcon';
-import { MessageIcon } from '@/components/icons/MessageIcon';
-import { ManageIcon } from '@/components/icons/ManageIcon';
-import { AccountIcon } from '@/components/icons/AccountIcon';
 import { calculateUnreadCount } from './conversations';
 import api from '@/services/api';
 
+const COLORS = {
+  primary: '#2D6A4F',
+  text: '#616161',
+};
+
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const { t } = useTranslation();
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchUnreadCount = async () => {
     try {
       const response = await api.get('/conversations');
       if (response.data.status === 'success') {
-        const count = calculateUnreadCount(response.data.conversations);
-        setUnreadCount(count);
+        setUnreadCount(calculateUnreadCount(response.data.conversations));
       }
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
-    }
+    } catch (_) {}
   };
 
   useFocusEffect(
@@ -40,25 +32,13 @@ export default function TabLayout() {
     }, [])
   );
 
-  // Refresh unread count every 5 seconds when app is active (only in production)
   useEffect(() => {
-    const environment = Constants.expoConfig?.extra?.environment;
-    
-    // Only start polling if not in development mode
-    if (environment !== 'development') {
-      const interval = setInterval(() => {
-        fetchUnreadCount();
-      }, 5000);
-
+    const env = Constants.expoConfig?.extra?.environment;
+    if (env !== 'development') {
+      const interval = setInterval(fetchUnreadCount, 5000);
       return () => clearInterval(interval);
     }
   }, []);
-
-  const COLORS = {
-    primary: '#55B086',
-    background: '#FFFFFF',
-    text: '#616161',
-  };
 
   return (
     <Tabs
@@ -72,101 +52,70 @@ export default function TabLayout() {
           letterSpacing: 0.2,
           marginTop: 2,
         },
-        tabBarItemStyle: {
-          height: 64,
-          paddingTop: 4,
-        },
-        tabBarIconStyle: {
-          width: 25,
-          height: 25,
-        },
+        tabBarItemStyle: { height: 64, paddingTop: 4 },
+        tabBarIconStyle: { width: 25, height: 25 },
         tabBarStyle: {
           position: 'absolute',
           borderTopWidth: 0,
           height: Platform.OS === 'ios' ? 86 : insets.bottom + 64,
         },
       }}>
+
+      {/* Home — swipe discovery deck */}
       <Tabs.Screen
         name="index"
         options={{
-          title: t('navigation.home'),
-          tabBarIcon: ({ color }) => <HomeIcon size={25} color={color} />,
+          title: 'Discover',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="layers-outline" size={25} color={color} />
+          ),
         }}
       />
+
+      {/* Likes — mutual matches */}
+      <Tabs.Screen
+        name="likes"
+        options={{
+          title: 'Likes',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="heart-outline" size={25} color={color} />
+          ),
+        }}
+      />
+
+      {/* Chat — conversations */}
       <Tabs.Screen
         name="conversations"
         listeners={{
           tabPress: (e) => {
             e.preventDefault();
-            router.push({
-              pathname: '/conversations',
-              //params: { userId: '1', refresh: Date.now() }
-            });
+            router.push('/conversations');
           },
-          focus: () => {
-            // Refresh unread count when conversations tab is focused
-            fetchUnreadCount();
-          },
+          focus: fetchUnreadCount,
         }}
         options={{
-          title: t('navigation.messages'),
-          tabBarIcon: ({ color }) => <MessageIcon size={25} color={color} />,
+          title: 'Chat',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="chatbubble-outline" size={25} color={color} />
+          ),
           tabBarBadge: unreadCount > 0 ? unreadCount.toString() : undefined,
         }}
       />
-      <Tabs.Screen
-        name="manage"
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            router.push({
-              pathname: '/manage',
-              params: { refresh: Date.now() }
-            });
-          },
-        }}
-        options={{
-          title: t('navigation.manage'),
-          tabBarIcon: ({ color }) => <ManageIcon size={25} color={color} />,
-        }}
-      />
+
+      {/* Account — profile & settings */}
       <Tabs.Screen
         name="account"
         options={{
-          title: t('navigation.account'),
-          tabBarIcon: ({ color }) => <AccountIcon size={25} color={color} />,
+          title: 'Account',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="person-outline" size={25} color={color} />
+          ),
         }}
       />
-      <Tabs.Screen
-        name="notification"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="orderDetail"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="calling"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="packageEdit"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="message"
-        options={{
-          href: null,
-        }}
-      />
+
+      {/* Hidden tab screens (used as stack-like routes inside tabs) */}
+      <Tabs.Screen name="message"      options={{ href: null }} />
+      <Tabs.Screen name="notification" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -17,7 +17,7 @@ interface RegisterData {
   password_confirmation: string;
   nationality: string;
   gender: string;
-  role?: string;
+  account_role?: string;
 }
 
 interface ForgotPasswordData {
@@ -33,17 +33,15 @@ interface ResetPasswordData {
 
 export interface SettingsData {
   language?: string;
-  place?: {
-    pickup?: {
-      address?: string;
-      latitude?: number;
-      longitude?: number;
-    };
-    dropoff?: {
-      address?: string;
-      latitude?: number;
-      longitude?: number;
-    };
+  account_role?: string;
+  max_distance?: number;
+  global_search?: boolean;
+  enable_discovery?: boolean;
+  discovery_location?: {
+    name?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
   };
 }
 

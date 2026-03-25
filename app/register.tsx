@@ -17,6 +17,7 @@ import { SelectArrowIcon } from '@/components/icons/SelectArrowIcon';
 import { UserRoundedIcon } from '@/components/icons/UserRoundedIcon';
 import { COUNTRIES } from '@/components/countries';
 import { authService } from '@/services/auth.service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HEADER_HEIGHT = 207;
 
@@ -239,13 +240,16 @@ export default function RegisterScreen() {
       }
 
       console.log('Making registration request...');
+      // Pick up account_role that was saved during boarding
+      const pendingRole = await AsyncStorage.getItem('pending_account_role');
+
       const payload: any = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         email: email.trim(),
         password,
         password_confirmation: confirmPassword,
-        role: 'sender',
+        account_role: pendingRole ?? 'trader',
       };
       
       // Only include nationality and gender if they are provided

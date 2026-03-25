@@ -188,7 +188,7 @@ export default {
     },
     deliveryCompleted: {
       title: 'Delivery completed!',
-      message: "Please, let's know about your experience and the service provided to you by the dropper. This will enable us to improve our system. Thank you for using PiqDrop!",
+      message: "Please, let's know about your experience and the service provided to you by the dropper. This will enable us to improve our system. Thank you for using Tradezell!",
       leaveReview: 'Leave a review',
       maybeLater: 'Maybe later'
     },
@@ -334,7 +334,7 @@ export default {
     tools: {
       emergencyContacts: {
         title: 'Emergency Contacts',
-        description: 'Save these emergency numbers: Local Police (911), PiqDrop Support (1-800-PIQDROP), and your local emergency services.'
+        description: 'Save these emergency numbers: Local Police (911), Tradezell Support (1-800-PIQDROP), and your local emergency services.'
       },
       locationSharing: {
         title: 'Location Sharing',
@@ -365,7 +365,7 @@ export default {
       description: 'Use these tools to report and block users, flag content, or contact support for immediate assistance.',
       blockUser: 'Block User: Tap on a user\'s profile and select \'Block\' to prevent them from contacting you',
       flagContent: 'Flag Content: Use the flag icon on any inappropriate content to report it',
-      contactSupport: 'Contact Support: Email support@piqdrop.com for immediate assistance'
+      contactSupport: 'Contact Support: Email support@tradezell.com for immediate assistance'
     },
     reportButton: 'Report',
     modal: {
@@ -375,7 +375,7 @@ export default {
         underage: 'Member under 18.',
         spam: 'Spam'
       },
-      emailSent: 'An email has been sent to support@piqdrop.com'
+      emailSent: 'An email has been sent to support@tradezell.com'
     }
   },
   faq: {

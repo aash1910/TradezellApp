@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: 'https://piqdrop.com/api', //'https://piqdrop.equation.wmd-hosting.com/api', //'https://piqdrop.local:8890/api',
+  baseURL: 'https://admin.tradezell.com/api', // production; change to local dev URL when needed
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

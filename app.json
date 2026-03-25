@@ -1,31 +1,29 @@
 {
   "expo": {
-    "name": "PiqDrop",
-    "slug": "piqdrop",
-    "version": "1.1.1", 
+    "name": "Tradezell",
+    "slug": "tradezell",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-dark.png",
-    "scheme": "piqdrop",
+    "scheme": "tradezell",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "cli": {
       "appVersionSource": "local"
     },
     "ios": {
-      "CFBundleDisplayName": "PiqDrop",
-      "bundleIdentifier": "com.piqdrop.com",
-      "googleServicesFile": "./GoogleService-Info.plist",
+      "CFBundleDisplayName": "Tradezell",
+      "bundleIdentifier": "com.tradezell.app",
       "deploymentTarget": "15.1",
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "We need your location to set pickup and delivery addresses and show your position on the map.",
-        "NSCameraUsageDescription": "We need camera access to take photos of packages for delivery documentation.",
-        "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload package photos and profile pictures.",
+        "NSLocationWhenInUseUsageDescription": "We need your location to show nearby listings and let you set your discovery radius.",
+        "NSCameraUsageDescription": "We need camera access to take photos of items you want to trade or sell.",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload item photos and profile pictures.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        },
-        "FirebaseAppDelegateProxyEnabled": false
+        }
       },
       "icon": {
         "dark": "./assets/icons/ios-dark.png",
@@ -36,10 +34,10 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icons/adaptive-icon.png",
-        "backgroundColor": "#55B086"
+        "backgroundColor": "#2D6A4F"
       },
-      "package": "com.piqdrop.app",
-      "versionCode": 6,
+      "package": "com.tradezell.app",
+      "versionCode": 1,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "ACCESS_FINE_LOCATION",
@@ -50,7 +48,7 @@
       ],
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyAzS_jfMrleaPh0xWe57BQ8aM5VzpwUzk0"
+          "apiKey": "REPLACE_WITH_TRADEZELL_GOOGLE_MAPS_KEY"
         }
       }
     },
@@ -66,13 +64,13 @@
         "expo-splash-screen",
         {
           "ios": {
-            "backgroundColor": "#55B086",
+            "backgroundColor": "#2D6A4F",
             "image": "./assets/images/splash-screen-1.png",
             "resizeMode": "contain",
             "enableFullScreenImage_legacy": true
           },
           "android": {
-            "backgroundColor": "#55B086",
+            "backgroundColor": "#2D6A4F",
             "image": "./assets/icons/splash-icon-android.png",
             "imageWidth": 200
           }
@@ -82,11 +80,12 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosUrlScheme": "com.googleusercontent.apps.885136208940-c07brsdi2plaqiijmfq9rslnmnlvi7bt"
+          "iosUrlScheme": "REPLACE_WITH_TRADEZELL_GOOGLE_URL_SCHEME"
         }
       ],
       "expo-secure-store",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
@@ -96,9 +95,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "f4e2a653-4467-4908-8aba-ce3b2ef4015d"
+        "projectId": "REPLACE_WITH_TRADEZELL_EAS_PROJECT_ID"
       },
-      "stripePublishableKey": "pk_test_51RaMqGBQsHpfCUCmVUDUmoJ3Mi7u6rJlb9mFJVhpMqKacI3JNcGIosKGaQLLvCXnIBGL30TilKbLpKp0rxCrsffP0073sjbHOE",
+      "stripePublishableKey": "REPLACE_WITH_TRADEZELL_STRIPE_KEY",
       "currency": {
         "code": "USD",
         "symbol": "$",
@@ -106,8 +105,7 @@
         "maxWithdrawal": 100000,
         "minWithdrawal": 100
       },
-      "environment2": "development",
-      "environment": "production"
+      "environment": "development"
     },
     "owner": "masum_advance"
   }
