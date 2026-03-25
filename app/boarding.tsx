@@ -37,7 +37,7 @@ const SLIDES = [
     icon: 'layers-outline' as const,
     title: 'Swipe to discover',
     subtitle:
-      'Browse listings near you. Swipe right if you like something. When the owner likes one of yours back, it's a match!',
+      "Browse listings near you. Swipe right if you like something. When the owner likes one of yours back, it's a match!",
   },
   {
     key: '3',
@@ -51,7 +51,7 @@ const SLIDES = [
 const ROLES = [
   { key: 'trader', label: 'Trader', desc: 'I trade items — swap old for new!', icon: 'swap-horizontal-outline' as const },
   { key: 'seller', label: 'Seller', desc: 'I mainly sell items for money.', icon: 'pricetag-outline' as const },
-  { key: 'buyer',  label: 'Buyer',  desc: 'I'm looking to buy or receive items.', icon: 'bag-handle-outline' as const },
+  { key: 'buyer',  label: 'Buyer',  desc: "I'm looking to buy or receive items.", icon: 'bag-handle-outline' as const },
 ];
 
 export default function BoardingScreen() {

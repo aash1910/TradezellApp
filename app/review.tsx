@@ -11,7 +11,8 @@ import Animated, {
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { LetterIcon } from '@/components/icons/LetterIcon';
 import { StarIcon } from '@/components/icons/StarIcon';
-import { Package } from '@/services/packageList.service';
+// Review screen adapted for Tradezell — uses listing/match context
+type Package = any;
 import api from '@/services/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

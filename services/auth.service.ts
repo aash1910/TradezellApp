@@ -6,6 +6,7 @@ interface LoginCredentials {
   phone?: string;
   password: string;
   role?: string;
+  account_role?: string;
   remember?: boolean;
 }
 
@@ -466,7 +467,7 @@ class AuthService {
     }
   }
   
-  async googleLogin(data: { id_token: string; role: string }) {
+  async googleLogin(data: { id_token: string; role?: string; account_role?: string }) {
     try {
       const response = await api.post('/google-login', data, {
         timeout: 30000,
@@ -487,7 +488,7 @@ class AuthService {
     }
   }
 
-  async appleLogin(data: { identity_token: string; email?: string | null; first_name?: string; last_name?: string; role: string }) {
+  async appleLogin(data: { identity_token: string; email?: string | null; first_name?: string; last_name?: string; role?: string; account_role?: string }) {
     try {
       const response = await api.post('/apple-login', data, {
         timeout: 30000,
@@ -521,7 +522,7 @@ class AuthService {
     }
   }
 
-  async restoreAppleAccount(data: { identity_token: string; email?: string | null; role: string }) {
+  async restoreAppleAccount(data: { identity_token: string; email?: string | null; role?: string; account_role?: string }) {
     try {
       const response = await api.post('/apple-restore', data, {
         timeout: 30000,
