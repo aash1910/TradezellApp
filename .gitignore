@@ -84,3 +84,7 @@ expo-env.d.ts
 
 .password
 credentials.json
+
+# Firebase / Google service account keys (must never be committed)
+piqdrop-*.json
+*service-account*.json
