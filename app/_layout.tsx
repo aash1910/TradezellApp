@@ -42,6 +42,7 @@ export default function RootLayout() {
         <Stack.Screen name="register"        options={{ headerShown: false }} />
         <Stack.Screen name="otpVerification" options={{ headerShown: false }} />
         <Stack.Screen name="success"         options={{ headerShown: false }} />
+        <Stack.Screen name="uploadFile"      options={{ headerShown: false }} />
         <Stack.Screen name="forgotPassword"  options={{ headerShown: false }} />
         <Stack.Screen name="resetPassword"   options={{ headerShown: false }} />
         <Stack.Screen name="accountRecovery" options={{ headerShown: false }} />

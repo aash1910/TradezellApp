@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,12 +12,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Modal,
+  Pressable,
+  Dimensions,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '@/services/api';
+import { listingService } from '@/services/listing.service';
+import { uploadService } from '@/services/upload.service';
+import { resolveListingImageUri } from '@/utils/images';
+
+const LISTING_SAVE_TIMEOUT_MS = 120000;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#2D6A4F',
@@ -35,7 +44,8 @@ const CATEGORIES = ['Clothing', 'Shoes', 'Electronics', 'Books', 'Furniture', 'J
 
 export default function AddListingScreen() {
   const insets = useSafeAreaInsets();
-  const { editId } = useLocalSearchParams<{ editId?: string }>();
+  const params = useLocalSearchParams<{ editId?: string }>();
+  const editId = Array.isArray(params.editId) ? params.editId[0] : params.editId;
   const isEdit = Boolean(editId);
 
   const [type, setType] = useState<'trade' | 'sell' | 'both'>('trade');
@@ -45,9 +55,52 @@ export default function AddListingScreen() {
   const [category, setCategory] = useState('');
   const [price, setPrice] = useState('');
   const [images, setImages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+  const [compressingImages, setCompressingImages] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!editId) return;
+
+    const listingId = Number(editId);
+    if (!Number.isFinite(listingId)) return;
+
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const listing = await listingService.getListing(listingId);
+        if (cancelled) return;
+
+        setType(listing.type);
+        setTitle(listing.title ?? '');
+        setDescription(listing.description ?? '');
+        setCondition(listing.condition ?? '');
+        setCategory(listing.category ?? '');
+        setPrice(listing.price != null ? String(listing.price) : '');
+        setImages(listing.images ?? []);
+      } catch {
+        if (!cancelled) {
+          Alert.alert('Error', 'Could not load listing.', [
+            { text: 'OK', onPress: () => router.back() },
+          ]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editId]);
 
   const pickImage = async () => {
+    const remaining = 5 - images.length;
+    if (remaining <= 0) return;
+
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Please grant photo library access to upload images.');
@@ -56,17 +109,22 @@ export default function AddListingScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.75,
-      base64: true,
+      quality: 1,
       allowsMultipleSelection: true,
-      selectionLimit: 5,
+      selectionLimit: remaining,
     });
 
     if (!result.canceled) {
-      const newImages = result.assets.map(a =>
-        a.base64 ? `data:image/jpeg;base64,${a.base64}` : a.uri
-      );
-      setImages(prev => [...prev, ...newImages].slice(0, 5));
+      setCompressingImages(true);
+      try {
+        const uris = result.assets.map((a) => a.uri).filter(Boolean) as string[];
+        const compressed = await uploadService.compressImagesToDataUrls(uris);
+        setImages((prev) => [...prev, ...compressed].slice(0, 5));
+      } catch {
+        Alert.alert('Error', 'Failed to process images. Please try again with smaller photos.');
+      } finally {
+        setCompressingImages(false);
+      }
     }
   };
 
@@ -100,10 +158,12 @@ export default function AddListingScreen() {
         payload.currency = 'USD';
       }
 
+      const saveConfig = { timeout: LISTING_SAVE_TIMEOUT_MS };
+
       if (isEdit) {
-        await api.put(`/listings/${editId}`, payload);
+        await api.put(`/listings/${editId}`, payload, saveConfig);
       } else {
-        await api.post('/listings', payload);
+        await api.post('/listings', payload, saveConfig);
       }
 
       Alert.alert('Success', isEdit ? 'Listing updated!' : 'Listing created!', [
@@ -131,6 +191,11 @@ export default function AddListingScreen() {
         <View style={{ width: 36 }} />
       </View>
 
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -224,16 +289,29 @@ export default function AddListingScreen() {
         <View style={styles.imagesRow}>
           {images.map((img, i) => (
             <View key={i} style={styles.imgWrapper}>
-              <Image source={{ uri: img }} style={styles.imgThumb} />
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setPreviewImage(resolveListingImageUri(img))}>
+                <Image source={{ uri: resolveListingImageUri(img) }} style={styles.imgThumb} />
+              </TouchableOpacity>
               <TouchableOpacity style={styles.imgRemove} onPress={() => removeImage(i)}>
                 <Ionicons name="close-circle" size={20} color={COLORS.error} />
               </TouchableOpacity>
             </View>
           ))}
           {images.length < 5 && (
-            <TouchableOpacity style={styles.addImgBtn} onPress={pickImage}>
-              <Ionicons name="camera-outline" size={28} color={COLORS.primary} />
-              <Text style={styles.addImgText}>Add</Text>
+            <TouchableOpacity
+              style={[styles.addImgBtn, compressingImages && styles.addImgBtnDisabled]}
+              onPress={pickImage}
+              disabled={compressingImages || saving}>
+              {compressingImages ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : (
+                <>
+                  <Ionicons name="camera-outline" size={28} color={COLORS.primary} />
+                  <Text style={styles.addImgText}>Add</Text>
+                </>
+              )}
             </TouchableOpacity>
           )}
         </View>
@@ -242,7 +320,7 @@ export default function AddListingScreen() {
         <TouchableOpacity
           style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
           onPress={handleSave}
-          disabled={saving}>
+          disabled={saving || compressingImages}>
           {saving ? (
             <ActivityIndicator color={COLORS.white} />
           ) : (
@@ -252,6 +330,32 @@ export default function AddListingScreen() {
           )}
         </TouchableOpacity>
       </ScrollView>
+      )}
+
+      <Modal
+        visible={previewImage !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewImage(null)}>
+        <View style={styles.imageModalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPreviewImage(null)} />
+          <TouchableOpacity
+            style={[styles.imageModalClose, { top: insets.top + 12 }]}
+            onPress={() => setPreviewImage(null)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Ionicons name="close" size={28} color={COLORS.white} />
+          </TouchableOpacity>
+          {previewImage ? (
+            <View style={styles.imageModalBody} pointerEvents="box-none">
+              <Image
+                source={{ uri: previewImage }}
+                style={styles.imageModalImage}
+                resizeMode="contain"
+              />
+            </View>
+          ) : null}
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -261,6 +365,7 @@ const styles = StyleSheet.create({
   header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 12, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   backBtn:        { padding: 4 },
   headerTitle:    { fontSize: 18, fontFamily: 'NunitoBold', color: COLORS.text },
+  loadingWrap:    { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll:         { flex: 1 },
   scrollContent:  { padding: 20, paddingBottom: 40 },
   label:          { fontSize: 14, fontFamily: 'NunitoBold', color: COLORS.text, marginBottom: 6, marginTop: 16 },
@@ -281,8 +386,28 @@ const styles = StyleSheet.create({
   imgThumb:       { width: 80, height: 80, borderRadius: 10 },
   imgRemove:      { position: 'absolute', top: -6, right: -6 },
   addImgBtn:      { width: 80, height: 80, borderRadius: 10, borderWidth: 1.5, borderColor: COLORS.primary, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  addImgBtnDisabled: { opacity: 0.6 },
   addImgText:     { fontSize: 11, color: COLORS.primary, marginTop: 2 },
   saveBtn:        { marginTop: 28, backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   saveBtnDisabled:{ opacity: 0.6 },
   saveBtnText:    { color: COLORS.white, fontSize: 16, fontFamily: 'NunitoBold' },
+  imageModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.92)',
+  },
+  imageModalBody: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalClose: {
+    position: 'absolute',
+    right: 16,
+    zIndex: 2,
+    padding: 8,
+  },
+  imageModalImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT * 0.75,
+  },
 });

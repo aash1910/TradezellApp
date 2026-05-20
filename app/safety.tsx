@@ -201,10 +201,7 @@ export default function SafetyScreen() {
               <>
                 <View style={styles.notificationContainer}>
                   <View style={styles.successContainer}> 
-                    <Image 
-                      source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1067/1067575.png' }} 
-                      style={styles.successImage} 
-                    />
+                    <Image source={require('@/assets/icons/scammers.png')} style={styles.successImage} />
                     <View style={styles.successTextContainer}>
                       <Text style={styles.successText}>{t('safety.tools.emergencyContacts.title')}</Text>
                       <Text style={styles.successDescription}>{t('safety.tools.emergencyContacts.description')}</Text>
@@ -213,10 +210,7 @@ export default function SafetyScreen() {
                 </View>
                 <View style={styles.notificationContainer}>
                   <View style={styles.successContainer}> 
-                    <Image 
-                      source={{ uri: 'https://cdn-icons-png.flaticon.com/512/854/854878.png' }} 
-                      style={styles.successImage} 
-                    />
+                    <Image source={require('@/assets/icons/carefull.png')} style={styles.successImage} />
                     <View style={styles.successTextContainer}>
                       <Text style={styles.successText}>{t('safety.tools.locationSharing.title')}</Text>
                       <Text style={styles.successDescription}>{t('safety.tools.locationSharing.description')}</Text>
@@ -225,10 +219,7 @@ export default function SafetyScreen() {
                 </View>
                 <View style={styles.notificationContainer}>
                   <View style={styles.successContainer}> 
-                    <Image 
-                      source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1828/1828640.png' }} 
-                      style={styles.successImage} 
-                    />
+                    <Image source={require('@/assets/icons/check_id.png')} style={styles.successImage} />
                     <View style={styles.successTextContainer}>
                       <Text style={styles.successText}>{t('safety.tools.verificationChecklist.title')}</Text>
                       <Text style={styles.successDescription}>{t('safety.tools.verificationChecklist.description')}</Text>
@@ -237,10 +228,7 @@ export default function SafetyScreen() {
                 </View>
                 <View style={styles.notificationContainer}>
                   <View style={styles.successContainer}> 
-                    <Image 
-                      source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1828/1828640.png' }} 
-                      style={styles.successImage} 
-                    />
+                    <Image source={require('@/assets/icons/payment.png')} style={styles.successImage} />
                     <View style={styles.successTextContainer}>
                       <Text style={styles.successText}>{t('safety.tools.reportIssues.title')}</Text>
                       <Text style={styles.successDescription}>{t('safety.tools.reportIssues.description')}</Text>

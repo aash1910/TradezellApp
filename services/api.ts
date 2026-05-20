@@ -1,9 +1,12 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+/** Admin / API host (app routes are under `/api`). */
+export const API_ORIGIN = 'https://admin.tradezell.com'; // 'http://127.0.0.1:8000'; 
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: 'https://admin.tradezell.com/api', // production; change to local dev URL when needed
+  baseURL: `${API_ORIGIN}/api`,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

@@ -80,7 +80,12 @@ export default function AccountScreen() {
         if (s.discovery_location) {
           setNewPlaceName(s.discovery_location.name ?? '');
           setDiscoveryLocationAddress(s.discovery_location.address ?? '');
-          setMarker({ latitude: s.discovery_location.latitude ?? 0, longitude: s.discovery_location.longitude ?? 0 });
+          const lat = s.discovery_location.latitude ?? 0;
+          const lng = s.discovery_location.longitude ?? 0;
+          setMarker({ latitude: lat, longitude: lng });
+          if (lat !== 0 && lng !== 0) {
+            setRegion({ latitude: lat, longitude: lng, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+          }
         }
       }
     } catch (e) {
@@ -91,18 +96,35 @@ export default function AccountScreen() {
   useFocusEffect(useCallback(() => { loadUser(); }, [loadUser]));
 
   useEffect(() => {
-    if (showLocationModal) {
-      (async () => {
-        try {
-          const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status === 'granted') {
-            const loc = await Location.getCurrentPositionAsync({});
-            setRegion({ latitude: loc.coords.latitude, longitude: loc.coords.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 });
-          }
-        } catch (_) {}
-      })();
+    if (!showLocationModal) return;
+
+    const hasSavedLocation = marker.latitude !== 0 && marker.longitude !== 0;
+    if (hasSavedLocation) {
+      setRegion({
+        latitude: marker.latitude,
+        longitude: marker.longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      });
+      return;
     }
-  }, [showLocationModal]);
+
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+
+        const lastKnown = await Location.getLastKnownPositionAsync();
+        const loc = lastKnown ?? await Location.getCurrentPositionAsync({});
+        setRegion({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        });
+      } catch (_) {}
+    })();
+  }, [showLocationModal, marker.latitude, marker.longitude]);
 
   const saveSettings = async (patch: Record<string, unknown>) => {
     try {
@@ -174,6 +196,8 @@ export default function AccountScreen() {
 
   const apiBase = (api.defaults.baseURL ?? '').replace('/api', '');
   const avatarUri = user?.image ? `${apiBase}/${user.image}` : null;
+  const displayName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || 'Your profile';
+  const initials = [user?.first_name?.[0], user?.last_name?.[0]].filter(Boolean).join('').toUpperCase() || '?';
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
@@ -184,22 +208,27 @@ export default function AccountScreen() {
         showsVerticalScrollIndicator={false}>
 
         {/* Profile Header */}
-        <View style={styles.profileCard}>
-          {avatarUri ? (
-            <Image source={{ uri: avatarUri }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder]}>
-              <Ionicons name="person" size={36} color={COLORS.subtitle} />
-            </View>
-          )}
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{user?.first_name} {user?.last_name}</Text>
-            <Text style={styles.profileEmail}>{user?.email}</Text>
+        <TouchableOpacity
+          style={styles.profileCard}
+          onPress={() => router.push('/updateProfile')}
+          activeOpacity={0.85}>
+          <View style={styles.avatarRing}>
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <Text style={styles.avatarInitials}>{initials}</Text>
+              </View>
+            )}
           </View>
-          <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/updateProfile')}>
-            <Ionicons name="pencil-outline" size={18} color={COLORS.primary} />
-          </TouchableOpacity>
-        </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName} numberOfLines={1}>{displayName}</Text>
+            <Text style={styles.profileEmail} numberOfLines={1}>{user?.email}</Text>
+          </View>
+          <View style={styles.profileChevron}>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.subtitle} />
+          </View>
+        </TouchableOpacity>
 
         {/* Account Role */}
         <SectionHeader title="Account Role" />
@@ -340,39 +369,48 @@ export default function AccountScreen() {
       </ScrollView>
 
       {/* Location picker modal */}
-      <Modal visible={showLocationModal} animationType="slide" onRequestClose={() => setShowLocationModal(false)}>
+      <Modal
+        visible={showLocationModal}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        statusBarTranslucent
+        onRequestClose={() => setShowLocationModal(false)}>
         <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowLocationModal(false)}>
-              <Ionicons name="close" size={24} color={COLORS.text} />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Discovery Location</Text>
-            <View style={{ width: 24 }} />
-          </View>
           <MapView
             style={styles.map}
-            initialRegion={region}
+            region={region}
+            onRegionChangeComplete={setRegion}
             onPress={handleMapPress}>
             {marker.latitude !== 0 && (
               <Marker coordinate={marker} />
             )}
           </MapView>
-          <Text style={styles.mapHint}>Tap the map to set your discovery location</Text>
-          {discoveryLocationAddress ? (
-            <View style={styles.locationPreview}>
-              <Ionicons name="location" size={18} color={COLORS.primary} />
-              <View style={{ flex: 1, marginLeft: 8 }}>
-                <Text style={styles.locationName}>{newPlaceName}</Text>
-                <Text style={styles.locationAddress} numberOfLines={2}>{discoveryLocationAddress}</Text>
+          <View style={[styles.mapBottomPanel, { paddingBottom: insets.bottom + 16 }]}>
+            <Text style={styles.mapHint}>Tap the map to set your discovery location</Text>
+            {discoveryLocationAddress ? (
+              <View style={styles.locationPreview}>
+                <Ionicons name="location" size={18} color={COLORS.primary} />
+                <View style={{ flex: 1, marginLeft: 8 }}>
+                  <Text style={styles.locationName}>{newPlaceName}</Text>
+                  <Text style={styles.locationAddress} numberOfLines={2}>{discoveryLocationAddress}</Text>
+                </View>
               </View>
+            ) : null}
+            <View style={styles.mapActionRow}>
+              <TouchableOpacity
+                style={styles.mapCloseBtn}
+                onPress={() => setShowLocationModal(false)}
+                accessibilityLabel="Close">
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmBtn, !discoveryLocationAddress && styles.confirmBtnDisabled]}
+                onPress={handleSaveLocation}
+                disabled={!discoveryLocationAddress}>
+                <Text style={styles.confirmBtnText}>Confirm Location</Text>
+              </TouchableOpacity>
             </View>
-          ) : null}
-          <TouchableOpacity
-            style={[styles.confirmBtn, !discoveryLocationAddress && styles.confirmBtnDisabled, { marginBottom: insets.bottom + 16 }]}
-            onPress={handleSaveLocation}
-            disabled={!discoveryLocationAddress}>
-            <Text style={styles.confirmBtnText}>Confirm Location</Text>
-          </TouchableOpacity>
+          </View>
         </View>
       </Modal>
 
@@ -447,12 +485,14 @@ const styles = StyleSheet.create({
   center:          { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scrollContent:   { paddingHorizontal: 16 },
   profileCard:     { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
-  avatar:          { width: 60, height: 60, borderRadius: 30 },
+  avatarRing:      { padding: 3, borderRadius: 38, borderWidth: 2, borderColor: COLORS.primary + '25' },
+  avatar:          { width: 64, height: 64, borderRadius: 32 },
   avatarPlaceholder: { backgroundColor: '#E8F4F0', alignItems: 'center', justifyContent: 'center' },
-  profileInfo:     { flex: 1, marginLeft: 12 },
-  profileName:     { fontSize: 17, fontFamily: 'NunitoBold', color: COLORS.text },
-  profileEmail:    { fontSize: 13, color: COLORS.subtitle, marginTop: 2 },
-  editBtn:         { padding: 8 },
+  avatarInitials:  { fontSize: 22, fontFamily: 'NunitoBold', color: COLORS.primary },
+  profileInfo:     { flex: 1, marginLeft: 14, marginRight: 8 },
+  profileName:     { fontSize: 18, fontFamily: 'NunitoBold', color: COLORS.text },
+  profileEmail:    { fontSize: 13, color: COLORS.subtitle, marginTop: 3 },
+  profileChevron:  { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
   roleRow:         { flexDirection: 'row', gap: 10, marginBottom: 4 },
   roleBtn:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: COLORS.divider, backgroundColor: COLORS.white },
   roleBtnActive:   { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '15' },
@@ -473,15 +513,16 @@ const styles = StyleSheet.create({
   sliderWrapper:   { paddingHorizontal: 4, marginBottom: 4 },
   menuItem:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 16 },
   // Modal
-  modalContainer:  { flex: 1, backgroundColor: COLORS.background },
-  modalHeader:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.divider },
-  modalTitle:      { fontSize: 17, fontFamily: 'NunitoBold', color: COLORS.text },
-  map:             { flex: 1, minHeight: 320 },
-  mapHint:         { textAlign: 'center', padding: 10, fontSize: 13, color: COLORS.subtitle },
-  locationPreview: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: COLORS.white, borderTopWidth: 1, borderTopColor: COLORS.divider },
+  modalContainer:  { flex: 1, backgroundColor: COLORS.white },
+  map:             { flex: 1 },
+  mapBottomPanel:  { backgroundColor: COLORS.white, borderTopWidth: 1, borderTopColor: COLORS.divider },
+  mapHint:         { textAlign: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, fontSize: 13, color: COLORS.subtitle },
+  locationPreview: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
   locationName:    { fontSize: 15, fontFamily: 'NunitoBold', color: COLORS.text },
   locationAddress: { fontSize: 13, color: COLORS.subtitle, marginTop: 2 },
-  confirmBtn:      { marginHorizontal: 20, backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 8 },
+  mapActionRow:    { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 4 },
+  mapCloseBtn:     { width: 52, height: 52, borderRadius: 14, borderWidth: 1, borderColor: COLORS.divider, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' },
+  confirmBtn:      { flex: 1, backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
   confirmBtnDisabled: { opacity: 0.5 },
   confirmBtnText:  { color: COLORS.white, fontFamily: 'NunitoBold', fontSize: 16 },
   // Alert modals

@@ -269,45 +269,45 @@ export default {
   safety: {
     title: 'Säkerhetscenter',
     greeting: 'Hej',
-    subtitle: 'Här är vad du behöver veta om säkerhet',
+    subtitle: 'Håll dig säker när du byter, säljer och köper på Tradezell',
     tabs: {
       guide: 'Guide',
       tools: 'Verktyg'
     },
     guide: {
       checkId: {
-        title: 'Kontrollera ID',
-        description: 'Kontrollera budbärarens ID eller pass innan du lämnar dina saker, se till att det matchar profilen på plattformen.'
+        title: 'Verifiera identitet',
+        description: 'Innan du träffas för byte eller försäljning, kontrollera den andra personens pass eller internationella ID och bekräfta att det matchar Tradezell-profilen. Slutför personliga byten endast med verifierade användare.'
       },
       careful: {
-        title: 'Var försiktig',
-        description: 'Ta en selfie med din budbärare om möjligt. Detta gör det lättare att identifiera din budbärare om något händer, men publicera inte fotot och använd det inte för andra ändamål utan budbärarens tillstånd. Efter leverans av dina saker är du skyldig att ta bort fotot, att inte göra det kan ha konsekvenser.'
+        title: 'Möt på en offentlig plats',
+        description: 'Genomför alltid byten på en livlig, välbelyst offentlig plats, t.ex. café, köpcentrum eller säker bytespunkt. Möt aldrig ensam i ett privat hem.'
       },
       scammers: {
-        title: 'Bedragare',
-        description: 'Bedragare förfinar sina metoder, vi ringer dig aldrig oväntat för att be om ditt kort-PIN, bankdetaljer, fullständigt lösenord, kontosäkerhetskod, ccv (3 siffror) på baksidan av ditt kort, kontonummer (Micr) och personlig information. Var vaksam!'
+        title: 'Akta dig för bedragare',
+        description: 'Tradezell kommer aldrig att be om ditt kort-PIN, bankuppgifter, fullständigt lösenord, säkerhetskoder eller personlig information. Var misstänksam mot den som ber dig betala utanför appen.'
       },
       payment: {
-        title: 'Betalning',
-        description: 'Betala aldrig offline eller överför pengar till ett annat konto. Vårt betalningssystem är utformat för att skydda våra användare.'
+        title: 'Betalningar i appen',
+        description: 'Varje annonsfoto kostar $2,98 via vårt säkra betalningssystem. Håll betalningar inom Tradezell för ditt skydd. Avgifter gäller enligt policy när köpare byter till försäljning eller byte.'
       }
     },
     tools: {
       emergencyContacts: {
-        title: 'Nödnummer',
-        description: 'Spara dessa nödnummer: Lokal polis (911), PiqDrop support (1-800-PIQDROP) och dina lokala nödtjänster.'
+        title: 'Dela appen',
+        description: 'Berätta för vänner eller familj att du använder Tradezell. Dela dina mötesplaner med någon du litar på innan du byter eller säljer personligen.'
       },
       locationSharing: {
-        title: 'Platsdelning',
-        description: 'Dela din plats i realtid med betrodda kontakter under leveransen. Aktivera platsdelning i dina enhetsinställningar för extra säkerhet.'
+        title: 'Dela din plats',
+        description: 'Dela din live-plats med en betrodd kontakt när du går till ett byte- eller försäljningsmöte. Aktivera platsdelning i enhetsinställningarna.'
       },
       verificationChecklist: {
-        title: 'Verifieringschecklista',
-        description: 'Använd vår checklista före varje leverans: ID-verifiering, profilmatchning, betalningsbekräftelse och säkerhetskontroll av leveransplatsen.'
+        title: 'Checklista före byte',
+        description: 'Innan ni möts: bekräfta ID-verifiering på profilen, granska annonsfoton, kom överens om föremål i chatten och välj en säker offentlig plats.'
       },
       reportIssues: {
-        title: 'Rapportera problem',
-        description: 'Rapportera omedelbart eventuella säkerhetsproblem eller misstänkt aktivitet via appen. Vårt säkerhetsteam är tillgängligt dygnet runt för att hjälpa dig.'
+        title: 'Rapportera ett problem',
+        description: 'Rapportera misstänkta annonser, falska profiler eller osäkert beteende via appen. Du kan avmatcha när som helst om du ångrar dig.'
       }
     }
   },

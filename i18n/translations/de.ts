@@ -269,45 +269,45 @@ export default {
   safety: {
     title: 'Sicherheitscenter',
     greeting: 'Hallo',
-    subtitle: 'Hier ist, was Sie über Sicherheit wissen müssen',
+    subtitle: 'Bleiben Sie sicher beim Tauschen, Verkaufen und Kaufen auf Tradezell',
     tabs: {
       guide: 'Anleitung',
       tools: 'Werkzeuge'
     },
     guide: {
       checkId: {
-        title: 'ID überprüfen',
-        description: 'Überprüfen Sie den Ausweis oder Pass des Kuriers, bevor Sie ihm Ihre Sachen übergeben, stellen Sie sicher, dass er mit dem Profil auf der Plattform übereinstimmt.'
+        title: 'Identität prüfen',
+        description: 'Prüfen Sie vor einem persönlichen Tausch oder Verkauf den Pass oder internationalen Ausweis der anderen Person und bestätigen Sie die Übereinstimmung mit dem Tradezell-Profil. Schließen Sie persönliche Tausche nur mit verifizierten Nutzern ab.'
       },
       careful: {
-        title: 'Seien Sie vorsichtig',
-        description: 'Machen Sie wenn möglich ein Selfie mit Ihrem Kurier. Dies erleichtert die Identifizierung Ihres Kuriers, falls etwas passiert, veröffentlichen Sie das Foto jedoch nicht und verwenden Sie es nicht für andere Zwecke ohne Erlaubnis des Kuriers. Nach der Lieferung Ihrer Sachen sind Sie verpflichtet, das Foto zu löschen, nicht zu tun kann Konsequenzen haben.'
+        title: 'Treffen Sie sich an einem öffentlichen Ort',
+        description: 'Führen Sie Tausche immer an einem belebten, gut beleuchteten öffentlichen Ort durch, z. B. Café, Einkaufszentrum oder sicherer Tauschpunkt. Treffen Sie sich niemals allein in einer Privatwohnung.'
       },
       scammers: {
-        title: 'Betrüger',
-        description: 'Betrüger verfeinern ihre Methoden, wir rufen Sie nie unerwartet an, um nach Ihrer Karten-PIN, Bankdaten, vollständigem Passwort, Kontosicherheitscode, ccv (3 Ziffern) auf der Rückseite Ihrer Karte, Kontonummer (Micr) und persönlichen Informationen zu fragen. Seien Sie wachsam!'
+        title: 'Vorsicht vor Betrügern',
+        description: 'Tradezell wird niemals nach Karten-PIN, Bankdaten, vollständigem Passwort, Sicherheitscodes oder persönlichen Informationen fragen. Seien Sie misstrauisch bei Zahlungsaufforderungen außerhalb der App.'
       },
       payment: {
-        title: 'Zahlung',
-        description: 'Zahlen Sie nie offline oder überweisen Sie Geld auf ein anderes Konto. Unser Zahlungssystem ist darauf ausgelegt, unsere Benutzer zu schützen.'
+        title: 'Zahlungen in der App',
+        description: 'Jedes Anzeigenfoto kostet $2,98 über unser sicheres Zahlungssystem. Halten Sie Zahlungen in Tradezell für Ihren Schutz. Gebühren gelten gemäß Richtlinie, wenn Käufer zum Verkaufen oder Tauschen wechseln.'
       }
     },
     tools: {
       emergencyContacts: {
-        title: 'Notfallkontakte',
-        description: 'Speichern Sie diese Notfallnummern: Lokale Polizei (911), PiqDrop Support (1-800-PIQDROP) und Ihre lokalen Notdienste.'
+        title: 'App teilen',
+        description: 'Sagen Sie Freunden oder Familie, dass Sie Tradezell nutzen. Teilen Sie Ihre Treffenpläne mit einer Vertrauensperson, bevor Sie persönlich tauschen oder verkaufen.'
       },
       locationSharing: {
-        title: 'Standortfreigabe',
-        description: 'Teilen Sie Ihren Standort in Echtzeit mit vertrauenswürdigen Kontakten während der Lieferung. Aktivieren Sie die Standortfreigabe in Ihren Geräteeinstellungen für zusätzliche Sicherheit.'
+        title: 'Standort teilen',
+        description: 'Teilen Sie Ihren Live-Standort mit einer Vertrauensperson, wenn Sie zu einem Tausch- oder Verkaufstreffen gehen. Aktivieren Sie die Standortfreigabe in den Geräteeinstellungen.'
       },
       verificationChecklist: {
-        title: 'Verifizierungscheckliste',
-        description: 'Verwenden Sie unsere Checkliste vor jeder Lieferung: ID-Verifizierung, Profilübereinstimmung, Zahlungsbestätigung und Sicherheitsüberprüfung des Lieferorts.'
+        title: 'Checkliste vor dem Tausch',
+        description: 'Vor dem Treffen: ID-Verifizierung im Profil prüfen, Anzeigenfotos ansehen, Artikel im Chat vereinbaren und einen sicheren öffentlichen Treffpunkt wählen.'
       },
       reportIssues: {
-        title: 'Probleme melden',
-        description: 'Melden Sie sofort alle Sicherheitsprobleme oder verdächtige Aktivitäten über die App. Unser Sicherheitsteam ist rund um die Uhr verfügbar, um Ihnen zu helfen.'
+        title: 'Problem melden',
+        description: 'Melden Sie verdächtige Anzeigen, Fake-Profile oder unsicheres Verhalten über die App. Sie können ein Match jederzeit aufheben, wenn Sie Ihre Meinung ändern.'
       }
     }
   },

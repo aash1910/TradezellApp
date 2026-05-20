@@ -7,6 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '@/services/api';
+import { resolveListingImageUri } from '@/utils/images';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -73,7 +74,7 @@ export default function ListingDetailScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {listing.images?.[0] ? (
-          <Image source={{ uri: listing.images[0] }} style={styles.heroImage} resizeMode="cover" />
+          <Image source={{ uri: resolveListingImageUri(listing.images[0]) }} style={styles.heroImage} resizeMode="cover" />
         ) : (
           <View style={styles.heroPlaceholder}>
             <Ionicons name="image-outline" size={72} color={COLORS.textLight} />

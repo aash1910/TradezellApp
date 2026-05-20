@@ -269,45 +269,45 @@ export default {
   safety: {
     title: 'Centro de Segurança',
     greeting: 'Olá',
-    subtitle: 'Aqui está o que você precisa saber sobre segurança',
+    subtitle: 'Mantenha-se seguro ao negociar, vender e comprar no Tradezell',
     tabs: {
       guide: 'Guia',
       tools: 'Ferramentas'
     },
     guide: {
       checkId: {
-        title: 'Verificar ID',
-        description: 'Verifique o cartão de identidade ou passaporte do entregador antes de entregar seus itens, certifique-se de que corresponde ao perfil na plataforma.'
+        title: 'Verificar identidade',
+        description: 'Antes de se encontrar para trocar ou vender, verifique o passaporte ou documento internacional da outra pessoa e confirme que corresponde ao perfil Tradezell. Conclua trocas presenciais apenas com usuários verificados.'
       },
       careful: {
-        title: 'Cuidado',
-        description: 'Tire uma selfie com seu entregador se possível. Será mais fácil identificar seu entregador se algo acontecer, no entanto, não poste a foto ou use-a para qualquer outro propósito sem a permissão do entregador. Após a entrega dos seus itens, você é obrigado a excluir a foto, a falha em fazê-lo pode ter consequências.'
+        title: 'Encontre-se em local público',
+        description: 'Conclua sempre trocas em um local público movimentado e bem iluminado, como café, shopping ou ponto de troca seguro. Nunca se encontre sozinho em uma residência privada.'
       },
       scammers: {
-        title: 'Golpistas',
-        description: 'Os golpistas estão melhorando suas táticas, nunca ligaremos para você do nada para pedir seu PIN do cartão, detalhes bancários, senha completa, código de acesso seguro da conta, o ccv (3 dígitos) na parte de trás do seu cartão, número da conta (Micr) e informações pessoais. Esteja vigilante!'
+        title: 'Cuidado com golpistas',
+        description: 'O Tradezell nunca pedirá PIN do cartão, dados bancários, senha completa, códigos de segurança ou informações pessoais. Desconfie de quem pedir pagamento fora do app ou transferência para outra conta.'
       },
       payment: {
-        title: 'Pagamento',
-        description: 'Nunca pague offline ou transfira dinheiro para outra conta. Nosso sistema de pagamento foi construído para proteger nossos usuários.'
+        title: 'Pagamentos no app',
+        description: 'Cada foto de anúncio custa $2,98 pelo nosso sistema de pagamento seguro. Mantenha os pagamentos dentro do Tradezell para sua proteção. Taxas de anúncio aplicam-se conforme nossa política quando compradores passam a vender ou trocar.'
       }
     },
     tools: {
       emergencyContacts: {
-        title: 'Contatos de Emergência',
-        description: 'Salve estes números de emergência: Polícia Local (911), Suporte PiqDrop (1-800-PIQDROP) e seus serviços de emergência locais.'
+        title: 'Compartilhar o app',
+        description: 'Conte a amigos ou familiares que você usa o Tradezell. Compartilhe seus planos de encontro com alguém de confiança antes de trocar ou vender itens pessoalmente.'
       },
       locationSharing: {
-        title: 'Compartilhamento de Localização',
-        description: 'Compartilhe sua localização em tempo real com contatos confiáveis durante as entregas. Ative o compartilhamento de localização nas configurações do seu dispositivo para maior segurança.'
+        title: 'Compartilhar localização',
+        description: 'Compartilhe sua localização em tempo real com um contato de confiança ao ir a um encontro de troca ou venda. Ative o compartilhamento de localização nas configurações do dispositivo.'
       },
       verificationChecklist: {
-        title: 'Lista de Verificação',
-        description: 'Use nossa lista de verificação antes de cada entrega: verificação de ID, correspondência de perfil, confirmação de pagamento e verificação de segurança do local de entrega.'
+        title: 'Lista pré-troca',
+        description: 'Antes de se encontrar: confirme a verificação de ID no perfil, revise as fotos do anúncio, combine os itens no chat e escolha um local público seguro.'
       },
       reportIssues: {
-        title: 'Reportar Problemas',
-        description: 'Reporte imediatamente quaisquer preocupações de segurança ou atividades suspeitas através do aplicativo. Nossa equipe de segurança está disponível 24/7 para ajudá-lo.'
+        title: 'Reportar um problema',
+        description: 'Reporte anúncios suspeitos, perfis falsos ou comportamento inseguro pelo app. Você pode desfazer um match a qualquer momento se mudar de ideia.'
       }
     }
   },

@@ -276,7 +276,7 @@ export default {
   safety: {
     title: 'Centre de sécurité',
     greeting: 'Bonjour',
-    subtitle: 'Voici ce que vous devez savoir sur la sécurité',
+    subtitle: 'Restez en sécurité en échangeant, vendant et achetant sur Tradezell',
     tabs: {
       guide: 'Guide',
       tools: 'Outils'
@@ -284,37 +284,37 @@ export default {
     guide: {
       checkId: {
         title: 'Vérifier l\'identité',
-        description: 'Vérifiez la pièce d\'identité ou le passeport du livreur avant de lui remettre vos affaires, assurez-vous qu\'il correspond au profil sur la plateforme.'
+        description: 'Avant un échange ou une vente en personne, vérifiez le passeport ou la pièce d\'identité internationale de l\'autre personne et confirmez qu\'elle correspond au profil Tradezell. Ne concluez des échanges en personne qu\'avec des utilisateurs vérifiés.'
       },
       careful: {
-        title: 'Soyez prudent',
-        description: 'Prenez un selfie avec votre livreur si possible. Cela facilitera l\'identification de votre livreur si quelque chose se produit, cependant, ne publiez pas la photo et ne l\'utilisez pas à d\'autres fins sans l\'autorisation du livreur. Après la livraison de vos affaires, vous êtes tenu de supprimer la photo, ne pas le faire peut avoir des conséquences.'
+        title: 'Rencontrez-vous dans un lieu public',
+        description: 'Effectuez toujours les échanges dans un lieu public animé et bien éclairé, comme un café, un centre commercial ou un point d\'échange sécurisé. Ne vous retrouvez jamais seul dans une résidence privée.'
       },
       scammers: {
-        title: 'Arnaqueurs',
-        description: 'Les arnaqueurs perfectionnent leurs méthodes, nous ne vous appellerons jamais de manière inattendue pour demander le code PIN de votre carte, les détails bancaires, le mot de passe complet, le code d\'accès sécurisé au compte, le ccv (3 chiffres) au dos de votre carte, le numéro de compte (Micr) et les informations personnelles. Soyez vigilant !'
+        title: 'Attention aux arnaqueurs',
+        description: 'Tradezell ne vous demandera jamais le code PIN de votre carte, vos coordonnées bancaires, votre mot de passe complet, vos codes de sécurité ou vos informations personnelles. Méfiez-vous de ceux qui demandent un paiement hors application.'
       },
       payment: {
-        title: 'Paiement',
-        description: 'Ne payez jamais hors ligne ou ne transférez pas d\'argent sur un autre compte. Notre système de paiement est conçu pour protéger nos utilisateurs.'
+        title: 'Paiements dans l\'app',
+        description: 'Chaque photo d\'annonce coûte 2,98 $ via notre système de paiement sécurisé. Gardez les paiements dans Tradezell pour votre protection. Les frais s\'appliquent selon notre politique lorsque les acheteurs passent à la vente ou à l\'échange.'
       }
     },
     tools: {
       emergencyContacts: {
-        title: 'Contacts d\'urgence',
-        description: 'Enregistrez ces numéros d\'urgence : Police locale (911), Support PiqDrop (1-800-PIQDROP) et vos services d\'urgence locaux.'
+        title: 'Partager l\'app',
+        description: 'Dites à vos amis ou à votre famille que vous utilisez Tradezell. Partagez vos plans de rencontre avec une personne de confiance avant d\'échanger ou de vendre en personne.'
       },
       locationSharing: {
-        title: 'Partage de localisation',
-        description: 'Partagez votre localisation en temps réel avec des contacts de confiance pendant la livraison. Activez le partage de localisation dans les paramètres de votre appareil pour une sécurité accrue.'
+        title: 'Partager votre position',
+        description: 'Partagez votre position en direct avec un contact de confiance lorsque vous vous rendez à un échange ou une vente. Activez le partage de localisation dans les paramètres de votre appareil.'
       },
       verificationChecklist: {
-        title: 'Liste de vérification',
-        description: 'Utilisez notre liste de vérification avant chaque livraison : vérification de l\'identité, correspondance du profil, confirmation du paiement et vérification de la sécurité du lieu de livraison.'
+        title: 'Liste avant échange',
+        description: 'Avant de vous rencontrer : confirmez la vérification d\'identité sur le profil, examinez les photos de l\'annonce, convenez des articles dans le chat et choisissez un lieu public sûr.'
       },
       reportIssues: {
-        title: 'Signaler des problèmes',
-        description: 'Signalez immédiatement tout problème de sécurité ou activité suspecte via l\'application. Notre équipe de sécurité est disponible 24/7 pour vous aider.'
+        title: 'Signaler un problème',
+        description: 'Signalez les annonces suspectes, les faux profils ou les comportements dangereux via l\'app. Vous pouvez annuler un match à tout moment si vous changez d\'avis.'
       }
     }
   },

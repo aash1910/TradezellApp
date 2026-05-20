@@ -306,47 +306,47 @@ export default {
     typeAddress: 'Type address here'
   },
   safety: {
-    title: 'Safety Center',
+    title: 'Safety Centre',
     greeting: 'Hi',
-    subtitle: "Here's what you need to know about safety",
+    subtitle: 'Stay safe while trading, selling, and buying on Tradezell',
     tabs: {
       guide: 'Guide',
       tools: 'Tools'
     },
     guide: {
       checkId: {
-        title: 'Check ID',
-        description: 'Check the ID card or passport of the dropper before giving them your items, make sure it matches with the profile on the platform.'
+        title: 'Verify identity',
+        description: 'Before meeting to trade or sell, check the other person\'s passport or international ID and confirm it matches their Tradezell profile. Only complete in-person exchanges with verified users.'
       },
       careful: {
-        title: 'Careful',
-        description: 'Take a selfie with your dropper if possible. it\'s easier to identify your dropper if anything should happen, however, don\'t post the picture or use it for any other purpose without the permission of the dropper, After your items have been dropped you are obligated to delete the photo, failure to do so might have consequences.'
+        title: 'Meet in a public place',
+        description: 'Always complete trades and exchanges in a busy, well-lit public location—such as a café, shopping centre, or designated safe exchange point. Never meet alone at a private home.'
       },
       scammers: {
-        title: 'Scammers',
-        description: 'scammers are upping their game, we will never call you out of the blue to ask for you card PIN, bank details, full password, account secure access code the ccv (3 digits) on the back of your card, account (Micr) number and personal information. Be vigilant!'
+        title: 'Watch for scammers',
+        description: 'Tradezell will never ask for your card PIN, bank details, full password, security codes, or personal information. Be wary of anyone who asks you to pay outside the app or transfer money to another account.'
       },
       payment: {
-        title: 'Payment',
-        description: 'Never pay offline or move money to another account. Our payment system is built to protect our users.'
+        title: 'Payments in the app',
+        description: 'Each listing photo is charged $2.98 through our secure payment system. Keep payments inside Tradezell for your protection. Listing fees apply as described in our policy when buyers switch to selling or trading.'
       }
     },
     tools: {
       emergencyContacts: {
-        title: 'Emergency Contacts',
-        description: 'Save these emergency numbers: Local Police (911), Tradezell Support (1-800-PIQDROP), and your local emergency services.'
+        title: 'Share the app',
+        description: 'Tell friends or family that you use Tradezell. Share your meet-up plans with someone you trust before trading or selling items in person.'
       },
       locationSharing: {
-        title: 'Location Sharing',
-        description: 'Share your live location with trusted contacts during drops. Enable location sharing in your device settings for added safety.'
+        title: 'Share your location',
+        description: 'Share your live location with a trusted contact when heading to a trade or sale meet-up. Enable location sharing in your device settings for added safety.'
       },
       verificationChecklist: {
-        title: 'Verification Checklist',
-        description: 'Use our verification checklist before each drop: ID verification, profile match, payment confirmation, and drop location safety check.'
+        title: 'Pre-trade checklist',
+        description: 'Before you meet: confirm ID verification on their profile, review listing photos, agree on items in chat, and choose a safe public meeting place.'
       },
       reportIssues: {
-        title: 'Report Issues',
-        description: 'Report any safety concerns or suspicious activity immediately through the app. Our safety team is available 24/7 to assist you.'
+        title: 'Report a problem',
+        description: 'Report suspicious listings, fake profiles, or unsafe behaviour through the app. You can unmatch at any time if you change your mind after a match.'
       }
     }
   },

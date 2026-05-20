@@ -29,6 +29,7 @@ import {
 } from 'react-native-gesture-handler';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '@/services/api';
+import { resolveListingImageUri } from '@/utils/images';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -83,7 +84,7 @@ function SwipeCard({
   const rotation = useSharedValue(0);
   const opacity = useSharedValue(1);
 
-  const firstImage = listing.images?.[0] ?? null;
+  const firstImage = listing.images?.[0] ? resolveListingImageUri(listing.images[0]) : null;
 
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {

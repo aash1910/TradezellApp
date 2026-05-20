@@ -269,45 +269,45 @@ export default {
   safety: {
     title: '安全中心',
     greeting: '您好',
-    subtitle: '以下是您需要了解的安全信息',
+    subtitle: '在 Tradezell 上交易、出售和购买时保持安全',
     tabs: {
       guide: '指南',
       tools: '工具'
     },
     guide: {
       checkId: {
-        title: '检查身份证',
-        description: '在交付物品前检查配送员的身份证或护照，确保与平台上的个人资料相符。'
+        title: '核实身份',
+        description: '当面交易或出售前，请核对对方的护照或国际身份证件，并确认与 Tradezell 个人资料一致。仅与已验证用户完成当面交易。'
       },
       careful: {
-        title: '小心谨慎',
-        description: '如果可能，与配送员一起自拍。如果发生任何事情，这将更容易识别您的配送员，但是，未经配送员许可，不要发布照片或将其用于其他目的。在您的物品交付后，您必须删除照片，否则可能会产生后果。'
+        title: '在公共场所见面',
+        description: '始终在人流较多、光线充足的公共场所完成交易，如咖啡馆、购物中心或安全交换点。切勿独自在私人住宅见面。'
       },
       scammers: {
-        title: '诈骗者',
-        description: '诈骗者正在升级他们的手段，我们绝不会突然打电话要求您的卡PIN码、银行详情、完整密码、账户安全访问码、卡背面的ccv（3位数字）、账户（Micr）号码和个人信息。请保持警惕！'
+        title: '谨防诈骗',
+        description: 'Tradezell 绝不会索要银行卡 PIN、银行信息、完整密码、安全码或个人资料。对要求在应用外付款或转账至其他账户的人保持警惕。'
       },
       payment: {
-        title: '支付',
-        description: '永远不要线下支付或将钱转到另一个账户。我们的支付系统旨在保护我们的用户。'
+        title: '应用内支付',
+        description: '每条 listing 照片通过安全支付系统收取 $2.98。为获得保护，请在 Tradezell 内完成支付。买家转为出售或交易时，费用按政策收取。'
       }
     },
     tools: {
       emergencyContacts: {
-        title: '紧急联系人',
-        description: '保存这些紧急号码：当地警察（911）、PiqDrop支持（1-800-PIQDROP）和您的当地紧急服务。'
+        title: '分享应用',
+        description: '告知亲友您使用 Tradezell。当面交易或出售前，将见面计划告知您信任的人。'
       },
       locationSharing: {
-        title: '位置共享',
-        description: '在配送过程中与可信联系人共享您的实时位置。在设备设置中启用位置共享以增加安全性。'
+        title: '分享位置',
+        description: '前往交易或出售见面时，与可信联系人共享实时位置。在设备设置中启用位置共享。'
       },
       verificationChecklist: {
-        title: '验证清单',
-        description: '每次配送前使用我们的验证清单：身份证验证、个人资料匹配、支付确认和配送地点安全检查。'
+        title: '交易前清单',
+        description: '见面前：确认个人资料上的身份验证、查看 listing 照片、在聊天中确认物品，并选择安全的公共场所。'
       },
       reportIssues: {
         title: '报告问题',
-        description: '通过应用程序立即报告任何安全问题或可疑活动。我们的安全团队全天候为您提供帮助。'
+        description: '通过应用举报可疑 listing、虚假资料或不安全行为。匹配后若改变主意，可随时取消匹配。'
       }
     }
   },
