@@ -370,12 +370,11 @@ class AuthService {
         settings: newSettings
       });
 
-      // Get current user from storage
-      const user = await this.getCurrentUser();
+      const user = response.data.user ?? await this.getCurrentUser();
       if (user) {
-        // Update user's settings
-        user.settings = response.data.settings;
-        // Save updated user back to storage
+        if (!response.data.user) {
+          user.settings = response.data.settings;
+        }
         await AsyncStorage.setItem('user', JSON.stringify(user));
       }
 

@@ -51,9 +51,28 @@ const COLORS = {
   subtitle: '#616161',
 };
 
+function paramString(value: string | string[] | undefined, fallback = ''): string {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value) && value[0]) return value[0];
+  return fallback;
+}
+
 export default function MessageScreen() {
   const { t } = useTranslation();
-  const { userId = '1', userName = 'Support Service', userImage = '', userMobile = '', refresh = 0 } = useLocalSearchParams();
+  const params = useLocalSearchParams<{
+    userId?: string | string[];
+    userName?: string | string[];
+    name?: string | string[];
+    userImage?: string | string[];
+    userMobile?: string | string[];
+    refresh?: string | string[];
+  }>();
+
+  const userId = paramString(params.userId, '1');
+  const userName = paramString(params.userName) || paramString(params.name) || (userId === '1' ? 'Support Service' : 'User');
+  const userImage = paramString(params.userImage);
+  const userMobile = paramString(params.userMobile);
+  const refresh = paramString(params.refresh, '0');
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -65,12 +84,12 @@ export default function MessageScreen() {
   const pollCountRef = useRef(0);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastMessageIdRef = useRef<number | null>(null);
-  const currentUserIdRef = useRef<string>(typeof userId === 'string' ? userId : '1');
+  const currentUserIdRef = useRef<string>(userId);
   const unreadCountIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const insets = useSafeAreaInsets();
   // Update currentUserIdRef when userId changes
   useEffect(() => {
-    currentUserIdRef.current = typeof userId === 'string' ? userId : '1';
+    currentUserIdRef.current = userId;
   }, [userId]);
 
   const headerAnimatedStyle = useAnimatedStyle(() => {

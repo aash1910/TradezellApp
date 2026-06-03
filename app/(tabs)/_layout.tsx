@@ -72,7 +72,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Likes — mutual matches */}
+      {/* Likes — pending likes + mutual matches */}
       <Tabs.Screen
         name="likes"
         options={{

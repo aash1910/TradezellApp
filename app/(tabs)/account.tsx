@@ -56,7 +56,7 @@ export default function AccountScreen() {
 
   // Discovery settings (from PiqRider pattern)
   const [distance, setDistance] = useState(250);
-  const [globalSearch, setGlobalSearch] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState(true);
   const [enableDiscovery, setEnableDiscovery] = useState(true);
   const [discoveryLocationAddress, setDiscoveryLocationAddress] = useState('');
   const [newPlaceName, setNewPlaceName] = useState('');
@@ -69,12 +69,17 @@ export default function AccountScreen() {
   const loadUser = useCallback(async () => {
     setLoading(true);
     try {
-      const u = await authService.getCurrentUser();
+      let u = null;
+      try {
+        u = await authService.getUser();
+      } catch {
+        u = await authService.getCurrentUser();
+      }
       setUser(u);
       if (u?.settings) {
         const s = typeof u.settings === 'string' ? JSON.parse(u.settings) : u.settings;
         setDistance(s.max_distance ?? 250);
-        setGlobalSearch(s.global_search ?? false);
+        setGlobalSearch(s.global_search ?? true);
         setEnableDiscovery(s.enable_discovery ?? true);
         setAccountRole(s.account_role ?? 'trader');
         if (s.discovery_location) {
@@ -132,7 +137,8 @@ export default function AccountScreen() {
         ? (typeof user.settings === 'string' ? JSON.parse(user.settings) : user.settings)
         : {};
       const merged = { ...current, ...patch };
-      await api.post('/update-settings', { settings: merged });
+      const updatedUser = await authService.updateUserSettings(merged);
+      if (updatedUser) setUser(updatedUser);
       await AsyncStorage.setItem('user_settings', JSON.stringify(merged));
     } catch (e) {
       console.error('Settings save error:', e);
@@ -195,7 +201,9 @@ export default function AccountScreen() {
   }
 
   const apiBase = (api.defaults.baseURL ?? '').replace('/api', '');
-  const avatarUri = user?.image ? `${apiBase}/${user.image}` : null;
+  const avatarUri = user?.image
+    ? `${apiBase}/${user.image}${user.updated_at ? `?v=${encodeURIComponent(user.updated_at)}` : ''}`
+    : null;
   const displayName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || 'Your profile';
   const initials = [user?.first_name?.[0], user?.last_name?.[0]].filter(Boolean).join('').toUpperCase() || '?';
 

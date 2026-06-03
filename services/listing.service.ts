@@ -38,6 +38,11 @@ export interface SwipeResult {
   };
 }
 
+export interface LikedListing {
+  liked_at: string;
+  listing: Listing;
+}
+
 export interface FeedParams {
   lat?: number;
   lng?: number;
@@ -88,5 +93,14 @@ export const listingService = {
   async swipe(listingId: number, direction: 'yes' | 'no'): Promise<SwipeResult> {
     const response = await api.post(`/listings/${listingId}/swipe`, { direction });
     return response.data;
+  },
+
+  async getLikedListings(): Promise<LikedListing[]> {
+    const response = await api.get('/listings/liked');
+    return response.data.liked ?? [];
+  },
+
+  async unlikeListing(listingId: number): Promise<void> {
+    await api.delete(`/listings/${listingId}/like`);
   },
 };
