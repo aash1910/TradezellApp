@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, RefreshControl } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -14,6 +14,7 @@ import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { authService } from '@/services/auth.service';
 import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
+import { useAppContentDimensions } from '@/hooks/useAppContentDimensions';
 
 const HEADER_HEIGHT = 120;
 
@@ -26,10 +27,10 @@ const COLORS = {
   buttonText: '#FFFFFF',
   subtitle: '#616161',
 };
-let tabWidth = 0;
 
 export default function SafetyScreen() {
   const insets = useSafeAreaInsets();
+  const { width: layoutWidth } = useAppContentDimensions();
   const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -40,17 +41,20 @@ export default function SafetyScreen() {
   const translateX = useSharedValue(0);
 
   const TABS = [t('safety.tabs.guide'), t('safety.tabs.tools')];
-  const screenWidth = Dimensions.get('window').width;
-  tabWidth = useMemo(() => (screenWidth - 32 - 8) / TABS.length, [screenWidth, TABS.length]);
+  /** form paddingHorizontal 16*2 + tabBar inner padding 4*2 */
+  const tabSegmentWidth = Math.max(0, (layoutWidth - 32 - 8) / TABS.length);
+
+  useEffect(() => {
+    translateX.value = activeTab * tabSegmentWidth;
+  }, [layoutWidth]);
 
   const handlePress = (index: number) => {
     setActiveTab(index);
-    translateX.value = withTiming(index * tabWidth, { duration: 200 });
+    translateX.value = withTiming(index * tabSegmentWidth, { duration: 200 });
   };
 
   const animatedTabStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
-    width: tabWidth,
   }));
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
@@ -137,7 +141,13 @@ export default function SafetyScreen() {
           <View style={styles.tabContainer}>
             {/* Tab Bar */}
             <View style={styles.tabBar}>
-              <Animated.View style={[styles.animatedIndicator, animatedTabStyle]} />
+              <Animated.View
+                style={[
+                  styles.animatedIndicator,
+                  { width: tabSegmentWidth },
+                  animatedTabStyle,
+                ]}
+              />
               {TABS.map((label, index) => (
                 <TouchableOpacity
                   key={index}
@@ -367,16 +377,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     padding: 4,
+    minWidth: 0,
   },
   animatedIndicator: {
     position: 'absolute',
-    height: '100%',
-    width: tabWidth,
+    top: 4,
+    bottom: 4,
+    left: 4,
     backgroundColor: COLORS.primary,
     borderRadius: 14,
     zIndex: 0,
-    top: 4,
-    left: 4,
   },
   tabButton: {
     flex: 1,

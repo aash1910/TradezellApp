@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, ActivityIndicator } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, {
   interpolate,
@@ -108,7 +109,7 @@ export default function OTPVerificationScreen() {
       }, 100);
 
       setTimeLeft(60);
-      Alert.alert('Success', 'OTP has been resent to your email');
+      showAlert('Success', 'OTP has been resent to your email');
     } catch (err: any) {
       let errorMessage = 'Failed to resend OTP. Please try again.';
       
@@ -121,7 +122,7 @@ export default function OTPVerificationScreen() {
         errorMessage = err.message;
       }
 
-      Alert.alert('Error', errorMessage);
+      showAlert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +132,7 @@ export default function OTPVerificationScreen() {
     try {
       const otpCode = otp.join('');
       if (otpCode.length !== 4) {
-        Alert.alert('Error', 'Please enter a valid 4-digit OTP');
+        showAlert('Error', 'Please enter a valid 4-digit OTP');
         return;
       }
 
@@ -139,7 +140,7 @@ export default function OTPVerificationScreen() {
       const response = await authService.verifyOtp(email, otpCode);
       
       console.log('OTP verification successful:', response);
-      //Alert.alert('OTP verification successful', 'Please login to continue');
+      //showAlert('OTP verification successful', 'Please login to continue');
       router.replace('/success');
     } catch (err: any) {
       console.error('OTP verification error:', err);
@@ -155,7 +156,7 @@ export default function OTPVerificationScreen() {
         errorMessage = err.message;
       }
 
-      Alert.alert('Verification Error', errorMessage);
+      showAlert('Verification Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

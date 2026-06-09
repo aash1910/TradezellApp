@@ -1,5 +1,6 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { Platform, Alert } from 'react-native';
+import { Platform } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 
 export const isAppleSignInAvailable = async () => {
   if (Platform.OS !== 'ios') {
@@ -13,7 +14,7 @@ export const isAppleSignInAvailable = async () => {
 };
 
 export const showAppleSignInUnavailableAlert = () => {
-  Alert.alert(
+  showAlert(
     'Apple Sign-In Unavailable',
     'Apple Sign-In is only available on iOS devices running iOS 13 or later.',
     [{ text: 'OK' }]

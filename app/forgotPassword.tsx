@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, ActivityIndicator } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -57,27 +58,27 @@ export default function ForgotPasswordScreen() {
 
   const handleForgotPassword = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter your email address');
+      showAlert('Error', 'Please enter your email address');
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      showAlert('Error', 'Please enter a valid email address');
       return;
     }
 
     try {
       setIsLoading(true);
       await authService.forgotPassword({ email: email.trim() });
-      Alert.alert(
+      showAlert(
         'Success',
         'Password reset token has been sent to your email',
         [{ text: 'OK', onPress: () => router.push({ pathname: '/resetPassword', params: { email: email.trim() } }) }]
       );
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         'Error',
         error.message || 'Failed to send reset token. Please try again.'
       );

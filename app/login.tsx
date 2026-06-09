@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator, Alert, Platform, Modal, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator, Platform, Modal, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { router } from 'expo-router';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
@@ -18,9 +18,11 @@ import { PhoneIcon } from '@/components/icons/PhoneIcon';
 import { GoogleIcon } from '@/components/icons/GoogleIcon';
 import { AppleIcon } from '@/components/icons/AppleIcon';
 import { authService } from '@/services/auth.service';
+import { showAlert } from '@/utils/alertCompat';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Linking from 'expo-linking';
-import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
+import * as Google from 'expo-auth-session/providers/google';
+import { CustomCountryPicker, type CountryItem } from '@/components/CustomCountryPicker';
 import { SelectDownArrowIcon } from '@/components/icons/SelectDownArrowIcon';
 import { parsePhoneNumber } from 'libphonenumber-js';
 import { 
@@ -64,19 +66,210 @@ export default function LoginScreen() {
   const [isPhoneModalVisible, setIsPhoneModalVisible] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isPhoneLoading, setIsPhoneLoading] = useState(false);
-  const [countryCode, setCountryCode] = useState<Country['cca2']>('BD');
+  const [countryCode, setCountryCode] = useState<string>('BD');
   const [callingCode, setCallingCode] = useState('880');
-  const [country, setCountry] = useState<Country | null>(null);
+  const [country, setCountry] = useState<CountryItem | null>(null);
   const [withCallingCode, setWithCallingCode] = useState(true);
   // Add state for phone password and phone existence
   const [phonePassword, setPhonePassword] = useState('');
   const [phoneExists, setPhoneExists] = useState(false);
   const [phoneCheckLoading, setPhoneCheckLoading] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const googleWebClientId =
+    Constants.expoConfig?.extra?.googleWebClientId || '';
+  const appleWebClientId =
+    Constants.expoConfig?.extra?.appleWebClientId || '';
+  const appleWebRedirectUri =
+    Constants.expoConfig?.extra?.appleWebRedirectUri || makeRedirectUri();
+  const appleWebNonce = React.useMemo(
+    () => `nonce_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`,
+    []
+  );
+  const googleRedirectUri = React.useMemo(() => makeRedirectUri(), []);
+  const [webGoogleRequest, webGoogleResponse, promptWebGoogleSignIn] = Google.useAuthRequest({
+    clientId: googleWebClientId || 'missing-google-web-client-id',
+    scopes: ['openid', 'profile', 'email'],
+    responseType: 'id_token',
+    redirectUri: googleRedirectUri,
+  });
 
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
   }, []);
+
+  const handleGoogleBackendLogin = async (idToken: string) => {
+    const backendResponse = await authService.googleLogin({
+      id_token: idToken,
+      account_role: 'trader',
+    });
+
+    if (backendResponse.user.image == null || backendResponse.user.document == null) {
+      showAlert('Please upload your profile image and document to continue.');
+      router.replace('/uploadFile');
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
+
+  const handleAppleBackendLogin = async (data: {
+    identityToken: string;
+    email?: string | null;
+    firstName?: string;
+    lastName?: string;
+    nonce?: string;
+  }) => {
+    const backendResponse = await authService.appleLogin({
+      identity_token: data.identityToken,
+      email: data.email,
+      first_name: data.firstName || '',
+      last_name: data.lastName || '',
+      account_role: 'trader',
+      nonce: data.nonce,
+    });
+
+    if (backendResponse.requires_restore_confirmation) {
+      showAlert(
+        'Account Deleted',
+        'Your account was previously deleted. Would you like to restore it?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => {
+              showAlert(
+                'Account Not Restored',
+                'You can sign up again with a new account if you prefer.'
+              );
+            }
+          },
+          {
+            text: 'Restore Account',
+            onPress: async () => {
+              try {
+                const restoreResponse = await authService.restoreAppleAccount({
+                  identity_token: data.identityToken,
+                  email: backendResponse.user_email || data.email || null,
+                  account_role: 'trader',
+                  nonce: data.nonce,
+                });
+
+                if (restoreResponse.user.image == null || restoreResponse.user.document == null) {
+                  showAlert('Account Restored', 'Welcome back! Please upload your profile image and document to continue.');
+                  router.replace('/uploadFile');
+                } else {
+                  showAlert('Account Restored', 'Welcome back! Your account has been successfully restored.');
+                  router.replace('/(tabs)');
+                }
+              } catch (restoreError: any) {
+                console.error('Restore Error:', restoreError);
+                showAlert(
+                  'Restore Failed',
+                  restoreError.response?.data?.message || 'Failed to restore your account. Please try again or contact support.'
+                );
+              }
+            }
+          }
+        ]
+      );
+      return;
+    }
+
+    if (backendResponse.user.image == null || backendResponse.user.document == null) {
+      showAlert('Please upload your profile image and document to continue.');
+      router.replace('/uploadFile');
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
+
+  const handleWebAppleSignIn = async () => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') {
+      showAlert('Apple Sign-In Error', 'Apple Sign-In on web is only available in a browser.');
+      return;
+    }
+
+    if (!appleWebClientId) {
+      showAlert(
+        'Apple Sign-In Configuration Error',
+        'Missing Apple Web Client ID. Please set expo.extra.appleWebClientId in app config.'
+      );
+      return;
+    }
+
+    if (!appleWebRedirectUri) {
+      showAlert(
+        'Apple Sign-In Configuration Error',
+        'Missing Apple Web Redirect URI. Please set expo.extra.appleWebRedirectUri in app config.'
+      );
+      return;
+    }
+
+    try {
+      const appleSdkUrl = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+      const existingScript = document.getElementById('appleid-auth-sdk');
+
+      if (!existingScript) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.id = 'appleid-auth-sdk';
+          script.src = appleSdkUrl;
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load Apple Sign-In SDK.'));
+          document.head.appendChild(script);
+        });
+      }
+
+      const AppleID = (window as any).AppleID;
+      if (!AppleID?.auth) {
+        throw new Error('Apple Sign-In SDK is not available.');
+      }
+
+      AppleID.auth.init({
+        clientId: appleWebClientId,
+        scope: 'name email',
+        redirectURI: appleWebRedirectUri,
+        state: Math.random().toString(36).slice(2, 12),
+        nonce: appleWebNonce,
+        usePopup: true,
+      });
+
+      setIsLoading(true);
+      const response = await AppleID.auth.signIn();
+      const identityToken = response?.authorization?.id_token;
+
+      if (!identityToken) {
+        throw new Error('Apple did not return an identity token. Please try again.');
+      }
+
+      await handleAppleBackendLogin({
+        identityToken,
+        firstName: response?.user?.name?.firstName || '',
+        lastName: response?.user?.name?.lastName || '',
+        email: response?.user?.email || null,
+        nonce: appleWebNonce,
+      });
+    } catch (error: any) {
+      console.error('Web Apple Sign-In error:', error);
+
+      if (error?.error === 'popup_closed_by_user') {
+        return;
+      }
+
+      let errorMessage = 'An error occurred during Apple Sign-In. Please try again.';
+      if (error?.error === 'popup_closed_by_browser') {
+        errorMessage = 'Your browser blocked the sign-in popup. Please allow popups and try again.';
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      showAlert('Apple Sign-In Error', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -110,7 +303,7 @@ export default function LoginScreen() {
     setIsPhoneModalVisible(true);
   };
 
-  const onSelect = (country: Country) => {
+  const onSelect = (country: CountryItem) => {
     setCountryCode(country.cca2);
     setCallingCode(country.callingCode[0]);
     setCountry(country);
@@ -138,7 +331,7 @@ export default function LoginScreen() {
       if (checkRes.exists) {
         setPhoneExists(true);
         // here show a message to enter password
-        Alert.alert('Please enter your password to continue', '', [
+        showAlert('Please enter your password to continue', '', [
           {
             text: 'OK',
             onPress: () => {
@@ -155,7 +348,7 @@ export default function LoginScreen() {
         setPhonePassword('');
         // Redirect to register page, pass phone as param
         // here show a message to enter all the details
-        Alert.alert('Please enter all the details to continue');
+        showAlert('Please enter all the details to continue');
         router.push({ pathname: '/register', params: { phone: validatedPhone } });
       }
     } catch (err: any) {
@@ -196,7 +389,7 @@ export default function LoginScreen() {
       // Handle login success (same as email login)
       const loginResponse = response as any;
       if (loginResponse.user.image == null || loginResponse.user.document == null) {
-        Alert.alert('Please upload your profile image and document to continue.');
+        showAlert('Please upload your profile image and document to continue.');
         router.replace('/uploadFile');
       } else {
         router.replace('/(tabs)');
@@ -235,7 +428,7 @@ export default function LoginScreen() {
       
       // Check if account restoration is required
       if (response.requires_restore_confirmation) {
-        Alert.alert(
+        showAlert(
           'Account Deleted',
           'Your account was previously deleted. Would you like to restore it?',
           [
@@ -262,7 +455,7 @@ export default function LoginScreen() {
                   if (restoreResponse.user.is_verified == 0) {
                     try {
                       await authService.resendOtp(restoreResponse.user.email);
-                      Alert.alert('Account Restored', 'Welcome back! Your account is not verified. Please enter the OTP sent to your email to verify your account.');
+                      showAlert('Account Restored', 'Welcome back! Your account is not verified. Please enter the OTP sent to your email to verify your account.');
                     } catch (error) {
                       console.error('Error resending OTP:', error);
                     }
@@ -271,10 +464,10 @@ export default function LoginScreen() {
                       params: { email: restoreResponse.user.email }
                     });
                   } else if (restoreResponse.user.image == null || restoreResponse.user.document == null) {
-                    Alert.alert('Account Restored', 'Welcome back! Please upload your profile image and document to continue.');
+                    showAlert('Account Restored', 'Welcome back! Please upload your profile image and document to continue.');
                     router.replace('/uploadFile');
                   } else {
-                    Alert.alert('Account Restored', 'Welcome back! Your account has been successfully restored.');
+                    showAlert('Account Restored', 'Welcome back! Your account has been successfully restored.');
                     router.replace('/(tabs)');
                   }
                 } catch (restoreError: any) {
@@ -301,7 +494,7 @@ export default function LoginScreen() {
         console.log(response.user.email);
         try {
           await authService.resendOtp(response.user.email);
-          Alert.alert('Your account is not verified. Please enter the OTP sent to your email to verify your account.');
+          showAlert('Your account is not verified. Please enter the OTP sent to your email to verify your account.');
         } catch (error) {
           console.error('Error resending OTP:', error);
         }
@@ -312,7 +505,7 @@ export default function LoginScreen() {
         });
       }
       else if( (response as any).user.image == null || (response as any).user.document == null ) {
-        Alert.alert('Please upload your profile image and document to continue.');
+        showAlert('Please upload your profile image and document to continue.');
         router.replace('/uploadFile');
       }
       else {
@@ -347,6 +540,47 @@ export default function LoginScreen() {
     }
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !webGoogleResponse) {
+      return;
+    }
+
+    const completeWebGoogleLogin = async () => {
+      if (webGoogleResponse.type !== 'success') {
+        return;
+      }
+
+      const idToken = webGoogleResponse.params?.id_token;
+      if (!idToken) {
+        showAlert('Google Sign-In Error', 'Google did not return an ID token. Please try again.');
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        await handleGoogleBackendLogin(idToken);
+      } catch (backendError: any) {
+        console.error('Web Google backend authentication error:', backendError);
+
+        let errorMessage = 'An error occurred during sign in. Please try again.';
+        if (backendError.response?.status === 403) {
+          errorMessage =
+            'This Google account is already registered with a different role in Tradezell. Please use a different Google account or sign in with email/password.';
+        } else if (backendError.response?.data?.message) {
+          errorMessage = backendError.response.data.message;
+        } else if (backendError.message) {
+          errorMessage = backendError.message;
+        }
+
+        showAlert('Google Sign-In Error', errorMessage);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    completeWebGoogleLogin();
+  }, [webGoogleResponse]);
+
   // Auto-focus password field when phoneExists becomes true
   useEffect(() => {
     if (phoneExists && phonePasswordInputRef.current) {
@@ -357,6 +591,32 @@ export default function LoginScreen() {
   }, [phoneExists]);
 
   const handleGoogleSignIn = async () => {
+    if (Platform.OS === 'web') {
+      if (!googleWebClientId) {
+        showAlert(
+          'Google Sign-In Configuration Error',
+          'Missing Google Web Client ID. Please set expo.extra.googleWebClientId in app config.'
+        );
+        return;
+      }
+
+      if (!webGoogleRequest) {
+        showAlert(
+          'Google Sign-In Not Ready',
+          'Google Sign-In is still initializing. Please wait a moment and try again.'
+        );
+        return;
+      }
+
+      try {
+        await promptWebGoogleSignIn();
+      } catch (error: any) {
+        console.error('Web Google Sign-In prompt error:', error);
+        showAlert('Google Sign-In Error', error?.message || 'Unable to start Google Sign-In.');
+      }
+      return;
+    }
+
     // Check if Google Sign-In is available
     if (!isGoogleSignInAvailable()) {
       showGoogleSignInUnavailableAlert();
@@ -370,31 +630,15 @@ export default function LoginScreen() {
       const response = await GoogleSignin.signIn();
       
       if (isSuccessResponse(response)) {
-        // Show the response in an alert for debugging
         console.log('Google Sign-In Response', JSON.stringify(response, null, 2));
-        // You can extract first_name, last_name, email, image from googleResponse.user if needed
-        // Call backend
         const idToken = response.data.idToken;
-        if(idToken){
+        if (idToken) {
           try {
-            const backendResponse = await authService.googleLogin({
-              id_token: idToken,
-              account_role: 'trader',
-            });
-
-            if( backendResponse.user.image == null || backendResponse.user.document == null ) {
-              Alert.alert('Please upload your profile image and document to continue.');
-              router.replace('/uploadFile');
-            }
-            else {
-              router.replace('/(tabs)');
-            }
+            await handleGoogleBackendLogin(idToken);
           } catch (backendError: any) {
-            // Sign out from Google to allow user to choose a different account
             await GoogleSignin.signOut();
             console.error('Backend authentication error:', backendError);
             
-            // Show user-friendly error message
             let errorMessage = 'An error occurred during sign in. Please try again.';
             
             if (backendError.response?.status === 403) {
@@ -405,14 +649,12 @@ export default function LoginScreen() {
               errorMessage = backendError.message;
             }
             
-            Alert.alert('Google Sign-In Error', errorMessage);
-            // Don't re-throw - we've already handled the error and shown the alert
+            showAlert('Google Sign-In Error', errorMessage);
             return;
           }
         }
 
       } else {
-        // sign in was cancelled by user
         console.log("sign in was cancelled by user");
       }
     } catch (error: any) {
@@ -421,111 +663,47 @@ export default function LoginScreen() {
       if (isErrorWithCode && isErrorWithCode(error)) {
         switch (error.code) {
           case statusCodes.IN_PROGRESS:
-            // operation (eg. sign in) already in progress
             console.log("operation (eg. sign in) already in progress");
             break;
           case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-            // Android only, play services not available or outdated
             console.log("Android only, play services not available or outdated");
-            Alert.alert('Google Play Services Error', 'Google Play Services is not available or outdated. Please update Google Play Services.');
+            showAlert('Google Play Services Error', 'Google Play Services is not available or outdated. Please update Google Play Services.');
             break;
           default:
-            // some other error happened
             console.log("Google Sign-In error:", error.code);
-            Alert.alert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In');
+            showAlert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In');
         }
       } else {
-        // an error that's not related to google sign in occurred
-        // Only show alert if it wasn't already shown in the backend error handling
-        // Check if it's a backend error that was already handled (403 from google-login)
         if (!error.response || (error.response?.status === 403 && error.config?.url?.includes('/google-login'))) {
-          // This is not a backend error or it's a 403 from google-login that we already handled
-          // Don't show another alert
           return;
         }
         console.log("an error that's not related to google sign in occurred");
-        Alert.alert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In');
+        showAlert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In');
       }
     }
   };
 
   const handleAppleSignIn = async () => {
+    if (Platform.OS === 'web') {
+      await handleWebAppleSignIn();
+      return;
+    }
+
     try {
       const appleData = await handleAppleSignInUtil();
       
       if (appleData && appleData.identityToken) {
         console.log('Apple Sign-In Success');
-        
-        // Send identityToken to backend for verification
-        const backendResponse = await authService.appleLogin({
-          identity_token: appleData.identityToken,
+        await handleAppleBackendLogin({
+          identityToken: appleData.identityToken,
           email: appleData.email,
-          first_name: appleData.fullName?.givenName || '',
-          last_name: appleData.fullName?.familyName || '',
-          account_role: 'trader',
+          firstName: appleData.fullName?.givenName || '',
+          lastName: appleData.fullName?.familyName || '',
         });
-
-        // Check if account restoration is required
-        if (backendResponse.requires_restore_confirmation) {
-          Alert.alert(
-            'Account Deleted',
-            'Your account was previously deleted. Would you like to restore it?',
-            [
-              {
-                text: 'Cancel',
-                style: 'cancel',
-                onPress: () => {
-                  Alert.alert(
-                    'Account Not Restored',
-                    'You can sign up again with a new account if you prefer.'
-                  );
-                }
-              },
-              {
-                text: 'Restore Account',
-                onPress: async () => {
-                  try {
-                    // Restore the account
-                    const restoreResponse = await authService.restoreAppleAccount({
-                      identity_token: appleData.identityToken,
-                      email: backendResponse.user_email || appleData.email || null,
-                      account_role: 'trader',
-                    });
-
-                    if (restoreResponse.user.image == null || restoreResponse.user.document == null) {
-                      Alert.alert('Account Restored', 'Welcome back! Please upload your profile image and document to continue.');
-                      router.replace('/uploadFile');
-                    } else {
-                      Alert.alert('Account Restored', 'Welcome back! Your account has been successfully restored.');
-                      router.replace('/(tabs)');
-                    }
-                  } catch (restoreError: any) {
-                    console.error('Restore Error:', restoreError);
-                    Alert.alert(
-                      'Restore Failed',
-                      restoreError.response?.data?.message || 'Failed to restore your account. Please try again or contact support.'
-                    );
-                  }
-                }
-              }
-            ]
-          );
-          return;
-        }
-
-        // Normal login flow
-        if( backendResponse.user.image == null || backendResponse.user.document == null ) {
-          Alert.alert('Please upload your profile image and document to continue.');
-          router.replace('/uploadFile');
-        }
-        else {
-          router.replace('/(tabs)');
-        }
       }
     } catch (error: any) {
       console.error('Apple Sign-In Error:', error);
       
-      // Extract user-friendly error message from backend response
       let errorMessage = 'An error occurred during Apple Sign-In. Please try again.';
       
       if (error.response?.data?.message) {
@@ -542,27 +720,21 @@ export default function LoginScreen() {
         errorMessage = error.message;
       }
       
-      Alert.alert(
+      showAlert(
         'Apple Sign-In Error', 
         errorMessage
       );
     }
   };
 
-  return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <Animated.ScrollView
-          ref={scrollRef}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 22) }]}>
+  const loginContent = (
+    <Animated.ScrollView
+      ref={scrollRef}
+      scrollEventThrottle={16}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 22) }]}>
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
           <Text style={styles.appName}>Tradezell</Text>
@@ -675,8 +847,22 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </Animated.ScrollView>
-      </TouchableWithoutFeedback>
+    </Animated.ScrollView>
+  );
+
+  return (
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      {Platform.OS === 'web' ? (
+        loginContent
+      ) : (
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          {loginContent}
+        </TouchableWithoutFeedback>
+      )}
 
       <Modal
         visible={isPhoneModalVisible}
@@ -702,14 +888,8 @@ export default function LoginScreen() {
               </Text>
               
               <View style={styles.phoneInputContainer}>
-                <CountryPicker
+                <CustomCountryPicker
                   countryCode={countryCode}
-                  withFilter
-                  withFlag
-                  withCallingCode
-                  withAlphaFilter
-                  withCallingCodeButton
-                  withModal
                   onSelect={onSelect}
                 />
                 <SelectDownArrowIcon size={16} color={COLORS.text} />
@@ -776,7 +956,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.backgroundWrapper,
   },
   scrollContent: {
     flexGrow: 1,
@@ -788,7 +968,10 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 24,
     backgroundColor: '#000',
-    borderRadius: 24,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     height: HEADER_HEIGHT,
   },
   logo: {

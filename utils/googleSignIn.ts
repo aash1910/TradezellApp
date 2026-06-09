@@ -3,20 +3,25 @@
  * @author Ashraful Islam
  */
 
-// Conditional import for Google Sign-In
+import { Platform } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
+
+// Conditional import for Google Sign-In (native only; web uses expo-auth-session)
 let GoogleSignin: any = null;
 let isSuccessResponse: any = null;
 let isErrorWithCode: any = null;
 let statusCodes: any = null;
 
-try {
-  const googleSignInModule = require('@react-native-google-signin/google-signin');
-  GoogleSignin = googleSignInModule.GoogleSignin;
-  isSuccessResponse = googleSignInModule.isSuccessResponse;
-  isErrorWithCode = googleSignInModule.isErrorWithCode;
-  statusCodes = googleSignInModule.statusCodes;
-} catch (error) {
-  console.log('Google Sign-In module not available in Expo Go');
+if (Platform.OS !== 'web') {
+  try {
+    const googleSignInModule = require('@react-native-google-signin/google-signin');
+    GoogleSignin = googleSignInModule.GoogleSignin;
+    isSuccessResponse = googleSignInModule.isSuccessResponse;
+    isErrorWithCode = googleSignInModule.isErrorWithCode;
+    statusCodes = googleSignInModule.statusCodes;
+  } catch (error) {
+    console.log('Google Sign-In module not available in Expo Go');
+  }
 }
 
 export const isGoogleSignInAvailable = () => {
@@ -46,8 +51,7 @@ export const getGoogleSignInModule = () => {
 };
 
 export const showGoogleSignInUnavailableAlert = () => {
-  const { Alert } = require('react-native');
-  Alert.alert(
+  showAlert(
     'Google Sign-In Not Available',
     'Google Sign-In is not available in Expo Go. Please use a development build or native build to test this feature.',
     [

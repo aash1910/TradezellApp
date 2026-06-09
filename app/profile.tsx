@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, Dimensions, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, TextInput } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
+import { CustomCountryPicker, type CountryItem } from '@/components/CustomCountryPicker';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -22,7 +22,6 @@ import api from '@/services/api';
 import { parsePhoneNumber } from 'libphonenumber-js';
 
 const HEADER_HEIGHT = 156;
-const { width, height } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#55B086',
@@ -39,13 +38,13 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false); 
-  const [country, setCountry] = useState<Country | null>(null);
+  const [country, setCountry] = useState<CountryItem | null>(null);
   const [withCallingCode, setWithCallingCode] = useState(true);
   const [senderProfileImage, setSenderProfileImage] = useState(require('@/assets/img/profile-blank.png'));
   const [name, setName] = useState(''); 
   const [email, setEmail] = useState('');
   const [gender, setGender] = useState('');
-  const [countryCode, setCountryCode] = useState<Country['cca2']>('US');
+  const [countryCode, setCountryCode] = useState<string>('US');
   const [callingCode, setCallingCode] = useState('1');
   const [phone, setPhone] = useState('');
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -100,7 +99,7 @@ export default function ProfileScreen() {
             const callCode = phoneNumber.countryCallingCode; // e.g., "1"
             const nationalNumber = phoneNumber.nationalNumber; // e.g., "2025550123"
 
-            setCountryCode(cca2 as Country['cca2']);
+            setCountryCode(cca2 ?? 'US');
             setCallingCode(callCode as string);
             setPhone(nationalNumber as string);
           } else {
@@ -226,14 +225,13 @@ export default function ProfileScreen() {
             <View style={styles.card}>
               <TouchableOpacity style={[styles.row, {paddingVertical: 12}]} onPress={() => router.push('/updateProfile')}>
                 <View style={styles.rowLeft}>
-                  <CountryPicker
-                    countryCode={countryCode as Country["cca2"]}
-                    withFilter
-                    withFlag
-                    withCallingCode
-                    withAlphaFilter
-                    withCallingCodeButton
-                    onSelect={() => {}}
+                  <CustomCountryPicker
+                    countryCode={countryCode}
+                    onSelect={(c) => {
+                      setCountryCode(c.cca2);
+                      setCallingCode(c.callingCode[0]);
+                      setCountry(c);
+                    }}
                   />
                   <SelectDownArrowIcon size={16} color={COLORS.text} /> 
                   <TextInput
@@ -307,10 +305,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundWrapper,
   },
   profileInfoRow: {
-    flexDirection: 'column', 
+    flexDirection: 'column',
     alignItems: 'center',
     marginBottom: 32,
     marginTop: -59,
+    position: 'relative',
   },
   profileImage: {
     width: 70,
@@ -318,11 +317,11 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginBottom: 8,
   },
-  editProfile :{
+  editProfile: {
     position: 'absolute',
-    left: width/2 ,
+    left: '50%',
     top: 45,
-    zIndex: 1,
+    zIndex: 2,
   },
   profileName: {
     fontFamily: 'nunito-bold',

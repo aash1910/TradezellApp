@@ -5,6 +5,7 @@ import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { PlusIcon } from '@/components/icons/PlusIcon';
 import { RightArrowIcon } from '@/components/icons/RightArrowIcon';
 import api from '@/services/api';
+import { openMessageChat, openSupportChat } from '@/utils/openSupportChat';
 
 interface Conversation {
   user_id: number;
@@ -108,14 +109,11 @@ export default function ConversationsScreen() {
       }
     }
 
-    router.push({
-      pathname: '/(tabs)/message',
-      params: {
-        userId: conversation.user_id.toString(),
-        userName: conversation.is_support ? 'Support Service' : conversation.name,
-        userImage: conversation.image || '',
-        userMobile: conversation.mobile || '',
-      }
+    openMessageChat({
+      userId: conversation.user_id.toString(),
+      userName: conversation.is_support ? 'Support Service' : conversation.name,
+      userImage: conversation.image || '',
+      userMobile: conversation.mobile || '',
     });
   };
 
@@ -153,11 +151,11 @@ export default function ConversationsScreen() {
       </View>
       
       <View style={styles.arrowContainer}>
-        {item.unread_count && item.unread_count > 0 && (
+        {item.unread_count > 0 ? (
           <View style={styles.unreadBadge}>
             <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
           </View>
-        )}
+        ) : null}
         <RightArrowIcon size={16} color={COLORS.subtitle} />
       </View>
     </TouchableOpacity>
@@ -188,15 +186,7 @@ export default function ConversationsScreen() {
         <Text style={styles.pageTitle}>Messages</Text>
         <TouchableOpacity 
           style={styles.newChatButton} 
-          onPress={() => router.push({
-            pathname: '/(tabs)/message',
-            params: {
-              userId: '1',
-              userName: 'Support Service',
-              userImage: '',
-              userMobile: '',
-            }
-          })}
+          onPress={() => openSupportChat()}
         >
           <PlusIcon size={24} color={COLORS.background} />
         </TouchableOpacity>

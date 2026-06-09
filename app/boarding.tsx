@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   FlatList,
   StatusBar,
 } from 'react-native';
@@ -12,8 +11,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { useAppContentDimensions } from '@/hooks/useAppContentDimensions';
 
 const COLORS = {
   primary: '#2D6A4F',
@@ -56,6 +54,7 @@ const ROLES = [
 
 export default function BoardingScreen() {
   const insets = useSafeAreaInsets();
+  const { width: contentWidth } = useAppContentDimensions();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedRole, setSelectedRole] = useState<string>('trader');
   const listRef = useRef<FlatList>(null);
@@ -127,8 +126,13 @@ export default function BoardingScreen() {
         scrollEnabled={false}
         showsHorizontalScrollIndicator={false}
         keyExtractor={i => i.key}
+        getItemLayout={(_, index) => ({
+          length: contentWidth,
+          offset: contentWidth * index,
+          index,
+        })}
         renderItem={({ item }) => (
-          <View style={styles.slide}>
+          <View style={[styles.slide, { width: contentWidth }]}>
             <View style={styles.iconCircle}>
               <Ionicons name={item.icon} size={64} color={COLORS.primary} />
             </View>
@@ -165,7 +169,7 @@ export default function BoardingScreen() {
 
 const styles = StyleSheet.create({
   container:      { flex: 1, backgroundColor: COLORS.background },
-  slide:          { width: SCREEN_WIDTH, alignItems: 'center', justifyContent: 'center', padding: 32 },
+  slide:          { alignItems: 'center', justifyContent: 'center', padding: 32 },
   iconCircle:     { width: 140, height: 140, borderRadius: 70, backgroundColor: '#D8F3DC', alignItems: 'center', justifyContent: 'center', marginBottom: 36 },
   slideTitle:     { fontSize: 26, fontFamily: 'NunitoBold', color: COLORS.text, textAlign: 'center', marginBottom: 12 },
   slideSubtitle:  { fontSize: 15, color: COLORS.textLight, textAlign: 'center', lineHeight: 22 },

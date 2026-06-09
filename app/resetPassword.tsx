@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, ActivityIndicator } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, {
   interpolate,
@@ -74,7 +75,7 @@ export default function ResetPasswordScreen() {
   const handleResetPassword = async () => {
     // Validate all fields are filled
     if (!token || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showAlert('Error', 'Please fill in all fields');
       return;
     }
 
@@ -94,7 +95,7 @@ export default function ResetPasswordScreen() {
     }
 
     if (passwordErrors.length > 0) {
-      Alert.alert(
+      showAlert(
         'Invalid Password',
         'Password requirements:\n' + passwordErrors.join('\n')
       );
@@ -103,7 +104,7 @@ export default function ResetPasswordScreen() {
 
     // Validate passwords match
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      showAlert('Error', 'Passwords do not match');
       return;
     }
 
@@ -115,7 +116,7 @@ export default function ResetPasswordScreen() {
         password_confirmation: confirmPassword,
         email: email || ''
       });
-      Alert.alert(
+      showAlert(
         'Success',
         'Your password has been reset successfully',
         [{ text: 'OK', onPress: () => router.replace('/login') }]
@@ -125,7 +126,7 @@ export default function ResetPasswordScreen() {
                          error.response?.data?.message ||
                          error.message || 
                          'Failed to reset password. Please try again.';
-      Alert.alert('Error', errorMessage);
+      showAlert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

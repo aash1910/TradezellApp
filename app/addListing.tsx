@@ -7,31 +7,32 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
   Modal,
   Pressable,
-  Dimensions,
 } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppContentDimensions } from '@/hooks/useAppContentDimensions';
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import api from '@/services/api';
 import { listingService } from '@/services/listing.service';
 import { uploadService } from '@/services/upload.service';
 import { resolveListingImageUri } from '@/utils/images';
 
 const LISTING_SAVE_TIMEOUT_MS = 120000;
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#2D6A4F',
   secondary: '#52B788',
-  background: '#F8FAF9',
+  background: '#FFFFFF',
+  backgroundWrapper: '#F5F5F5',
   white: '#FFFFFF',
   text: '#1B1B1B',
   textLight: '#6B7280',
@@ -44,6 +45,7 @@ const CATEGORIES = ['Clothing', 'Shoes', 'Electronics', 'Books', 'Furniture', 'J
 
 export default function AddListingScreen() {
   const insets = useSafeAreaInsets();
+  const { height: contentHeight } = useAppContentDimensions();
   const params = useLocalSearchParams<{ editId?: string }>();
   const editId = Array.isArray(params.editId) ? params.editId[0] : params.editId;
   const isEdit = Boolean(editId);
@@ -83,7 +85,7 @@ export default function AddListingScreen() {
         setImages(listing.images ?? []);
       } catch {
         if (!cancelled) {
-          Alert.alert('Error', 'Could not load listing.', [
+          showAlert('Error', 'Could not load listing.', [
             { text: 'OK', onPress: () => router.back() },
           ]);
         }
@@ -97,13 +99,20 @@ export default function AddListingScreen() {
     };
   }, [editId]);
 
+  useEffect(() => {
+    StatusBar.setBarStyle('light-content');
+    return () => {
+      StatusBar.setBarStyle('dark-content');
+    };
+  }, []);
+
   const pickImage = async () => {
     const remaining = 5 - images.length;
     if (remaining <= 0) return;
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please grant photo library access to upload images.');
+      showAlert('Permission needed', 'Please grant photo library access to upload images.');
       return;
     }
 
@@ -121,7 +130,7 @@ export default function AddListingScreen() {
         const compressed = await uploadService.compressImagesToDataUrls(uris);
         setImages((prev) => [...prev, ...compressed].slice(0, 5));
       } catch {
-        Alert.alert('Error', 'Failed to process images. Please try again with smaller photos.');
+        showAlert('Error', 'Failed to process images. Please try again with smaller photos.');
       } finally {
         setCompressingImages(false);
       }
@@ -134,11 +143,11 @@ export default function AddListingScreen() {
 
   const handleSave = async () => {
     if (!title.trim()) {
-      Alert.alert('Required', 'Please enter a title for your listing.');
+      showAlert('Required', 'Please enter a title for your listing.');
       return;
     }
     if ((type === 'sell' || type === 'both') && !price) {
-      Alert.alert('Required', 'Please enter a price for sell listings.');
+      showAlert('Required', 'Please enter a price for sell listings.');
       return;
     }
 
@@ -166,11 +175,11 @@ export default function AddListingScreen() {
         await api.post('/listings', payload, saveConfig);
       }
 
-      Alert.alert('Success', isEdit ? 'Listing updated!' : 'Listing created!', [
+      showAlert('Success', isEdit ? 'Listing updated!' : 'Listing created!', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message ?? 'Failed to save listing. Please try again.');
+      showAlert('Error', e?.response?.data?.message ?? 'Failed to save listing. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -180,25 +189,21 @@ export default function AddListingScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
+          <LeftArrowIcon size={44} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEdit ? 'Edit Listing' : 'New Listing'}</Text>
-        <View style={{ width: 36 }} />
+        <Text style={styles.pageTitle}>{isEdit ? 'Edit Listing' : 'New Listing'}</Text>
       </View>
 
       {loading ? (
-        <View style={styles.loadingWrap}>
+        <View style={[styles.content, styles.loadingWrap, { paddingBottom: Math.max(insets.bottom, 24) }]}>
           <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       ) : (
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        style={styles.content}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 40) }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
 
@@ -349,7 +354,13 @@ export default function AddListingScreen() {
             <View style={styles.imageModalBody} pointerEvents="box-none">
               <Image
                 source={{ uri: previewImage }}
-                style={styles.imageModalImage}
+                style={[
+                  styles.imageModalImage,
+                  {
+                    width: '100%',
+                    height: contentHeight * 0.75,
+                  },
+                ]}
                 resizeMode="contain"
               />
             </View>
@@ -361,13 +372,49 @@ export default function AddListingScreen() {
 }
 
 const styles = StyleSheet.create({
-  root:           { flex: 1, backgroundColor: COLORS.background },
-  header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 12, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  backBtn:        { padding: 4 },
-  headerTitle:    { fontSize: 18, fontFamily: 'NunitoBold', color: COLORS.text },
-  loadingWrap:    { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll:         { flex: 1 },
-  scrollContent:  { padding: 20, paddingBottom: 40 },
+  root: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 52,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    backgroundColor: '#000',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    position: 'relative',
+  },
+  leftArrow: {
+    width: 44,
+    height: 44,
+    position: 'absolute',
+    left: 16,
+    top: 52,
+  },
+  pageTitle: {
+    fontSize: 18,
+    fontFamily: 'nunito-bold',
+    color: COLORS.background,
+    letterSpacing: 0.2,
+    lineHeight: 44,
+    textAlign: 'center',
+  },
+  content: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundWrapper,
+  },
+  loadingWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 24,
+  },
   label:          { fontSize: 14, fontFamily: 'NunitoBold', color: COLORS.text, marginBottom: 6, marginTop: 16 },
   input:          { backgroundColor: COLORS.white, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: COLORS.text },
   textArea:       { height: 100, textAlignVertical: 'top' },
@@ -399,6 +446,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    width: '100%',
+    maxWidth: '100%',
   },
   imageModalClose: {
     position: 'absolute',
@@ -407,7 +457,6 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   imageModalImage: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT * 0.75,
+    maxWidth: '100%',
   },
 });

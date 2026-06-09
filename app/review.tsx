@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import Animated, {
@@ -109,12 +110,12 @@ export default function ReviewScreen() {
 
   const handleSubmit = async () => {
     if (!rating) {
-      Alert.alert(t('common.error'), t('review.validation.selectRating'));
+      showAlert(t('common.error'), t('review.validation.selectRating'));
       return;
     }
 
     if (!reviewText.trim()) {
-      Alert.alert(t('common.error'), t('review.validation.writeReview'));
+      showAlert(t('common.error'), t('review.validation.writeReview'));
       return;
     }
 
@@ -128,13 +129,13 @@ export default function ReviewScreen() {
       });
 
       if (response.data.status === 'success') {
-        Alert.alert(t('review.success.title'), t('review.success.message'));
+        showAlert(t('review.success.title'), t('review.success.message'));
         router.push('/(tabs)/manage');
       } else {
         throw new Error(response.data.message || 'Failed to submit review');
       }
     } catch (error: any) {
-      Alert.alert(t('common.error'), error.response?.data?.message || error.message || 'Failed to submit review');
+      showAlert(t('common.error'), error.response?.data?.message || error.message || 'Failed to submit review');
     } finally {
       setIsSubmitting(false);
     }

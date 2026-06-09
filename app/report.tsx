@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -178,7 +179,7 @@ export default function SafetyScreen() {
             <Text style={styles.modalTitle}>{t('report.modal.title')}</Text>
             <TouchableOpacity style={styles.modalOption} onPress={() => {
               setModalVisible(false);
-              Alert.alert(t('report.modal.emailSent'));
+              showAlert(t('report.modal.emailSent'));
             }}>
               <Text style={styles.modalOptionText}>{t('report.modal.options.unsolicited')}</Text>
               <RightArrowIcon size={18} color={COLORS.text} />
@@ -186,7 +187,7 @@ export default function SafetyScreen() {
             <View style={styles.modalDivider} />
             <TouchableOpacity style={styles.modalOption} onPress={() => {
               setModalVisible(false);
-              Alert.alert(t('report.modal.emailSent'));
+              showAlert(t('report.modal.emailSent'));
             }}>
               <Text style={styles.modalOptionText}>{t('report.modal.options.underage')}</Text>
               <RightArrowIcon size={18} color={COLORS.text} />
@@ -194,7 +195,7 @@ export default function SafetyScreen() {
             <View style={styles.modalDivider} />
             <TouchableOpacity style={styles.modalOption} onPress={() => {
               setModalVisible(false);
-              Alert.alert(t('report.modal.emailSent'));
+              showAlert(t('report.modal.emailSent'));
             }}>
               <Text style={styles.modalOptionText}>{t('report.modal.options.spam')}</Text>
               <RightArrowIcon size={18} color={COLORS.text} />

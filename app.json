@@ -13,7 +13,7 @@
     },
     "ios": {
       "CFBundleDisplayName": "Tradezell",
-      "bundleIdentifier": "com.tradezell.app",
+      "bundleIdentifier": "org.reactjs.native.example.Tradezell",
       "deploymentTarget": "15.1",
       "usesAppleSignIn": true,
       "infoPlist": {
@@ -36,7 +36,7 @@
         "foregroundImage": "./assets/icons/adaptive-icon.png",
         "backgroundColor": "#2D6A4F"
       },
-      "package": "com.tradezell.app",
+      "package": "org.reactjs.native.example.Tradezell",
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
@@ -105,7 +105,10 @@
         "maxWithdrawal": 100000,
         "minWithdrawal": 100
       },
-      "environment": "development"
+      "environment": "development",
+      "googleWebClientId": "245235849387-a8jb24bbplnql4tqe3p1vnhddd8pd4ef.apps.googleusercontent.com",
+      "appleWebClientId": "com.tradezell.app",
+      "appleWebRedirectUri": "https://app.tradezell.com/auth/apple/callback"
     },
     "owner": "masum_advance"
   }

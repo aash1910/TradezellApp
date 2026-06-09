@@ -1,25 +1,35 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, Image, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Alert, StatusBar,
-  RefreshControl, ScrollView,
+  StyleSheet, ActivityIndicator, StatusBar,
+  RefreshControl, ScrollView, Modal, Pressable,
 } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import api from '@/services/api';
 import { resolveListingImageUri } from '@/utils/images';
 
 const COLORS = {
-  primary: '#2D6A4F', secondary: '#52B788', background: '#F8FAF9',
-  white: '#FFFFFF', text: '#1B1B1B', textLight: '#6B7280',
-  border: '#E5E7EB', danger: '#EF4444',
+  primary: '#2D6A4F',
+  secondary: '#52B788',
+  background: '#FFFFFF',
+  backgroundWrapper: '#F5F5F5',
+  white: '#FFFFFF',
+  text: '#1B1B1B',
+  textLight: '#6B7280',
+  border: '#E5E7EB',
+  danger: '#EF4444',
 };
 
 interface Listing {
   id: number; type: string; title: string; status: string;
   price: number | null; currency: string; images: string[]; condition: string; category: string;
 }
+
+const STATUS_OPTIONS = ['active', 'paused', 'sold', 'traded'] as const;
 
 const STATUS_STYLES: Record<string, { color: string; bg: string; label: string }> = {
   active: { color: '#15803D', bg: '#DCFCE7', label: 'Active' },
@@ -42,6 +52,8 @@ export default function MyListingsScreen() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [statusPicker, setStatusPicker] = useState<{ id: number; status: string } | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const fetchListings = useCallback(async (pullToRefresh = false) => {
     if (pullToRefresh) {
@@ -74,6 +86,13 @@ export default function MyListingsScreen() {
     }, [fetchListings])
   );
 
+  useEffect(() => {
+    StatusBar.setBarStyle('light-content');
+    return () => {
+      StatusBar.setBarStyle('dark-content');
+    };
+  }, []);
+
   const refreshControl = (
     <RefreshControl
       refreshing={refreshing}
@@ -83,24 +102,38 @@ export default function MyListingsScreen() {
     />
   );
 
-  const handleStatusChange = async (id: number, status: string) => {
-    const options = ['active', 'paused', 'sold', 'traded'].filter(s => s !== status);
-    Alert.alert('Update Status', 'Change listing status to:', [
-      ...options.map(s => ({
-        text: s.charAt(0).toUpperCase() + s.slice(1),
-        onPress: async () => {
-          try {
-            await api.patch(`/listings/${id}/status`, { status: s });
-            setListings(prev => prev.map(l => l.id === id ? { ...l, status: s } : l));
-          } catch { Alert.alert('Error', 'Failed to update status.'); }
-        },
-      })),
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+  const openStatusPicker = (id: number, status: string) => {
+    setStatusPicker({ id, status });
+  };
+
+  const closeStatusPicker = () => {
+    if (!updatingStatus) {
+      setStatusPicker(null);
+    }
+  };
+
+  const applyStatusChange = async (nextStatus: string) => {
+    if (!statusPicker || nextStatus === statusPicker.status) {
+      closeStatusPicker();
+      return;
+    }
+
+    setUpdatingStatus(true);
+    try {
+      await api.patch(`/listings/${statusPicker.id}/status`, { status: nextStatus });
+      setListings(prev =>
+        prev.map(l => (l.id === statusPicker.id ? { ...l, status: nextStatus } : l))
+      );
+      setStatusPicker(null);
+    } catch {
+      showAlert('Error', 'Failed to update status.');
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
   const handleDelete = (id: number) => {
-    Alert.alert('Delete Listing', 'Are you sure you want to delete this listing?', [
+    showAlert('Delete Listing', 'Are you sure you want to delete this listing?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete', style: 'destructive',
@@ -108,7 +141,7 @@ export default function MyListingsScreen() {
           try {
             await api.delete(`/listings/${id}`);
             setListings(prev => prev.filter(l => l.id !== id));
-          } catch { Alert.alert('Error', 'Failed to delete listing.'); }
+          } catch { showAlert('Error', 'Failed to delete listing.'); }
         },
       },
     ]);
@@ -206,7 +239,7 @@ export default function MyListingsScreen() {
           <TouchableOpacity
             style={styles.actionBtn}
             activeOpacity={0.7}
-            onPress={() => handleStatusChange(item.id, item.status)}>
+            onPress={() => openStatusPicker(item.id, item.status)}>
             <Ionicons name="swap-horizontal-outline" size={18} color={COLORS.secondary} />
             <Text style={[styles.actionLabel, { color: COLORS.secondary }]}>Status</Text>
           </TouchableOpacity>
@@ -226,66 +259,170 @@ export default function MyListingsScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}><Ionicons name="arrow-back" size={24} color={COLORS.text} /></TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>My Listings</Text>
+        <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
+          <LeftArrowIcon size={44} />
+        </TouchableOpacity>
+        <View style={styles.headerTitleBlock}>
+          <Text style={styles.pageTitle}>My Listings</Text>
           {!loading && listings.length > 0 && (
-            <Text style={styles.headerCount}>
+            <Text style={styles.pageSubtitle}>
               {listings.length} listing{listings.length !== 1 ? 's' : ''}
             </Text>
           )}
         </View>
-        <TouchableOpacity onPress={() => router.push('/addListing')}>
-          <Ionicons name="add-circle-outline" size={26} color={COLORS.primary} />
+        <TouchableOpacity
+          style={styles.rightAction}
+          onPress={() => router.push('/addListing')}
+          accessibilityLabel="Add listing">
+          <Ionicons name="add-circle-outline" size={26} color={COLORS.white} />
         </TouchableOpacity>
       </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 60 }} />
-      ) : listings.length === 0 ? (
-        <ScrollView
-          contentContainerStyle={styles.emptyScroll}
-          refreshControl={refreshControl}
-          showsVerticalScrollIndicator={false}>
-          <View style={styles.empty}>
-            <Ionicons name="albums-outline" size={64} color={COLORS.secondary} />
-            <Text style={styles.emptyTitle}>No listings yet</Text>
-            <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/addListing')}>
-              <Text style={styles.addBtnText}>Add Your First Listing</Text>
+      <View style={[styles.content, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+        {loading ? (
+          <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
+        ) : listings.length === 0 ? (
+          <ScrollView
+            contentContainerStyle={styles.emptyScroll}
+            refreshControl={refreshControl}
+            showsVerticalScrollIndicator={false}>
+            <View style={styles.empty}>
+              <Ionicons name="albums-outline" size={64} color={COLORS.secondary} />
+              <Text style={styles.emptyTitle}>No listings yet</Text>
+              <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/addListing')}>
+                <Text style={styles.addBtnText}>Add Your First Listing</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        ) : (
+          <FlatList
+            data={listings}
+            keyExtractor={i => String(i.id)}
+            renderItem={renderItem}
+            contentContainerStyle={styles.list}
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            showsVerticalScrollIndicator={false}
+            refreshControl={refreshControl}
+          />
+        )}
+      </View>
+
+      <Modal
+        visible={statusPicker !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={closeStatusPicker}>
+        <Pressable style={styles.statusModalOverlay} onPress={closeStatusPicker}>
+          <Pressable
+            style={[styles.statusModalCard, { paddingBottom: Math.max(insets.bottom, 20) }]}
+            onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.statusModalTitle}>Update Status</Text>
+            <Text style={styles.statusModalSubtitle}>Choose a new status for this listing</Text>
+
+            {STATUS_OPTIONS.map((option) => {
+              const style = STATUS_STYLES[option];
+              const isCurrent = statusPicker?.status === option;
+
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.statusOption, isCurrent && styles.statusOptionCurrent]}
+                  disabled={updatingStatus || isCurrent}
+                  onPress={() => applyStatusChange(option)}>
+                  <View style={[styles.statusOptionDot, { backgroundColor: style.color }]} />
+                  <Text style={[styles.statusOptionText, isCurrent && styles.statusOptionTextCurrent]}>
+                    {style.label}
+                  </Text>
+                  {isCurrent ? (
+                    <Text style={styles.statusOptionBadge}>Current</Text>
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+
+            {updatingStatus ? (
+              <ActivityIndicator size="small" color={COLORS.primary} style={styles.statusUpdating} />
+            ) : null}
+
+            <TouchableOpacity
+              style={styles.statusCancelBtn}
+              onPress={closeStatusPicker}
+              disabled={updatingStatus}>
+              <Text style={styles.statusCancelText}>Cancel</Text>
             </TouchableOpacity>
-          </View>
-        </ScrollView>
-      ) : (
-        <FlatList
-          data={listings}
-          keyExtractor={i => String(i.id)}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          showsVerticalScrollIndicator={false}
-          refreshControl={refreshControl}
-        />
-      )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
   header: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingTop: 52,
+    paddingBottom: 40,
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    backgroundColor: '#000',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    position: 'relative',
   },
-  headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: 20, fontFamily: 'NunitoBold', color: COLORS.text },
-  headerCount: { fontSize: 12, color: COLORS.textLight, marginTop: 2 },
-  list: { paddingHorizontal: 16, paddingBottom: 40 },
+  leftArrow: {
+    width: 44,
+    height: 44,
+    position: 'absolute',
+    left: 16,
+    top: 52,
+  },
+  rightAction: {
+    width: 44,
+    height: 44,
+    position: 'absolute',
+    right: 16,
+    top: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitleBlock: {
+    alignItems: 'center',
+    maxWidth: '70%',
+  },
+  pageTitle: {
+    fontSize: 18,
+    fontFamily: 'nunito-bold',
+    color: COLORS.background,
+    letterSpacing: 0.2,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  pageSubtitle: {
+    fontSize: 12,
+    fontFamily: 'nunito-medium',
+    color: 'rgba(255, 255, 255, 0.72)',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  content: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundWrapper,
+    paddingTop: 24,
+  },
+  loader: {
+    marginTop: 60,
+  },
+  list: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
   separator: { height: 12 },
   card: {
     backgroundColor: COLORS.white,
@@ -401,4 +538,83 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 18, fontFamily: 'NunitoBold', color: COLORS.text, marginTop: 12 },
   addBtn: { marginTop: 20, backgroundColor: COLORS.primary, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 },
   addBtnText: { color: COLORS.white, fontFamily: 'NunitoBold' },
+  statusModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  statusModalCard: {
+    width: '100%',
+    maxWidth: 392,
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  statusModalTitle: {
+    fontSize: 18,
+    fontFamily: 'NunitoBold',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  statusModalSubtitle: {
+    fontSize: 13,
+    color: COLORS.textLight,
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  statusOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 10,
+  },
+  statusOptionCurrent: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#D1D5DB',
+  },
+  statusOptionDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  statusOptionText: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'NunitoBold',
+    color: COLORS.text,
+  },
+  statusOptionTextCurrent: {
+    color: COLORS.textLight,
+  },
+  statusOptionBadge: {
+    fontSize: 11,
+    fontFamily: 'NunitoBold',
+    color: COLORS.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  statusUpdating: {
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  statusCancelBtn: {
+    marginTop: 4,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  statusCancelText: {
+    fontSize: 15,
+    fontFamily: 'NunitoBold',
+    color: COLORS.textLight,
+  },
 });

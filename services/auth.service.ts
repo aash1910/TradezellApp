@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { appendImageToFormData } from '@/utils/appendImageToFormData';
 import api from './api';
 
 interface LoginCredentials {
@@ -389,16 +390,16 @@ class AuthService {
     try { 
       
       const formData = new FormData();
-      formData.append('image', {
-        uri: imageUri,
-        type: 'image/jpeg',
-        name: `${type}_${Date.now()}.jpg`
-      } as any);
+      const fileName = `${type}_${Date.now()}.jpg`;
+      await appendImageToFormData(formData, 'image', imageUri, fileName);
       formData.append('type', type === 'profile' ? 'image' : 'document');
 
       const response = await api.post('/upload-image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+        transformRequest: (data, headers) => {
+          if (typeof FormData !== 'undefined' && data instanceof FormData) {
+            delete (headers as Record<string, unknown>)['Content-Type'];
+          }
+          return data;
         },
         timeout: 60000, // Increase to 60 seconds for image uploads
       });
@@ -487,7 +488,7 @@ class AuthService {
     }
   }
 
-  async appleLogin(data: { identity_token: string; email?: string | null; first_name?: string; last_name?: string; role?: string; account_role?: string }) {
+  async appleLogin(data: { identity_token: string; email?: string | null; first_name?: string; last_name?: string; role?: string; account_role?: string; nonce?: string }) {
     try {
       const response = await api.post('/apple-login', data, {
         timeout: 30000,
@@ -521,7 +522,7 @@ class AuthService {
     }
   }
 
-  async restoreAppleAccount(data: { identity_token: string; email?: string | null; role?: string; account_role?: string }) {
+  async restoreAppleAccount(data: { identity_token: string; email?: string | null; role?: string; account_role?: string; nonce?: string }) {
     try {
       const response = await api.post('/apple-restore', data, {
         timeout: 30000,

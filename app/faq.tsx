@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Dimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { openSupportChat } from '@/utils/openSupportChat';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -212,7 +213,7 @@ export default function SafetyScreen() {
           <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom , 22) }]}>
             <TouchableOpacity 
               style={styles.continueButton}
-              onPress={() => router.push('/supportService')} 
+              onPress={() => openSupportChat()} 
             >
               <HeadphonesRoundIcon size={20} color={COLORS.buttonText} />
               <Text style={styles.continueButtonText}>{t('faq.getSupport')}</Text>
@@ -224,7 +225,7 @@ export default function SafetyScreen() {
         <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom , 22) }]}>
           <TouchableOpacity 
             style={styles.continueButton}
-            onPress={() => router.replace('/(tabs)/message')} 
+            onPress={() => openSupportChat({ replace: true })} 
           >
             <HeadphonesRoundIcon size={20} color={COLORS.buttonText} />
             <Text style={styles.continueButtonText}>{t('faq.getSupport')}</Text>

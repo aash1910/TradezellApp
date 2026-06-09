@@ -7,13 +7,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   StatusBar,
   Dimensions,
   FlatList,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -107,7 +107,7 @@ export default function ListingDetailScreen() {
     const seller = listing.user
       ? `${listing.user.first_name} ${listing.user.last_name}`.trim()
       : 'the seller';
-    Alert.alert(
+    showAlert(
       'Pass on this listing?',
       `You're not interested in "${listing.title}".\n\n• Hidden from Discover\n• Removed from Liked (if you saved it)\n• Match with ${seller} ended (if you were matched)`,
       [
@@ -124,7 +124,7 @@ export default function ListingDetailScreen() {
       if (direction === 'yes' && res.data.matched) {
         const other = res.data.match?.other_user;
         const name = other ? `${other.first_name} ${other.last_name}` : 'Someone';
-        Alert.alert(
+        showAlert(
           "It's a Match!",
           `You and ${name} liked each other! Head to Chat to start talking.`,
           [
@@ -133,7 +133,7 @@ export default function ListingDetailScreen() {
           ]
         );
       } else if (direction === 'yes') {
-        Alert.alert(
+        showAlert(
           'Liked!',
           'Saved to your Likes tab. We\'ll notify you if they like one of your listings back.'
         );
@@ -141,11 +141,11 @@ export default function ListingDetailScreen() {
         const parts = ['Hidden from Discover.'];
         if (res.data.removed_like) parts.push('Removed from your Liked list.');
         if (res.data.unmatched) parts.push('Match ended.');
-        Alert.alert('Passed', parts.join(' '));
+        showAlert('Passed', parts.join(' '));
       }
       router.back();
     } catch {
-      Alert.alert('Error', 'Could not submit swipe.');
+      showAlert('Error', 'Could not submit swipe.');
     } finally {
       setSwiping(false);
     }

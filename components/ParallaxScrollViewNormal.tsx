@@ -1,5 +1,5 @@
 import type { PropsWithChildren, ReactElement } from 'react';
-import { StyleSheet, View, Image, Dimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -9,25 +9,27 @@ import Animated, {
 
 import { ThemedView } from '@/components/ThemedView';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useAppContentDimensions } from '@/hooks/useAppContentDimensions';
 import Svg, { Ellipse } from 'react-native-svg';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-const { width, height } = Dimensions.get('window');
-
-const HEADER_HEIGHT = height / 100 * 52;
 
 type Props = PropsWithChildren<{
   headerImage: ReactElement;
   headerBackgroundColor: { dark: string; light: string };
   curveHeight: number;
+  maxHeaderHeight?: number;
 }>;
 
 export default function ParallaxScrollViewNormal({
   children,
   headerImage,
   headerBackgroundColor,
-  curveHeight,  
+  curveHeight,
+  maxHeaderHeight,
 }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
+  const { width, height } = useAppContentDimensions();
+  const headerHeight = maxHeaderHeight ? Math.min((height / 100) * 52, maxHeaderHeight) : (height / 100) * 52;
+
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
   const headerAnimatedStyle = useAnimatedStyle(() => {
@@ -36,16 +38,16 @@ export default function ParallaxScrollViewNormal({
         {
           translateY: interpolate(
             scrollOffset.value,
-            [-HEADER_HEIGHT, 0, HEADER_HEIGHT],
-            [-HEADER_HEIGHT / 2, 0, HEADER_HEIGHT * 0.75]
+            [-headerHeight, 0, headerHeight],
+            [-headerHeight / 2, 0, headerHeight * 0.75]
           ),
         },
         {
-          scale: interpolate(scrollOffset.value, [-HEADER_HEIGHT, 0, HEADER_HEIGHT], [2, 1, 1]),
+          scale: interpolate(scrollOffset.value, [-headerHeight, 0, headerHeight], [2, 1, 1]),
         },
       ],
     };
-  });
+  }, [headerHeight]);
 
   return (
     <ThemedView style={styles.container}>
@@ -58,7 +60,7 @@ export default function ParallaxScrollViewNormal({
         <Animated.View
           style={[
             styles.header,
-            { backgroundColor: headerBackgroundColor[colorScheme] },
+            { height: headerHeight, backgroundColor: headerBackgroundColor[colorScheme] },
             headerAnimatedStyle,
           ]}>
           <ThemedView style={[styles.contentHeaderImage, { backgroundColor: headerBackgroundColor[colorScheme] }]}>
@@ -72,10 +74,7 @@ export default function ParallaxScrollViewNormal({
             </View>
           </ThemedView>
         </Animated.View>
-        <ThemedView style={styles.content}>
-          
-          {children}
-        </ThemedView>
+        <ThemedView style={[styles.content, { minHeight: height - headerHeight }]}>{children}</ThemedView>
       </Animated.ScrollView>
     </ThemedView>
   );
@@ -86,7 +85,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    height: HEADER_HEIGHT,
     overflow: 'hidden',
   },
   bottomSvg: {
@@ -96,7 +94,6 @@ const styles = StyleSheet.create({
     right: 0,
   },
   content: {
-    minHeight: height - HEADER_HEIGHT,
     paddingTop: 42,
     gap: 16,
     alignItems: 'center',

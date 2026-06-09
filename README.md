@@ -20,18 +20,26 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 4. Android Build Preview for Simulator: eas build -p android --profile preview
 
-5. Run Android Emulator manually: /Volumes/ExAsh/Library/Android/sdk/emulator/emulator -read-only @Resizable_Experimental_API_UpsideDownCake
+5. Run Android Emulator manually: 
+   - List available emulators: `~/Library/Android/sdk/emulator/emulator -list-avds`
+   - Start emulator: `~/Library/Android/sdk/emulator/emulator -avd Medium_Phone_API_36.1`
 
 6. To create only the ios folder: npx expo prebuild --platform ios
+
+6.1. **Xcode Cloud**: The repo includes `ios/ci_scripts/ci_post_clone.sh`, which runs `expo prebuild` after clone so `ios/PiqDrop.xcworkspace` exists before the build. Configure Xcode Cloud to use **workspace** `ios/PiqDrop.xcworkspace` and **scheme** `PiqDrop`. Ensure `ios/ci_scripts/` is committed.
 
 7.1. Build to Expo for submit to Appstore: eas build --platform ios --profile production
 eas build --platform ios --profile production --clear-cache
 
 7.2. Submit to App Store: eas submit --platform ios --profile production
 
+7.3. Build Android Local: eas build --platform android --profile production --local
+
 8.0. Development build standalone app: eas build --profile development --platform ios
 
 8.1 "googleServicesFile": "./GoogleService-Info.plist", // firebase
+
+9. Web build: npx expo export -p web   
 
 In the output, you'll find options to open the app in a
 

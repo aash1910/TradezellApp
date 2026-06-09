@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Dimensions, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, TextInput, Alert, FlatList, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, TextInput, FlatList, ScrollView } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router } from 'expo-router';
-import CountryPicker, { Country, getCallingCode } from 'react-native-country-picker-modal';
+import { CustomCountryPicker, type CountryItem } from '@/components/CustomCountryPicker';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -17,7 +18,14 @@ import { ComplexGearIcon } from '@/components/icons/ComplexGearIcon';
 import { EditIcon } from '@/components/icons/EditIcon';
 import { SelectDownArrowIcon } from '@/components/icons/SelectDownArrowIcon';
 import { LocationIcon } from '@/components/icons/LocationIcon';
-import MapView, { Marker, Region } from 'react-native-maps';
+import ProfileLocationMap from '@/components/ProfileLocationMap';
+
+type Region = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+};
 import * as Location from 'expo-location';
 import { CalendarIcon } from '@/components/icons/CalendarDateIcon';
 import { SelectArrowIcon } from '@/components/icons/SelectArrowIcon';
@@ -30,8 +38,6 @@ import { uploadService } from '@/services/upload.service';
 import { useTranslation } from 'react-i18next';
 
 const HEADER_HEIGHT = 156;
-const { width, height } = Dimensions.get('window');
-
 const COLORS = {
   primary: '#55B086',
   background: '#FFFFFF',
@@ -78,31 +84,34 @@ const PickerColumn = ({ items, selectedValue, onValueChange, width = 100 }: {
   }, [selectedValue, items.length]);
 
   return (
-    <ScrollView
-      ref={scrollRef}
-      style={[styles.pickerColumn, { width }]}
-      showsVerticalScrollIndicator={false}
-      snapToInterval={40}
-      decelerationRate="fast"
-    >
-      {items.map((item, index) => (
-        <TouchableOpacity
-          key={index}
-          style={[
-            styles.pickerItem,
-            selectedValue === (typeof item === 'number' ? item : index) && styles.pickerItemSelected
-          ]}
-          onPress={() => onValueChange(typeof item === 'number' ? item : index)}
-        >
-          <Text style={[
-            styles.pickerItemText,
-            selectedValue === (typeof item === 'number' ? item : index) && styles.pickerItemTextSelected
-          ]}>
-            {item}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+    <View style={[styles.pickerColumnOuter, { width }]}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.pickerColumnScroll}
+        contentContainerStyle={styles.pickerColumnScrollContent}
+        showsVerticalScrollIndicator={Platform.OS === 'web'}
+        snapToInterval={40}
+        decelerationRate="fast"
+      >
+        {items.map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.pickerItem,
+              selectedValue === (typeof item === 'number' ? item : index) && styles.pickerItemSelected
+            ]}
+            onPress={() => onValueChange(typeof item === 'number' ? item : index)}
+          >
+            <Text style={[
+              styles.pickerItemText,
+              selectedValue === (typeof item === 'number' ? item : index) && styles.pickerItemTextSelected
+            ]}>
+              {item}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
   );
 };
 
@@ -186,10 +195,10 @@ export default function UpdateProfileScreen() {
   const scrollOffset = useScrollViewOffset(scrollRef);
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [countryCode, setCountryCode] = useState<Country['cca2']>('US');
+  const [countryCode, setCountryCode] = useState<string>('US');
   const [callingCode, setCallingCode] = useState('1');
   const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState<Country | null>(null);
+  const [country, setCountry] = useState<CountryItem | null>(null);
   const [withCallingCode, setWithCallingCode] = useState(true);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -233,7 +242,7 @@ export default function UpdateProfileScreen() {
     };
   });
 
-  const onSelect = (country: Country) => {
+  const onSelect = (country: CountryItem) => {
     setCountryCode(country.cca2);
     setCallingCode(country.callingCode[0]);
     setCountry(country);
@@ -309,7 +318,7 @@ export default function UpdateProfileScreen() {
               const callCode = phoneNumber.countryCallingCode; // e.g., "1"
               const nationalNumber = phoneNumber.nationalNumber; // e.g., "2025550123"
 
-              setCountryCode(cca2 as Country['cca2']);
+              setCountryCode(cca2 ?? 'US');
               setCallingCode(callCode as string);
               setPhone(nationalNumber as string);
             } else {
@@ -352,15 +361,45 @@ export default function UpdateProfileScreen() {
     })();
   }, []);
 
+  const reverseGeocode = async (coords: { latitude: number; longitude: number }) => {
+    if (Platform.OS !== 'web') {
+      const geocode = await Location.reverseGeocodeAsync(coords);
+      return geocode[0] ?? null;
+    }
+
+    const url =
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1` +
+      `&lat=${coords.latitude}&lon=${coords.longitude}`;
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Reverse geocoding failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const address = data?.address ?? {};
+
+    return {
+      name: data?.name ?? '',
+      street: address.road ?? address.pedestrian ?? address.footway ?? '',
+      city: address.city ?? address.town ?? address.village ?? address.suburb ?? '',
+      region: address.state ?? address.county ?? '',
+      postalCode: address.postcode ?? '',
+      country: address.country ?? '',
+    };
+  };
+
   const handleMapPress = async (e: any) => {
     const coords = e.nativeEvent.coordinate;
-    //console.log(coords);
-    //setMarker(coords);
 
     try {
-      const geocode = await Location.reverseGeocodeAsync(coords);
-      if (geocode.length > 0) {
-        const place = geocode[0];
+      const place = await reverseGeocode(coords);
+      if (place) {
         const parts = [
           place.name,
           place.street,
@@ -369,26 +408,21 @@ export default function UpdateProfileScreen() {
           place.postalCode,
           place.country
         ];
-        // Filter out null/undefined/empty strings and duplicates
         const uniqueParts = Array.from(new Set(parts.filter(Boolean)));
         const address = uniqueParts.join(', ');        
         setLocation(address);
-        //console.log(address);
         setRegion({
           latitude: coords.latitude,
           longitude: coords.longitude,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         });
-        //console.log(region);
       } else {
         setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
       }
-      //setModalVisible(false);
     } catch (err) {
       console.warn('Reverse geocoding error:', err);
       setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
-      //setModalVisible(false);
     }
   };
 
@@ -490,12 +524,12 @@ export default function UpdateProfileScreen() {
           console.log(response);
           if (response.data.image) {
             setSenderProfileImage(response.data.image);
-            Alert.alert('Success', 'Profile image updated successfully');
+            showAlert('Success', 'Profile image updated successfully');
           } else {
-            Alert.alert('Error', 'Failed to update profile image');
+            showAlert('Error', 'Failed to update profile image');
           }
         } catch (error: any) {
-          Alert.alert(
+          showAlert(
             'Upload Failed', 
             'Failed to upload profile image. Please try uploading again.',
             [{ text: 'OK' }]
@@ -506,7 +540,7 @@ export default function UpdateProfileScreen() {
       }
     } catch (error) {
       console.error('Error taking picture:', error);
-      Alert.alert(
+      showAlert(
         'Error', 
         'Failed to take picture. Please try uploading again.',
         [{ text: 'OK' }]
@@ -531,12 +565,12 @@ export default function UpdateProfileScreen() {
           const response = await authService.uploadImage(compressedUri, 'profile');
           if (response.data.image) {
             setSenderProfileImage(response.data.image);
-            Alert.alert('Success', 'Profile image updated successfully');
+            showAlert('Success', 'Profile image updated successfully');
           } else {
-            Alert.alert('Error', 'Failed to update profile image');
+            showAlert('Error', 'Failed to update profile image');
           }
         } catch (error: any) {
-          Alert.alert(
+          showAlert(
             'Upload Failed', 
             'Failed to upload profile image. Please try uploading again.',
             [{ text: 'OK' }]
@@ -547,7 +581,7 @@ export default function UpdateProfileScreen() {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert(
+      showAlert(
         'Error', 
         'Failed to pick image. Please try uploading again.',
         [{ text: 'OK' }]
@@ -566,14 +600,14 @@ export default function UpdateProfileScreen() {
         try {
           const phoneNumber = parsePhoneNumber(mobile);
           if (!phoneNumber || !phoneNumber.isValid()) {
-            Alert.alert(t('updateProfile.validationError'), t('updateProfile.invalidPhone'));
+            showAlert(t('updateProfile.validationError'), t('updateProfile.invalidPhone'));
             setIsLoading(false);
             return;
           }
           console.log(phoneNumber);
           mobile = phoneNumber.number as string;
         } catch (error) {
-          Alert.alert(t('updateProfile.validationError'), t('updateProfile.invalidPhone'));
+          showAlert(t('updateProfile.validationError'), t('updateProfile.invalidPhone'));
           setIsLoading(false);
           return;
         }
@@ -603,7 +637,7 @@ export default function UpdateProfileScreen() {
       const response = await authService.updateUserProfile(userData);
 
       if (response) {
-        Alert.alert(t('common.success'), t('updateProfile.success'));
+        showAlert(t('common.success'), t('updateProfile.success'));
         router.push('/(tabs)/account');
       }
     } catch (error: any) {
@@ -616,14 +650,14 @@ export default function UpdateProfileScreen() {
           .flat()
           .join('\n');
         
-        Alert.alert(
+        showAlert(
           t('updateProfile.validationError'),
           errorMessages,
           [{ text: t('common.ok'), style: 'default' }]
         );
       } else {
         // Handle other errors
-        Alert.alert(
+        showAlert(
           t('common.error'),
           t('updateProfile.error'),
           [{ text: t('common.ok'), style: 'default' }]
@@ -701,14 +735,8 @@ export default function UpdateProfileScreen() {
 
           <Text style={styles.label}>{t('updateProfile.mobile')}</Text>
           <View style={styles.inputContainer}>
-            <CountryPicker
-              countryCode={countryCode as Country["cca2"]}
-              withFilter
-              withFlag
-              withCallingCode
-              withAlphaFilter
-              withCallingCodeButton
-              withModal
+            <CustomCountryPicker
+              countryCode={countryCode}
               onSelect={onSelect}
             />
             <SelectDownArrowIcon size={16} color={COLORS.text} /> 
@@ -749,16 +777,15 @@ export default function UpdateProfileScreen() {
                   <>
                     {region && (
                       <>
-                      <MapView
-                        style={{ flex: 1 }}
+                      <ProfileLocationMap
                         region={region}
-                        onPress={(e) => {
+                        marker={marker}
+                        onPress={(e: any) => {
                           const coords = e.nativeEvent.coordinate;
                           setMarker(coords);
+                          handleMapPress(e);
                         }}
-                      >
-                        {marker && <Marker coordinate={marker} />}
-                      </MapView>
+                      />
                       <Text style={styles.mapHint}>{t('updateProfile.mapHint')}</Text>
                       </>
                     )}
@@ -1062,10 +1089,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundWrapper,
   },
   profileInfoRow: {
-    flexDirection: 'column', 
+    flexDirection: 'column',
     alignItems: 'center',
     marginBottom: 32,
     marginTop: -59,
+    position: 'relative',
   },
   profileImage: {
     width: 70,
@@ -1073,11 +1101,12 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginBottom: 8,
   },
-  editProfile :{
+  editProfile: {
     position: 'absolute',
-    left: width/2 ,
+    left: '50%',
+    marginLeft: 15,
     top: 45,
-    zIndex: 1,
+    zIndex: 2,
   },
   profileName: {
     fontFamily: 'nunito-bold',
@@ -1254,6 +1283,10 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    maxWidth: '100%',
+    width: '100%',
+    minWidth: 0,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -1348,11 +1381,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    height: 240,
+    minHeight: 240,
+    width: '100%',
+    minWidth: 0,
   },
-  pickerColumn: {
+  pickerColumnOuter: {
     height: 200,
-    flex: 1,
+    overflow: 'hidden',
     marginHorizontal: 0,
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -1366,6 +1401,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+  },
+  pickerColumnScroll: {
+    flexGrow: 0,
+    flexShrink: 1,
+    height: 200,
+    width: '100%',
+  },
+  pickerColumnScrollContent: {
+    flexGrow: 0,
+    paddingVertical: 4,
   },
   pickerItem: {
     height: 48,
@@ -1400,6 +1445,7 @@ const styles = StyleSheet.create({
   },
   pickerColumnContainer: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
   },
   pickerColumnLabel: {

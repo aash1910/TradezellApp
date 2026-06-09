@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Dimensions, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard, TextInput, Alert, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard, TextInput, FlatList } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -9,16 +10,29 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
-import MapView, { Marker, Region } from 'react-native-maps';
+import MapPicker from '@/components/MapPicker';
+
+type Region = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+};
+
+const DEFAULT_MAP_REGION: Region = {
+  latitude: 23.8103,
+  longitude: 90.4125,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
+};
 import * as Location from 'expo-location';
 import { SelectArrowIcon } from '@/components/icons/SelectArrowIcon';
 import { COUNTRIES } from '@/components/countries';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppContentDimensions } from '@/hooks/useAppContentDimensions';
 
 const HEADER_HEIGHT = 80;
-const { width, height } = Dimensions.get('window');
-const TAB_WIDTH = (width - 32 - 8) / 2;
 
 const COLORS = {
   primary: '#55B086',
@@ -57,6 +71,9 @@ export default function LocationModal({
   locationIndex = '1',
 }: LocationModalProps) {
   const insets = useSafeAreaInsets();
+  const { width: layoutWidth } = useAppContentDimensions();
+  /** tabBar marginHorizontal 16*2 + inner padding 4*2 */
+  const tabSegmentWidth = Math.max(0, (layoutWidth - 32 - 8) / 2);
   const { t } = useTranslation();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -71,10 +88,14 @@ export default function LocationModal({
 
   const [location, setLocation] = useState(currentLocation || '');
   const [marker, setMarker] = useState<{latitude: number; longitude: number} | null>(currentMarker);
-  const [region, setRegion] = useState<Region | null>(currentRegion);
+  const [region, setRegion] = useState<Region | null>(currentRegion || DEFAULT_MAP_REGION);
   const [mode, setMode] = useState('map');
   const [isLoading, setIsLoading] = useState(false);
   const translateX = useSharedValue(0);
+
+  useEffect(() => {
+    translateX.value = mode === 'map' ? 0 : tabSegmentWidth;
+  }, [layoutWidth]);
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -93,9 +114,9 @@ export default function LocationModal({
     };
   });
 
-  const handlePress = (mode: string) => {
-    setMode(mode);
-    translateX.value = withTiming(mode === 'map' ? 0 : TAB_WIDTH, { duration: 200 });
+  const handlePress = (nextMode: string) => {
+    setMode(nextMode);
+    translateX.value = withTiming(nextMode === 'map' ? 0 : tabSegmentWidth, { duration: 200 });
   };
 
   const animatedTabStyle = useAnimatedStyle(() => ({
@@ -107,7 +128,7 @@ export default function LocationModal({
       // Reset state when modal opens
       setLocation(currentLocation || '');
       setMarker(currentMarker);
-      setRegion(currentRegion);
+      setRegion(currentRegion || DEFAULT_MAP_REGION);
       setMode('map');
       translateX.value = 0; // Reset animation to first tab
       setAddressLine1('');
@@ -119,14 +140,46 @@ export default function LocationModal({
     }
   }, [visible, currentLocation, currentRegion, currentMarker]);
 
+  const reverseGeocode = async (coords: { latitude: number; longitude: number }) => {
+    if (Platform.OS !== 'web') {
+      const geocode = await Location.reverseGeocodeAsync(coords);
+      return geocode[0] ?? null;
+    }
+
+    const url =
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1` +
+      `&lat=${coords.latitude}&lon=${coords.longitude}`;
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Reverse geocoding failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const address = data?.address ?? {};
+
+    return {
+      name: data?.name ?? '',
+      street: address.road ?? address.pedestrian ?? address.footway ?? '',
+      city: address.city ?? address.town ?? address.village ?? address.suburb ?? '',
+      region: address.state ?? address.county ?? '',
+      postalCode: address.postcode ?? '',
+      country: address.country ?? '',
+    };
+  };
+
   const handleMapPress = async (e: any) => {
     const coords = e.nativeEvent.coordinate;
     setMarker(coords);
 
     try {
-      const geocode = await Location.reverseGeocodeAsync(coords);
-      if (geocode.length > 0) {
-        const place = geocode[0];
+      const place = await reverseGeocode(coords);
+      if (place) {
         const parts = [
           place.name,
           place.street,
@@ -198,7 +251,7 @@ export default function LocationModal({
   const handleUpdate = async () => {
     if(mode == 'map') {
       if(!marker) {
-        Alert.alert(t('packageForm.mapHint'));
+        showAlert(t('packageForm.mapHint'));
         return;
       }
       
@@ -212,7 +265,7 @@ export default function LocationModal({
       
     } else {
       if (!country.trim()) {
-        Alert.alert(t('packageForm.fillRequiredFields'));
+        showAlert(t('packageForm.fillRequiredFields'));
         return;
       }
       
@@ -281,7 +334,13 @@ export default function LocationModal({
           <View style={styles.tabContainer}>
             {/* Tab Bar */}
             <View style={styles.tabBar}>
-              <Animated.View style={[styles.animatedIndicator, animatedTabStyle]} />
+              <Animated.View
+                style={[
+                  styles.animatedIndicator,
+                  { width: tabSegmentWidth },
+                  animatedTabStyle,
+                ]}
+              />
                 <TouchableOpacity
                   onPress={() => handlePress('map')}
                   style={styles.tabButton}
@@ -316,18 +375,11 @@ export default function LocationModal({
                 <>
                   {region && (
                     <>
-                    <MapView
-                      style={{ flex: 1, marginTop: -92 }}
-                      initialRegion={region || {
-                        latitude: 0,
-                        longitude: 0,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }}
+                    <MapPicker
+                      region={region}
+                      marker={marker}
                       onPress={handleMapPress}
-                    >
-                      {marker && <Marker coordinate={marker} />}
-                    </MapView>
+                    />
                     <Text style={styles.mapHint}>{t('packageForm.mapHint')}</Text>
                     </>
                   )}
@@ -685,13 +737,12 @@ const styles = StyleSheet.create({
   },
   animatedIndicator: {
     position: 'absolute',
-    height: '100%',
-    width: TAB_WIDTH,
+    top: 4,
+    bottom: 4,
+    left: 4,
     backgroundColor: COLORS.primary,
     borderRadius: 14,
     zIndex: 0,
-    top: 4,
-    left: 4,
   },
   tabButton: {
     flex: 1,

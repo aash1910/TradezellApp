@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard, StatusBar, Alert, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, Keyboard, StatusBar, ActivityIndicator, FlatList } from 'react-native';
 import { Button, Checkbox } from 'react-native-paper';
 import { FontAwesome, Feather, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -17,6 +17,7 @@ import { SelectArrowIcon } from '@/components/icons/SelectArrowIcon';
 import { UserRoundedIcon } from '@/components/icons/UserRoundedIcon';
 import { COUNTRIES } from '@/components/countries';
 import { authService } from '@/services/auth.service';
+import { showAlert } from '@/utils/alertCompat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HEADER_HEIGHT = 207;
@@ -220,7 +221,7 @@ export default function RegisterScreen() {
     // Nationality and gender are now optional - removed validation
 
     if (errors.length > 0) {
-      Alert.alert(
+      showAlert(
         'Validation Error',
         'Please fix the following errors:\n' + errors.join('\n')
       );
@@ -268,7 +269,7 @@ export default function RegisterScreen() {
       console.log('Registration successful:', response);
 
       // Navigate to OTP verification
-      Alert.alert('Registration successful', 'Please check your email for OTP verification');
+      showAlert('Registration successful', 'Please check your email for OTP verification');
       router.replace({
         pathname: '/otpVerification',
         params: { email: email.trim() }
@@ -317,7 +318,7 @@ export default function RegisterScreen() {
         errorMessage = err.message || 'Registration failed. Please try again.';
       }
 
-      Alert.alert(
+      showAlert(
         'Registration Error',
         errorMessage
       );
@@ -337,7 +338,7 @@ export default function RegisterScreen() {
         scrollEventThrottle={16}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={Platform.OS === 'web'}
       >
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.back()}>
@@ -353,7 +354,7 @@ export default function RegisterScreen() {
             <UserRoundedIcon size={20} color={COLORS.text} />
             <TextInput 
               ref={firstNameInputRef}
-              placeholder="Name" 
+              placeholder="First Name" 
               style={styles.input} 
               value={firstName}
               onChangeText={setFirstName}
@@ -373,7 +374,7 @@ export default function RegisterScreen() {
           <View style={styles.inputContainer}>
             <UserRoundedIcon size={20} color={COLORS.text} />
             <TextInput 
-              placeholder="Name" 
+              placeholder="Last Name" 
               ref={lastNameInputRef}
               style={styles.input} 
               value={lastName}
@@ -582,7 +583,7 @@ export default function RegisterScreen() {
             </KeyboardAvoidingView>
           </Modal>
         </View>
-        {isKeyboardVisible && (
+        {isKeyboardVisible && Platform.OS !== 'web' && (
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
@@ -599,7 +600,7 @@ export default function RegisterScreen() {
         )}
       </Animated.ScrollView>
     </KeyboardAvoidingView>
-      {!isKeyboardVisible && (
+      {(!isKeyboardVisible || Platform.OS === 'web') && (
         <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
           <TouchableOpacity 
             style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
@@ -626,7 +627,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 0,
-    paddingBottom: Platform.OS === 'ios' ? 86 : 0,
+    paddingBottom: Platform.select({
+      ios: 86,
+      web: 100,
+      default: 0,
+    }),
   },
   header: {
     paddingTop: 47,

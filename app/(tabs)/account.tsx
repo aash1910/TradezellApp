@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,24 +8,22 @@ import {
   Image,
   Switch,
   Modal,
-  Alert,
   ActivityIndicator,
   StatusBar,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Slider from '@react-native-community/slider';
-import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import ProfileLocationMap from '@/components/ProfileLocationMap';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '@/services/api';
 import { authService } from '@/services/auth.service';
-
-const { width } = Dimensions.get('window');
+import { openSupportChat } from '@/utils/openSupportChat';
 
 const COLORS = {
   primary: '#2D6A4F',
@@ -45,6 +43,20 @@ const ROLES = [
   { key: 'buyer',  label: 'Buyer',  icon: 'bag-handle-outline' as const },
 ];
 
+type Region = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+};
+
+const DEFAULT_MAP_REGION: Region = {
+  latitude: 23.8103,
+  longitude: 90.4125,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
+};
+
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
 
@@ -60,11 +72,40 @@ export default function AccountScreen() {
   const [enableDiscovery, setEnableDiscovery] = useState(true);
   const [discoveryLocationAddress, setDiscoveryLocationAddress] = useState('');
   const [newPlaceName, setNewPlaceName] = useState('');
-  const [marker, setMarker] = useState({ latitude: 0, longitude: 0 });
-  const [region, setRegion] = useState({ latitude: 0, longitude: 0, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+  const [marker, setMarker] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [region, setRegion] = useState<Region | null>(null);
 
   // Account role
   const [accountRole, setAccountRole] = useState('trader');
+
+  const locationSnapshotRef = useRef({
+    discoveryLocationAddress: '',
+    newPlaceName: '',
+    marker: null as { latitude: number; longitude: number } | null,
+    region: null as Region | null,
+  });
+  const locationModalSessionRef = useRef(0);
+
+  const openLocationModal = () => {
+    locationSnapshotRef.current = {
+      discoveryLocationAddress,
+      newPlaceName,
+      marker,
+      region,
+    };
+    locationModalSessionRef.current += 1;
+    setShowLocationModal(true);
+  };
+
+  const closeLocationModal = () => {
+    const snap = locationSnapshotRef.current;
+    setDiscoveryLocationAddress(snap.discoveryLocationAddress);
+    setNewPlaceName(snap.newPlaceName);
+    setMarker(snap.marker);
+    setRegion(snap.region);
+    locationModalSessionRef.current += 1;
+    setShowLocationModal(false);
+  };
 
   const loadUser = useCallback(async () => {
     setLoading(true);
@@ -85,10 +126,10 @@ export default function AccountScreen() {
         if (s.discovery_location) {
           setNewPlaceName(s.discovery_location.name ?? '');
           setDiscoveryLocationAddress(s.discovery_location.address ?? '');
-          const lat = s.discovery_location.latitude ?? 0;
-          const lng = s.discovery_location.longitude ?? 0;
-          setMarker({ latitude: lat, longitude: lng });
-          if (lat !== 0 && lng !== 0) {
+          const lat = s.discovery_location.latitude;
+          const lng = s.discovery_location.longitude;
+          if (lat != null && lng != null) {
+            setMarker({ latitude: lat, longitude: lng });
             setRegion({ latitude: lat, longitude: lng, latitudeDelta: 0.05, longitudeDelta: 0.05 });
           }
         }
@@ -101,23 +142,15 @@ export default function AccountScreen() {
   useFocusEffect(useCallback(() => { loadUser(); }, [loadUser]));
 
   useEffect(() => {
-    if (!showLocationModal) return;
-
-    const hasSavedLocation = marker.latitude !== 0 && marker.longitude !== 0;
-    if (hasSavedLocation) {
-      setRegion({
-        latitude: marker.latitude,
-        longitude: marker.longitude,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      });
-      return;
-    }
-
     (async () => {
+      if (region !== null) return;
+
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') return;
+        if (status !== 'granted') {
+          setRegion(DEFAULT_MAP_REGION);
+          return;
+        }
 
         const lastKnown = await Location.getLastKnownPositionAsync();
         const loc = lastKnown ?? await Location.getCurrentPositionAsync({});
@@ -127,9 +160,11 @@ export default function AccountScreen() {
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         });
-      } catch (_) {}
+      } catch (_) {
+        setRegion(DEFAULT_MAP_REGION);
+      }
     })();
-  }, [showLocationModal, marker.latitude, marker.longitude]);
+  }, [region]);
 
   const saveSettings = async (patch: Record<string, unknown>) => {
     try {
@@ -142,27 +177,73 @@ export default function AccountScreen() {
       await AsyncStorage.setItem('user_settings', JSON.stringify(merged));
     } catch (e) {
       console.error('Settings save error:', e);
-      Alert.alert('Error', 'Failed to save settings.');
+      showAlert('Error', 'Failed to save settings.');
     }
+  };
+
+  const reverseGeocode = async (coords: { latitude: number; longitude: number }) => {
+    if (Platform.OS !== 'web') {
+      const geo = await Location.reverseGeocodeAsync(coords);
+      return geo[0] ?? null;
+    }
+
+    const url =
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1` +
+      `&lat=${coords.latitude}&lon=${coords.longitude}`;
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Reverse geocoding failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const address = data?.address ?? {};
+
+    return {
+      name: data?.name ?? '',
+      street: address.road ?? address.pedestrian ?? address.footway ?? '',
+      city: address.city ?? address.town ?? address.village ?? address.suburb ?? '',
+      region: address.state ?? address.county ?? '',
+      postalCode: address.postcode ?? '',
+      country: address.country ?? '',
+    };
   };
 
   const handleMapPress = async (e: any) => {
     const coords = e.nativeEvent.coordinate;
-    setMarker(coords);
+    const session = locationModalSessionRef.current;
+
     try {
-      const geo = await Location.reverseGeocodeAsync(coords);
-      if (geo.length > 0) {
-        const p = geo[0];
-        const parts = [p.name, p.street, p.city, p.region, p.postalCode, p.country].filter(Boolean);
+      const place = await reverseGeocode(coords);
+      if (session !== locationModalSessionRef.current) return;
+
+      if (place) {
+        const parts = [place.name, place.street, place.city, place.region, place.postalCode, place.country].filter(Boolean);
         setDiscoveryLocationAddress([...new Set(parts)].join(', '));
-        setNewPlaceName(p.region ?? p.city ?? p.name ?? '');
+        setNewPlaceName(place.region ?? place.city ?? place.name ?? '');
+        setRegion({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        });
       } else {
         setDiscoveryLocationAddress(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
       }
-    } catch (_) {}
+    } catch (_) {
+      if (session !== locationModalSessionRef.current) return;
+      setDiscoveryLocationAddress(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+    }
   };
 
   const handleSaveLocation = async () => {
+    if (!marker) return;
+
     const locationData = {
       name: newPlaceName,
       address: discoveryLocationAddress,
@@ -188,7 +269,7 @@ export default function AccountScreen() {
       await AsyncStorage.clear();
       router.replace('/login');
     } catch (e) {
-      Alert.alert('Error', 'Failed to delete account. Please try again.');
+      showAlert('Error', 'Failed to delete account. Please try again.');
     }
   };
 
@@ -266,7 +347,7 @@ export default function AccountScreen() {
 
         {/* Location picker */}
         <View style={styles.card}>
-          <TouchableOpacity style={styles.row} onPress={() => setShowLocationModal(true)}>
+          <TouchableOpacity style={styles.row} onPress={openLocationModal}>
             <View style={styles.rowLeft}>
               <Ionicons name="location-outline" size={20} color={COLORS.text} />
               <Text style={styles.rowLabel} numberOfLines={1}>
@@ -355,7 +436,7 @@ export default function AccountScreen() {
           <View style={styles.divider} />
           <MenuItem icon="shield-checkmark-outline" label="Safety Centre" onPress={() => router.push('/safety')} />
           <View style={styles.divider} />
-          <MenuItem icon="headset-outline" label="Support" onPress={() => router.push('/supportService')} />
+          <MenuItem icon="headset-outline" label="Support" onPress={() => openSupportChat()} />
         </View>
 
         {/* Danger zone */}
@@ -380,19 +461,25 @@ export default function AccountScreen() {
       <Modal
         visible={showLocationModal}
         animationType="slide"
-        presentationStyle="fullScreen"
-        statusBarTranslucent
-        onRequestClose={() => setShowLocationModal(false)}>
+        onRequestClose={closeLocationModal}>
         <View style={styles.modalContainer}>
-          <MapView
-            style={styles.map}
-            region={region}
-            onRegionChangeComplete={setRegion}
-            onPress={handleMapPress}>
-            {marker.latitude !== 0 && (
-              <Marker coordinate={marker} />
-            )}
-          </MapView>
+          {region ? (
+            <View style={styles.map}>
+              <ProfileLocationMap
+                region={region}
+                marker={marker}
+                onPress={(e: any) => {
+                  const coords = e.nativeEvent.coordinate;
+                  setMarker(coords);
+                  handleMapPress(e);
+                }}
+              />
+            </View>
+          ) : (
+            <View style={[styles.map, styles.center]}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+            </View>
+          )}
           <View style={[styles.mapBottomPanel, { paddingBottom: insets.bottom + 16 }]}>
             <Text style={styles.mapHint}>Tap the map to set your discovery location</Text>
             {discoveryLocationAddress ? (
@@ -407,7 +494,7 @@ export default function AccountScreen() {
             <View style={styles.mapActionRow}>
               <TouchableOpacity
                 style={styles.mapCloseBtn}
-                onPress={() => setShowLocationModal(false)}
+                onPress={closeLocationModal}
                 accessibilityLabel="Close">
                 <Ionicons name="close" size={24} color={COLORS.text} />
               </TouchableOpacity>
@@ -535,7 +622,7 @@ const styles = StyleSheet.create({
   confirmBtnText:  { color: COLORS.white, fontFamily: 'NunitoBold', fontSize: 16 },
   // Alert modals
   overlayBg:       { flex: 1, backgroundColor: '#00000060', alignItems: 'center', justifyContent: 'center' },
-  alertCard:       { backgroundColor: COLORS.white, borderRadius: 20, padding: 24, width: width - 48 },
+  alertCard:       { backgroundColor: COLORS.white, borderRadius: 20, padding: 24, width: '90%', maxWidth: 392 },
   alertTitle:      { fontSize: 18, fontFamily: 'NunitoBold', color: COLORS.text, textAlign: 'center' },
   alertBody:       { fontSize: 14, color: COLORS.subtitle, textAlign: 'center', marginTop: 8 },
   alertBtns:       { flexDirection: 'row', gap: 12, marginTop: 20 },

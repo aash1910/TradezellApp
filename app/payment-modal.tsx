@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, ActivityIndicator, StatusBar, Modal, TouchableOpacity, Dimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, StatusBar, Modal, TouchableOpacity, Dimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router, useLocalSearchParams } from 'expo-router';
-import { StripeProvider, CardField, useStripe, useConfirmPayment } from '@stripe/stripe-react-native';
+import { StripeProvider, CardField, useStripe } from '@/components/stripeShim';
 import { LeftArrowIcon } from '@/components/icons/LeftArrowIcon';
 import { paymentService, PaymentIntent } from '@/services/payment.service';
 import { Package } from '@/services/packageList.service';
@@ -50,7 +51,7 @@ function PaymentModalContent() {
       }
     } catch (error) {
       console.error('Error parsing order data:', error);
-      Alert.alert('Error', 'Invalid order data');
+      showAlert('Error', 'Invalid order data');
       router.back();
     }
   }, [params.orderData]);
@@ -72,7 +73,7 @@ function PaymentModalContent() {
       );
       setPaymentIntent(intent);
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      showAlert('Error', error.message);
       router.back();
     } finally {
       setIsLoading(false);
@@ -81,7 +82,7 @@ function PaymentModalContent() {
 
   const handlePayment = async () => {
     if (!paymentIntent || !cardComplete) {
-      Alert.alert('Error', 'Please complete your card details');
+      showAlert('Error', 'Please complete your card details');
       return;
     }
 
@@ -97,10 +98,10 @@ function PaymentModalContent() {
 
       if (error) {
         setPaymentStatus('error');
-        Alert.alert('Payment Failed', error.message);
+        showAlert('Payment Failed', error.message);
       } else if (confirmedPaymentIntent) {
         setPaymentStatus('success');
-        Alert.alert(
+        showAlert(
           'Payment Successful', 
           'Your payment has been processed and is held in escrow. You will be refunded if no dropper accepts your package.',
           [
@@ -113,7 +114,7 @@ function PaymentModalContent() {
       }
     } catch (error: any) {
       setPaymentStatus('error');
-      Alert.alert('Payment Error', error.message);
+      showAlert('Payment Error', error.message);
     }
   };
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, StatusBar } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MapView, { Marker } from 'react-native-maps';
+import SimpleLocationMap from '@/components/SimpleLocationMap';
 import * as Location from 'expo-location';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -41,9 +41,7 @@ export default function MapScreen() {
         <View style={{ width: 24 }} />
       </View>
       {region ? (
-        <MapView style={styles.map} initialRegion={region}>
-          <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} title="You are here" />
-        </MapView>
+        <SimpleLocationMap style={styles.map} region={region} markerTitle="You are here" />
       ) : (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={COLORS.primary} />

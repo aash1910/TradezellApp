@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, RefreshControl, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, Platform, Keyboard, StatusBar, RefreshControl, Linking } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import Animated, {
   interpolate,
@@ -74,19 +74,29 @@ export default function MessageScreen() {
   const userMobile = paramString(params.userMobile);
   const refresh = paramString(params.refresh, '0');
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
-  const bottomPosition = useSharedValue(86);
   const pollCountRef = useRef(0);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastMessageIdRef = useRef<number | null>(null);
   const currentUserIdRef = useRef<string>(userId);
   const unreadCountIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const insets = useSafeAreaInsets();
+  /** Must match `tabBarStyle.height` in `(tabs)/_layout.tsx` (iOS 86, else safe bottom + row). */
+  const tabBarInset = Platform.OS === 'ios' ? 86 : insets.bottom + 64;
+  /** Matches `inputBarWrapper`: paddingTop 10 + row (input/send ~44) + paddingBottom. */
+  const composerPaddingBottom = isKeyboardVisible ? 10 : Math.max(insets.bottom, 10);
+  const inputComposerHeight = 10 + 44 + composerPaddingBottom;
+  /** List must clear tab bar + absolutely positioned composer above it. */
+  const scrollListBottomInset = tabBarInset + inputComposerHeight + 8;
+  const tabBarInsetRef = useRef(tabBarInset);
+  tabBarInsetRef.current = tabBarInset;
+  const bottomPosition = useSharedValue(tabBarInset);
   // Update currentUserIdRef when userId changes
   useEffect(() => {
     currentUserIdRef.current = userId;
@@ -244,6 +254,8 @@ export default function MessageScreen() {
   useFocusEffect(
     useCallback(() => {
       console.log('Screen focused, resetting count to 0');
+      currentUserIdRef.current = userId;
+      lastMessageIdRef.current = null;
       fetchMessages();
       fetchUnreadCount();
       
@@ -281,24 +293,38 @@ export default function MessageScreen() {
   );
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        setKeyboardVisible(true);
-        bottomPosition.value = withTiming(0, { duration: 250 });
-      }
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setKeyboardVisible(false);
-        bottomPosition.value = withTiming( 86, { duration: 250 });
-      }
-    );
+    if (!isKeyboardVisible) {
+      bottomPosition.value = tabBarInset;
+    }
+  }, [tabBarInset, isKeyboardVisible]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const keyboardShowListener = Keyboard.addListener(showEvent, (event) => {
+      const height = event.endCoordinates.height;
+      setKeyboardVisible(true);
+      setKeyboardHeight(height);
+      bottomPosition.value = withTiming(height, { duration: 250 });
+      setTimeout(() => {
+        scrollRef.current?.scrollToEnd({ animated: true });
+      }, 150);
+    });
+
+    const keyboardHideListener = Keyboard.addListener(hideEvent, () => {
+      setKeyboardVisible(false);
+      setKeyboardHeight(0);
+      bottomPosition.value = withTiming(tabBarInsetRef.current, { duration: 250 });
+    });
 
     return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
+      keyboardShowListener.remove();
+      keyboardHideListener.remove();
     };
   }, []);
 
@@ -334,10 +360,7 @@ export default function MessageScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
+    <View style={styles.container}>
         <Animated.View style={[styles.header]}>
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.push({
             pathname: '/conversations'
@@ -361,7 +384,14 @@ export default function MessageScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: isKeyboardVisible ? 0 : 86 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingBottom: isKeyboardVisible
+              ? keyboardHeight + inputComposerHeight + 12
+              : scrollListBottomInset,
+          },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -415,7 +445,12 @@ export default function MessageScreen() {
         </View>
       </Animated.ScrollView>
         {/* Message Input Bar */}
-        <Animated.View style={[styles.inputBarWrapper, { paddingBottom: Math.max(insets.bottom, 10) }, inputBarAnimatedStyle]}>
+        <Animated.View
+          style={[
+            styles.inputBarWrapper,
+            { paddingBottom: isKeyboardVisible ? 10 : Math.max(insets.bottom, 10) },
+            inputBarAnimatedStyle,
+          ]}>
           <View style={styles.inputBar}>
             <TextInput
               style={styles.input}
@@ -429,7 +464,7 @@ export default function MessageScreen() {
           </TouchableOpacity>
         </Animated.View>
       
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -587,11 +622,15 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   inputBarWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     backgroundColor: COLORS.background,
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 14,
+    zIndex: 10,
   },
   inputBar: {
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, KeyboardAvoidingView, Platform, Keyboard, StatusBar, ActivityIndicator, ScrollView } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, {
@@ -109,12 +110,12 @@ export default function UploadFileScreen() {
           const response = await authService.uploadImage(compressedUri, 'profile');
           if (response.data.image) {
             setProfileImage(response.data.image);
-            Alert.alert('Success', 'Profile image updated successfully');
+            showAlert('Success', 'Profile image updated successfully');
           } else {
-            Alert.alert('Error', 'Failed to update profile image');
+            showAlert('Error', 'Failed to update profile image');
           }
         } catch (error: any) {
-          Alert.alert(
+          showAlert(
             'Upload Failed', 
             'Failed to upload profile image. Please try uploading again.',
             [{ text: 'OK' }]
@@ -125,7 +126,7 @@ export default function UploadFileScreen() {
       }
     } catch (error) {
       console.error('Error taking picture:', error);
-      Alert.alert(
+      showAlert(
         'Error', 
         'Failed to take picture. Please try uploading again.',
         [{ text: 'OK' }]
@@ -150,12 +151,12 @@ export default function UploadFileScreen() {
           const response = await authService.uploadImage(compressedUri, 'profile');
           if (response.data.image) {
             setProfileImage(response.data.image);
-            Alert.alert('Success', 'Profile image updated successfully');
+            showAlert('Success', 'Profile image updated successfully');
           } else {
-            Alert.alert('Error', 'Failed to update profile image');
+            showAlert('Error', 'Failed to update profile image');
           }
         } catch (error: any) {
-          Alert.alert(
+          showAlert(
             'Upload Failed', 
             'Failed to upload profile image. Please try uploading again.',
             [{ text: 'OK' }]
@@ -166,7 +167,7 @@ export default function UploadFileScreen() {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert(
+      showAlert(
         'Error', 
         'Failed to pick image. Please try uploading again.',
         [{ text: 'OK' }]
@@ -191,12 +192,12 @@ export default function UploadFileScreen() {
           const response = await authService.uploadImage(compressedUri, 'id_card');
           if (response.data.document) {
             setIdCardImage(response.data.document);
-            Alert.alert('Success', 'Passport/ID card image updated successfully');
+            showAlert('Success', 'Passport/ID card image updated successfully');
           } else {
-            Alert.alert('Error', 'Failed to update Passport/ID card image');
+            showAlert('Error', 'Failed to update Passport/ID card image');
           }
         } catch (error: any) {
-          Alert.alert(
+          showAlert(
             'Upload Failed', 
             'Failed to upload Passport/ID card image. Please try uploading again.',
             [{ text: 'OK' }]
@@ -207,7 +208,7 @@ export default function UploadFileScreen() {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert(
+      showAlert(
         'Error', 
         'Failed to pick image. Please try uploading again.',
         [{ text: 'OK' }]
@@ -232,12 +233,12 @@ export default function UploadFileScreen() {
           const response = await authService.uploadImage(compressedUri, 'id_card');
           if (response.data.document) {
             setIdCardImage(response.data.document);
-            Alert.alert('Success', 'Passport/ID card image updated successfully');
+            showAlert('Success', 'Passport/ID card image updated successfully');
           } else {
-            Alert.alert('Error', 'Failed to update Passport/ID card image');
+            showAlert('Error', 'Failed to update Passport/ID card image');
           }
         } catch (error: any) {
-          Alert.alert(
+          showAlert(
             'Upload Failed', 
             'Failed to upload Passport/ID card image. Please try uploading again.',
             [{ text: 'OK' }]
@@ -249,7 +250,7 @@ export default function UploadFileScreen() {
       
     } catch (error) {
       console.error('Error taking picture:', error);
-      Alert.alert(
+      showAlert(
         'Error', 
         'Failed to take picture. Please try uploading again.',
         [{ text: 'OK' }]
@@ -375,16 +376,16 @@ export default function UploadFileScreen() {
               style={[styles.continueButton, (!agreedToTerms || !profileImage || !idCardImage) && styles.continueButtonDisabled]}
               onPress={() => {
                 if (!profileImage && !idCardImage) {
-                  Alert.alert('Error', 'Please upload both Passport/ID document and profile picture');
+                  showAlert('Error', 'Please upload both Passport/ID document and profile picture');
                   return;
                 } else if (!profileImage) {
-                  Alert.alert('Error', 'Please upload your profile picture');
+                  showAlert('Error', 'Please upload your profile picture');
                   return;
                 } else if (!idCardImage) {
-                  Alert.alert('Error', 'Please upload your Passport/ID document');
+                  showAlert('Error', 'Please upload your Passport/ID document');
                   return;
                 } else if (!agreedToTerms) {
-                  Alert.alert('Error', 'Please agree to the Terms & Conditions and Privacy Policy');
+                  showAlert('Error', 'Please agree to the Terms & Conditions and Privacy Policy');
                   return;
                 }
                 router.push('/(tabs)');
@@ -403,16 +404,16 @@ export default function UploadFileScreen() {
             style={styles.continueButton}
             onPress={() => {
               if (!profileImage && !idCardImage) {
-                Alert.alert('Error', 'Please upload both Passport/ID document and profile picture');
+                showAlert('Error', 'Please upload both Passport/ID document and profile picture');
                 return;
               } else if (!profileImage) {
-                Alert.alert('Error', 'Please upload your profile picture');
+                showAlert('Error', 'Please upload your profile picture');
                 return;
               } else if (!idCardImage) {
-                Alert.alert('Error', 'Please upload your Passport/ID document');
+                showAlert('Error', 'Please upload your Passport/ID document');
                 return;
               } else if (!agreedToTerms) {
-                Alert.alert('Error', 'Please agree to the Terms & Conditions and Privacy Policy');
+                showAlert('Error', 'Please agree to the Terms & Conditions and Privacy Policy');
                 return;
               }
               router.push('/(tabs)');

@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
-  Alert,
   StatusBar,
 } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router, useFocusEffect } from 'expo-router';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -317,7 +317,7 @@ export default function DiscoverScreen() {
       } catch (e) {
         console.error('Swipe error:', e);
         setListings(prev => [listing, ...prev]);
-        Alert.alert('Error', 'Could not save your like. Please try again.');
+        showAlert('Error', 'Could not save your like. Please try again.');
       } finally {
         setSwiping(false);
       }
@@ -336,7 +336,7 @@ export default function DiscoverScreen() {
       const seller = current.user
         ? `${current.user.first_name} ${current.user.last_name}`.trim()
         : 'the seller';
-      Alert.alert(
+      showAlert(
         'Pass on this listing?',
         `You're not interested in "${current.title}".\n\n• Hidden from Discover\n• Removed from Liked (if saved)\n• Match with ${seller} ended (if matched)`,
         [

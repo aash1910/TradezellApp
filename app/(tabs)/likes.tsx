@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   StatusBar,
 } from 'react-native';
+import { showAlert } from '@/utils/alertCompat';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -90,7 +90,7 @@ export default function LikesScreen() {
       ? `${match.other_user.first_name} ${match.other_user.last_name}`
       : 'this person';
 
-    Alert.alert(
+    showAlert(
       'Unmatch',
       `End your match with ${name}? You can still see their listings in Discover unless you Pass. Chat history remains.`,
       [
@@ -104,7 +104,7 @@ export default function LikesScreen() {
               await api.delete(`/matches/${match.id}`);
               setMatches(prev => prev.filter(m => m.id !== match.id));
             } catch {
-              Alert.alert('Error', 'Failed to unmatch. Please try again.');
+              showAlert('Error', 'Failed to unmatch. Please try again.');
             } finally {
               setUnmatching(null);
             }
@@ -115,7 +115,7 @@ export default function LikesScreen() {
   };
 
   const handleRemoveLike = (item: LikedListing) => {
-    Alert.alert(
+    showAlert(
       'Remove like',
       `Remove "${item.listing.title}" from your likes? It may show up in Discover again.`,
       [
@@ -129,7 +129,7 @@ export default function LikesScreen() {
               await listingService.unlikeListing(item.listing.id);
               setLiked(prev => prev.filter(l => l.listing.id !== item.listing.id));
             } catch {
-              Alert.alert('Error', 'Failed to remove like. Please try again.');
+              showAlert('Error', 'Failed to remove like. Please try again.');
             } finally {
               setRemovingLike(null);
             }
