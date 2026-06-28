@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import * as Localization from 'expo-localization';
+import { Platform } from 'react-native';
 import { authService } from '@/services/auth.service';
 import { LANGUAGES, LANG_CODES } from '@/constants/languages';
 
@@ -33,7 +34,10 @@ const loadUserLanguage = async () => {
   }
 };
 
-// Load user language on initialization
-loadUserLanguage();
+// Load user language on initialization (skip during web SSR — AsyncStorage needs window)
+if (Platform.OS !== 'web' || typeof window !== 'undefined') {
+  loadUserLanguage();
+}
 
+export { loadUserLanguage };
 export default i18n; 

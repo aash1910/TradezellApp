@@ -1,4 +1,5 @@
 import '@/i18n';
+import { loadUserLanguage } from '@/i18n';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -35,6 +36,12 @@ export default function RootLayout() {
       hideSplash();
     }
   }, [loaded]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      loadUserLanguage();
+    }
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') {

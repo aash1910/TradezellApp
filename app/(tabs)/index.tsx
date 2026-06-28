@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
   StatusBar,
 } from 'react-native';
 import { showAlert } from '@/utils/alertCompat';
@@ -33,11 +32,7 @@ import api from '@/services/api';
 import { resolveListingImageUri } from '@/utils/images';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - 28;
-const CARD_HEIGHT = SCREEN_HEIGHT * 0.58;
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.38;
+import { useAppContentDimensions } from '@/hooks/useAppContentDimensions';
 
 const COLORS = {
   primary: '#1B4332',
@@ -81,11 +76,21 @@ function SwipeCard({
   onSwipe,
   isTop,
   index,
+  cardWidth,
+  cardHeight,
+  cardLeft,
+  cardTop,
+  swipeThreshold,
 }: {
   listing: Listing;
   onSwipe: (direction: 'yes' | 'no') => void;
   isTop: boolean;
   index: number;
+  cardWidth: number;
+  cardHeight: number;
+  cardLeft: number;
+  cardTop: number;
+  swipeThreshold: number;
 }) {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -102,13 +107,13 @@ function SwipeCard({
       if (!isTop) return;
       translateX.value = e.translationX;
       translateY.value = e.translationY;
-      rotation.value = (e.translationX / SCREEN_WIDTH) * 14;
+      rotation.value = (e.translationX / cardWidth) * 14;
     })
     .onEnd((e) => {
       if (!isTop) return;
-      if (Math.abs(e.translationX) > SWIPE_THRESHOLD) {
+      if (Math.abs(e.translationX) > swipeThreshold) {
         const dir = e.translationX > 0 ? 'yes' : 'no';
-        const exitX = dir === 'yes' ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
+        const exitX = dir === 'yes' ? cardWidth * 1.5 : -cardWidth * 1.5;
         translateX.value = withTiming(exitX, { duration: 280 });
         opacity.value = withTiming(0, { duration: 280 }, () => {
           runOnJS(onSwipe)(dir);
@@ -131,11 +136,11 @@ function SwipeCard({
   }));
 
   const likeOpacity = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.value, [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
+    opacity: interpolate(translateX.value, [0, swipeThreshold], [0, 1], Extrapolation.CLAMP),
   }));
 
   const nopeOpacity = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.value, [-SWIPE_THRESHOLD, 0], [1, 0], Extrapolation.CLAMP),
+    opacity: interpolate(translateX.value, [-swipeThreshold, 0], [1, 0], Extrapolation.CLAMP),
   }));
 
   const scale = 1 - index * 0.045;
@@ -146,6 +151,12 @@ function SwipeCard({
       <Animated.View
         style={[
           styles.card,
+          {
+            width: cardWidth,
+            height: cardHeight,
+            left: cardLeft,
+            top: cardTop,
+          },
           cardStyle,
           !isTop && {
             transform: [{ scale }, { translateY: yOffset }],
@@ -242,6 +253,8 @@ export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const bottomChrome = tabBarHeight + ACTIONS_BOTTOM_GAP;
+  const { width: contentWidth, height: contentHeight } = useAppContentDimensions();
+  const [deckSize, setDeckSize] = useState({ width: 0, height: 0 });
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [swiping, setSwiping] = useState(false);
@@ -351,6 +364,24 @@ export default function DiscoverScreen() {
 
   const remainingCount = listings.length;
 
+  const { cardWidth, cardHeight, cardLeft, cardTop, swipeThreshold } = useMemo(() => {
+    const deckWidth = deckSize.width > 0 ? deckSize.width : contentWidth;
+    const deckHeight = deckSize.height > 0 ? deckSize.height : Math.max(0, contentHeight * 0.45);
+    const width = Math.max(0, deckWidth - 28);
+    const height = Math.max(0, deckHeight - 12);
+    const left = Math.max(0, (deckWidth - width) / 2);
+    const top = Math.max(0, (deckHeight - height) / 2);
+    return {
+      cardWidth: width,
+      cardHeight: height,
+      cardLeft: left,
+      cardTop: top,
+      swipeThreshold: width * 0.38,
+    };
+  }, [contentWidth, contentHeight, deckSize.height, deckSize.width]);
+
+  const canShowCards = cardWidth > 0 && cardHeight > 0;
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
@@ -388,7 +419,14 @@ export default function DiscoverScreen() {
           </View>
         )}
 
-        <View style={styles.deckArea}>
+        <View
+          style={styles.deckArea}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            setDeckSize((prev) =>
+              prev.width === width && prev.height === height ? prev : { width, height }
+            );
+          }}>
           {loading ? (
             <View style={styles.loadingWrap}>
               <ActivityIndicator size="large" color={COLORS.primaryLight} />
@@ -408,7 +446,7 @@ export default function DiscoverScreen() {
                 <Text style={styles.refreshBtnText}>Refresh feed</Text>
               </TouchableOpacity>
             </View>
-          ) : (
+          ) : canShowCards ? (
             listings.slice(0, 3).map((listing, index) => (
               <SwipeCard
                 key={listing.id}
@@ -416,9 +454,14 @@ export default function DiscoverScreen() {
                 onSwipe={handleSwipe}
                 isTop={index === 0}
                 index={index}
+                cardWidth={cardWidth}
+                cardHeight={cardHeight}
+                cardLeft={cardLeft}
+                cardTop={cardTop}
+                swipeThreshold={swipeThreshold}
               />
             ))
-          )}
+          ) : null}
         </View>
 
         {!loading && listings.length > 0 && (
@@ -591,8 +634,6 @@ const styles = StyleSheet.create({
 
   card: {
     position: 'absolute',
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
     borderRadius: 24,
     backgroundColor: COLORS.surface,
     overflow: 'hidden',

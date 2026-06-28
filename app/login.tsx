@@ -738,7 +738,7 @@ export default function LoginScreen() {
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
           <Text style={styles.appName}>Tradezell</Text>
-          <Text style={styles.tagline}>Making delivery simple</Text>
+          <Text style={styles.tagline}>Trade for a better planet</Text>
         </Animated.View>
 
         <View style={styles.form}>
@@ -975,11 +975,11 @@ const styles = StyleSheet.create({
     height: HEADER_HEIGHT,
   },
   logo: {
-    width: 70,
-    height: 76,
+    width: 80,
+    height: 80,
     resizeMode: 'contain',
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   appName: {
     fontSize: 24,
