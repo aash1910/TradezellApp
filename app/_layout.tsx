@@ -47,12 +47,51 @@ export default function RootLayout() {
     if (Platform.OS !== 'web' || typeof document === 'undefined') {
       return;
     }
-    if (document.getElementById(WEB_GLOBAL_STYLES_ID)) {
-      return;
+
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (viewportMeta) {
+      viewportMeta.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no, viewport-fit=cover, interactive-widget=resizes-visual',
+      );
     }
-    const el = document.createElement('style');
-    el.id = WEB_GLOBAL_STYLES_ID;
+
+    let el = document.getElementById(WEB_GLOBAL_STYLES_ID) as HTMLStyleElement | null;
+    if (!el) {
+      el = document.createElement('style');
+      el.id = WEB_GLOBAL_STYLES_ID;
+      document.head.appendChild(el);
+    }
     el.textContent = `
+/* Lock the page height on mobile Safari so the virtual keyboard does not expand the layout viewport. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  position: fixed;
+  inset: 0;
+}
+
+/*
+ * iOS Safari auto-zooms focused fields below 16px — RN Web inputs often use 14px.
+ * Force 16px on web so tapping a field does not zoom the whole page.
+ */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
 /* Use aria-modal, not role=dialog: inactive stacked modals lose role but keep aria-modal (react-native-web). */
 [aria-modal="true"] {
   display: flex !important;
@@ -79,9 +118,8 @@ select:focus-visible {
   box-shadow: none !important;
 }
 `.trim();
-    document.head.appendChild(el);
     return () => {
-      el.remove();
+      el?.remove();
     };
   }, []);
 

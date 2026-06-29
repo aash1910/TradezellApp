@@ -47,6 +47,11 @@ function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function formatListingType(type: string) {
+  if (type === 'both') return 'TRADE & SELL';
+  return type.toUpperCase();
+}
+
 export default function MyListingsScreen() {
   const insets = useSafeAreaInsets();
   const [listings, setListings] = useState<Listing[]>([]);
@@ -152,6 +157,7 @@ export default function MyListingsScreen() {
     const priceLabel = formatPrice(item.currency, item.price);
     const imageCount = item.images?.length ?? 0;
     const isSell = item.type === 'sell';
+    const needsPrice = item.type === 'sell' || item.type === 'both';
 
     return (
       <View style={styles.card}>
@@ -190,7 +196,7 @@ export default function MyListingsScreen() {
 
             <View style={styles.typeRow}>
               <View style={[styles.typeBadge, isSell ? styles.sellBadge : styles.tradeBadge]}>
-                <Text style={styles.typeBadgeText}>{item.type.toUpperCase()}</Text>
+                <Text style={styles.typeBadgeText}>{formatListingType(item.type)}</Text>
               </View>
             </View>
 
@@ -217,9 +223,9 @@ export default function MyListingsScreen() {
 
             {priceLabel ? (
               <Text style={styles.price}>{priceLabel}</Text>
-            ) : (
+            ) : needsPrice ? (
               <Text style={styles.noPrice}>No price set</Text>
-            )}
+            ) : null}
           </View>
 
           <Ionicons name="chevron-forward" size={18} color={COLORS.border} style={styles.chevron} />

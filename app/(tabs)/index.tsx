@@ -258,7 +258,11 @@ export default function DiscoverScreen() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [swiping, setSwiping] = useState(false);
-  const [matchModal, setMatchModal] = useState<{ name: string } | null>(null);
+  const [matchModal, setMatchModal] = useState<{
+    name: string;
+    userId: number;
+    userImage: string;
+  } | null>(null);
   const [likedToast, setLikedToast] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -291,6 +295,14 @@ export default function DiscoverScreen() {
         if (settings.max_distance) params.radius_km = settings.max_distance;
       }
 
+      const filtersStr = await AsyncStorage.getItem('discover_filters');
+      if (filtersStr) {
+        const filters = JSON.parse(filtersStr);
+        if (filters.type) params.type = filters.type;
+        if (filters.condition) params.condition = filters.condition;
+        if (filters.category) params.category = filters.category;
+      }
+
       const response = await api.get('/listings/feed', { params });
       if (response.data.status === 'success') {
         setListings(response.data.listings.data ?? response.data.listings);
@@ -320,10 +332,15 @@ export default function DiscoverScreen() {
         setSwiping(true);
         const res = await api.post(`/listings/${listing.id}/swipe`, { direction: 'yes' });
         if (res.data.matched) {
-          const otherName = res.data.match?.other_user
-            ? `${res.data.match.other_user.first_name} ${res.data.match.other_user.last_name}`
+          const other = res.data.match?.other_user;
+          const otherName = other
+            ? `${other.first_name} ${other.last_name}`
             : 'Someone';
-          setMatchModal({ name: otherName });
+          setMatchModal({
+            name: otherName,
+            userId: other?.id ?? 0,
+            userImage: other?.image || '',
+          });
         } else {
           showLikedToast('Saved to Likes — we\'ll match you if they like your listings back');
         }
@@ -526,8 +543,21 @@ export default function DiscoverScreen() {
               style={styles.matchChatBtn}
               activeOpacity={0.9}
               onPress={() => {
+                const { userId, name, userImage } = matchModal;
                 setMatchModal(null);
-                router.push('/conversations');
+                if (!userId) {
+                  router.push('/conversations');
+                  return;
+                }
+                router.push({
+                  pathname: '/(tabs)/message',
+                  params: {
+                    userId: String(userId),
+                    userName: name,
+                    userImage,
+                    userMobile: '',
+                  },
+                });
               }}>
               <Ionicons name="chatbubbles" size={20} color={COLORS.surface} />
               <Text style={styles.matchChatBtnText}>Message now</Text>

@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
+
+const DISCOVER_FILTERS_KEY = 'discover_filters';
 
 const COLORS = {
   primary: '#2D6A4F', background: '#F8FAF9', white: '#FFFFFF',
@@ -20,13 +23,32 @@ export default function FilterScreen() {
   const [condition, setCondition] = useState('');
   const [category, setCategory] = useState('');
 
-  const handleApply = () => {
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(DISCOVER_FILTERS_KEY);
+        if (!saved) return;
+        const filters = JSON.parse(saved);
+        setType(filters.type ?? '');
+        setCondition(filters.condition ?? '');
+        setCategory(filters.category ?? '');
+      } catch (_) {}
+    })();
+  }, []);
+
+  const handleApply = async () => {
+    await AsyncStorage.setItem(
+      DISCOVER_FILTERS_KEY,
+      JSON.stringify({ type, condition, category }),
+    );
     router.back();
-    // The Discover screen reads these from navigation params or AsyncStorage on focus
   };
 
-  const handleReset = () => {
-    setType(''); setCondition(''); setCategory('');
+  const handleReset = async () => {
+    setType('');
+    setCondition('');
+    setCategory('');
+    await AsyncStorage.removeItem(DISCOVER_FILTERS_KEY);
   };
 
   return (

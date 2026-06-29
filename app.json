@@ -105,7 +105,7 @@
         "maxWithdrawal": 100000,
         "minWithdrawal": 100
       },
-      "environment": "development",
+      "environment": "production",
       "googleWebClientId": "245235849387-a8jb24bbplnql4tqe3p1vnhddd8pd4ef.apps.googleusercontent.com",
       "appleWebClientId": "com.tradezell.app",
       "appleWebRedirectUri": "https://app.tradezell.com/auth/apple/callback"

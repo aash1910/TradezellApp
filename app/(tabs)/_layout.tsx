@@ -1,12 +1,12 @@
 import { Tabs, router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { calculateUnreadCount } from './conversations';
 import api from '@/services/api';
+import { isDevelopment } from '@/utils/environment';
 
 const COLORS = {
   primary: '#2D6A4F',
@@ -18,6 +18,11 @@ export default function TabLayout() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchUnreadCount = async () => {
+    if (isDevelopment) {
+      setUnreadCount(0);
+      return;
+    }
+
     try {
       const response = await api.get('/conversations');
       if (response.data.status === 'success') {
@@ -33,8 +38,7 @@ export default function TabLayout() {
   );
 
   useEffect(() => {
-    const env = Constants.expoConfig?.extra?.environment;
-    if (env !== 'development') {
+    if (!isDevelopment) {
       const interval = setInterval(fetchUnreadCount, 5000);
       return () => clearInterval(interval);
     }
@@ -98,7 +102,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <Ionicons name="chatbubble-outline" size={25} color={color} />
           ),
-          tabBarBadge: unreadCount > 0 ? unreadCount.toString() : undefined,
+          tabBarBadge: !isDevelopment && unreadCount > 0 ? unreadCount.toString() : undefined,
         }}
       />
 

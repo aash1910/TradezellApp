@@ -738,7 +738,7 @@ export default function LoginScreen() {
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
           <Text style={styles.appName}>Tradezell</Text>
-          <Text style={styles.tagline}>Trade for a better planet</Text>
+          <Text style={styles.tagline}>Trade, Sell & Buy Items</Text>
         </Animated.View>
 
         <View style={styles.form}>

@@ -16,8 +16,9 @@ import { CameraIcon } from '@/components/icons/CameraIcon';
 import { MicrophoneIcon } from '@/components/icons/MicrophoneIcon';
 import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
-import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isDevelopment } from '@/utils/environment';
+import { useWebKeyboardInset } from '@/hooks/useWebKeyboardInset';
 
 interface Message {
   id: number;
@@ -73,8 +74,13 @@ export default function MessageScreen() {
   const userImage = paramString(params.userImage);
   const userMobile = paramString(params.userMobile);
   const refresh = paramString(params.refresh, '0');
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const { keyboardInset: webKeyboardInset, isKeyboardVisible: isWebKeyboardVisible } =
+    useWebKeyboardInset();
+  const [isNativeKeyboardVisible, setNativeKeyboardVisible] = useState(false);
+  const [nativeKeyboardHeight, setNativeKeyboardHeight] = useState(0);
+  const isKeyboardVisible =
+    Platform.OS === 'web' ? isWebKeyboardVisible : isNativeKeyboardVisible;
+  const keyboardHeight = Platform.OS === 'web' ? webKeyboardInset : nativeKeyboardHeight;
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,10 +130,7 @@ export default function MessageScreen() {
   }, []);
 
   const startPolling = useCallback(() => {
-    const environment = Constants.expoConfig?.extra?.environment;
-    
-    // Only start polling if not in development mode
-    if (environment === 'development') {
+    if (isDevelopment) {
       console.log('Skipping polling in development mode');
       return;
     }
@@ -161,6 +164,11 @@ export default function MessageScreen() {
   }, []);
 
   const fetchUnreadCount = async () => {
+    if (isDevelopment) {
+      setUnreadCount(0);
+      return;
+    }
+
     try {
       const response = await api.get('/conversations');
       if (response.data.status === 'success') {
@@ -265,13 +273,15 @@ export default function MessageScreen() {
       pollCountRef.current = 0;
       startPolling();
 
-      // Start unread count polling
+      // Start unread count polling (disabled in development)
       if (unreadCountIntervalRef.current) {
         clearInterval(unreadCountIntervalRef.current);
       }
-      unreadCountIntervalRef.current = setInterval(() => {
-        fetchUnreadCount();
-      }, 5000);
+      if (!isDevelopment) {
+        unreadCountIntervalRef.current = setInterval(() => {
+          fetchUnreadCount();
+        }, 5000);
+      }
 
       setTimeout(() => {
         scrollRef.current?.scrollToEnd({ animated: true });
@@ -300,6 +310,15 @@ export default function MessageScreen() {
 
   useEffect(() => {
     if (Platform.OS === 'web') {
+      bottomPosition.value = withTiming(
+        isWebKeyboardVisible ? webKeyboardInset : tabBarInsetRef.current,
+        { duration: 150 },
+      );
+      if (isWebKeyboardVisible) {
+        setTimeout(() => {
+          scrollRef.current?.scrollToEnd({ animated: true });
+        }, 150);
+      }
       return;
     }
 
@@ -308,8 +327,8 @@ export default function MessageScreen() {
 
     const keyboardShowListener = Keyboard.addListener(showEvent, (event) => {
       const height = event.endCoordinates.height;
-      setKeyboardVisible(true);
-      setKeyboardHeight(height);
+      setNativeKeyboardVisible(true);
+      setNativeKeyboardHeight(height);
       bottomPosition.value = withTiming(height, { duration: 250 });
       setTimeout(() => {
         scrollRef.current?.scrollToEnd({ animated: true });
@@ -317,8 +336,8 @@ export default function MessageScreen() {
     });
 
     const keyboardHideListener = Keyboard.addListener(hideEvent, () => {
-      setKeyboardVisible(false);
-      setKeyboardHeight(0);
+      setNativeKeyboardVisible(false);
+      setNativeKeyboardHeight(0);
       bottomPosition.value = withTiming(tabBarInsetRef.current, { duration: 250 });
     });
 
@@ -326,7 +345,7 @@ export default function MessageScreen() {
       keyboardShowListener.remove();
       keyboardHideListener.remove();
     };
-  }, []);
+  }, [isWebKeyboardVisible, webKeyboardInset]);
 
   const inputBarAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -360,7 +379,7 @@ export default function MessageScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, Platform.OS === 'web' && styles.containerWeb]}>
         <Animated.View style={[styles.header]}>
           <TouchableOpacity style={styles.leftArrow} onPress={() => router.push({
             pathname: '/conversations'
@@ -369,7 +388,7 @@ export default function MessageScreen() {
           </TouchableOpacity>
           <View style={styles.titleContainer}>
             <Text style={styles.pageTitle}>{userName}</Text>
-            {unreadCount > 0 && (
+            {!isDevelopment && unreadCount > 0 && (
               <View style={styles.unreadBadge}>
                 <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
               </View>
@@ -453,7 +472,7 @@ export default function MessageScreen() {
           ]}>
           <View style={styles.inputBar}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, Platform.OS === 'web' && styles.inputWeb]}
               placeholder="Type a message"
               value={input}
               onChangeText={setInput}
@@ -472,6 +491,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  containerWeb: {
+    overflow: 'hidden',
   },
   scrollContent: {
     flexGrow: 1,
@@ -648,6 +670,9 @@ const styles = StyleSheet.create({
     fontFamily: 'nunito-medium',
     height: 44,
     flex: 1,
+  },
+  inputWeb: {
+    fontSize: 16,
   },
   sendBtn: {
 

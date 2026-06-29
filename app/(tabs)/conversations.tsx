@@ -6,6 +6,7 @@ import { PlusIcon } from '@/components/icons/PlusIcon';
 import { RightArrowIcon } from '@/components/icons/RightArrowIcon';
 import api from '@/services/api';
 import { openMessageChat, openSupportChat } from '@/utils/openSupportChat';
+import { isDevelopment } from '@/utils/environment';
 
 interface Conversation {
   user_id: number;
@@ -41,6 +42,12 @@ export default function ConversationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchConversations = async () => {
+    if (isDevelopment) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     try {
       const response = await api.get('/conversations');
       if (response.data.status === 'success') {
@@ -65,8 +72,10 @@ export default function ConversationsScreen() {
     }, [])
   );
 
-  // Refresh conversations every 5 seconds when app is active
+  // Refresh conversations every 5 seconds when app is active (disabled in development)
   useEffect(() => {
+    if (isDevelopment) return;
+
     const interval = setInterval(() => {
       fetchConversations();
     }, 5000);

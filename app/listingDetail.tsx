@@ -8,10 +8,11 @@ import {
   StyleSheet,
   ActivityIndicator,
   StatusBar,
-  Dimensions,
   FlatList,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Platform,
+  type ImageStyle,
 } from 'react-native';
 import { showAlert } from '@/utils/alertCompat';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -19,9 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api, { API_ORIGIN } from '@/services/api';
 import { resolveListingImageUri } from '@/utils/images';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GALLERY_HEIGHT = SCREEN_WIDTH * 0.88;
+import { useAppContentDimensions } from '@/hooks/useAppContentDimensions';
 const THUMB_SIZE = 72;
 const H_PAD = 20;
 
@@ -55,8 +54,15 @@ function resolveUserImageUri(image: string | null | undefined): string | null {
   return `${API_ORIGIN.replace(/\/$/, '')}/${image.replace(/^\//, '')}`;
 }
 
+const galleryImageFill: ImageStyle = Platform.select({
+  web: { width: '100%', height: '100%', objectFit: 'cover' },
+  default: { width: '100%', height: '100%' },
+})!;
+
 export default function ListingDetailScreen() {
   const insets = useSafeAreaInsets();
+  const { width: contentWidth } = useAppContentDimensions();
+  const galleryHeight = contentWidth * 0.88;
   const { id } = useLocalSearchParams<{ id: string }>();
   const [listing, setListing] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -86,10 +92,13 @@ export default function ListingDetailScreen() {
     [listing?.images]
   );
 
-  const onGalleryScrollEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-    setActiveImageIndex(index);
-  }, []);
+  const onGalleryScrollEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const index = Math.round(e.nativeEvent.contentOffset.x / contentWidth);
+      setActiveImageIndex(index);
+    },
+    [contentWidth]
+  );
 
   const scrollToImage = useCallback((index: number) => {
     setActiveImageIndex(index);
@@ -98,9 +107,11 @@ export default function ListingDetailScreen() {
 
   const renderGalleryImage = useCallback(
     ({ item }: { item: string }) => (
-      <Image source={{ uri: item }} style={styles.gallerySlide} resizeMode="cover" />
+      <View style={{ width: contentWidth, height: galleryHeight, overflow: 'hidden' }}>
+        <Image source={{ uri: item }} style={galleryImageFill} resizeMode="cover" />
+      </View>
     ),
-    []
+    [contentWidth, galleryHeight]
   );
 
   const handlePassPress = () => {
@@ -128,7 +139,24 @@ export default function ListingDetailScreen() {
           "It's a Match!",
           `You and ${name} liked each other! Head to Chat to start talking.`,
           [
-            { text: 'Go to Chat', onPress: () => router.push('/conversations') },
+            {
+              text: 'Go to Chat',
+              onPress: () => {
+                if (other?.id) {
+                  router.push({
+                    pathname: '/(tabs)/message',
+                    params: {
+                      userId: String(other.id),
+                      userName: name,
+                      userImage: other.image || '',
+                      userMobile: '',
+                    },
+                  });
+                } else {
+                  router.push('/conversations');
+                }
+              },
+            },
             { text: 'Stay here' },
           ]
         );
@@ -195,7 +223,7 @@ export default function ListingDetailScreen() {
         {/* Gallery */}
         <View style={styles.gallerySection}>
           {imageUris.length > 0 ? (
-            <View style={styles.galleryWrap}>
+            <View style={[styles.galleryWrap, { width: contentWidth, height: galleryHeight }]}>
               <FlatList
                 ref={galleryRef}
                 data={imageUris}
@@ -206,9 +234,10 @@ export default function ListingDetailScreen() {
                 showsHorizontalScrollIndicator={false}
                 bounces={imageUris.length > 1}
                 onMomentumScrollEnd={onGalleryScrollEnd}
+                style={{ width: contentWidth, height: galleryHeight }}
                 getItemLayout={(_, index) => ({
-                  length: SCREEN_WIDTH,
-                  offset: SCREEN_WIDTH * index,
+                  length: contentWidth,
+                  offset: contentWidth * index,
                   index,
                 })}
                 onScrollToIndexFailed={(info) => {
@@ -239,7 +268,7 @@ export default function ListingDetailScreen() {
               )}
             </View>
           ) : (
-            <View style={styles.heroPlaceholder}>
+            <View style={[styles.heroPlaceholder, { width: contentWidth, height: galleryHeight }]}>
               <Ionicons name="image-outline" size={64} color={COLORS.secondary} />
               <Text style={styles.placeholderText}>No photos</Text>
             </View>
@@ -447,8 +476,7 @@ const styles = StyleSheet.create({
   emptyBtnText: { color: COLORS.white, fontFamily: 'NunitoBold', fontSize: 15 },
 
   gallerySection: { position: 'relative', backgroundColor: '#0f172a' },
-  galleryWrap: { width: SCREEN_WIDTH, height: GALLERY_HEIGHT, overflow: 'hidden' },
-  gallerySlide: { width: SCREEN_WIDTH, height: GALLERY_HEIGHT },
+  galleryWrap: { overflow: 'hidden' },
   galleryGradient: {
     position: 'absolute',
     left: 0,
@@ -458,8 +486,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,23,42,0.45)',
   },
   heroPlaceholder: {
-    width: SCREEN_WIDTH,
-    height: GALLERY_HEIGHT,
     backgroundColor: '#E8F4F0',
     alignItems: 'center',
     justifyContent: 'center',
@@ -611,6 +637,24 @@ const styles = StyleSheet.create({
   },
   detailLabel: { fontSize: 12, color: COLORS.textLight },
   detailValue: { fontSize: 16, fontFamily: 'NunitoBold', color: COLORS.text, marginTop: 2 },
+
+  thumbStrip: { gap: 10, paddingRight: 8 },
+  thumb: {
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  thumbActive: { borderColor: COLORS.primary },
+  thumbImage: { width: '100%', height: '100%' },
+  thumbOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(45,106,79,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   thumbStrip: { gap: 10, paddingRight: 8 },
   thumb: {
